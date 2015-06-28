@@ -3,7 +3,7 @@ namespace PhalconX\Validators;
 
 use Phalcon\Validation\Message;
 
-class MbstringLength extends BaseValidator
+class StringLength extends BaseValidator
 {
     public function validate(\Phalcon\Validation $validator, $attribute)
     {
@@ -15,7 +15,7 @@ class MbstringLength extends BaseValidator
             $msg = $this->getOption('messageMinimum', "Value for $attribute is too short");
         }
         if (isset($msg)) {
-            $validator->appendMessage(new Message($message, $attribute));
+            $validator->appendMessage(new Message($msg, $attribute));
             return false;
         }
         return true;

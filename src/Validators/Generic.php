@@ -10,9 +10,7 @@ use Phalcon\Validation\Message;
  *   new Generic(array(
  *        'validate' => function($value, $validator) {
  *            // do validation
- *            if ( !$isValid ) {
- *                $validator->setOption('message', $validator->getAttribute() . '\'s value is not valid');
- *            }
+ *            return $isValid;
  *        }
  *   ));
  * </code>
