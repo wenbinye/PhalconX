@@ -6,7 +6,7 @@ use Phalcon\Validation\ValidatorInterface;
 
 abstract class BaseValidator extends Validator implements ValidatorInterface
 {
-    protected function getOptionDef($option, $default = null)
+    protected function getOptionWithDefault($option, $default = null)
     {
         $value = $this->getOption($option);
         return isset($value) ? $value : $default;
@@ -14,6 +14,6 @@ abstract class BaseValidator extends Validator implements ValidatorInterface
 
     protected function getMessage($default = null)
     {
-        return $this->getOptionDef('message', $default);
+        return $this->getOptionWithDefault('message', $default);
     }
 }

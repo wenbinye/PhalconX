@@ -1,6 +1,11 @@
 <?php
 namespace PhalconX\Test;
 
+use Symfony\Component\Yaml\Yaml;
+
+/**
+ * Create dataset from file
+ */
 trait Dataset
 {
     public function dataset($file)

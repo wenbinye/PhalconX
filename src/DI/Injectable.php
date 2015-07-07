@@ -1,27 +1,27 @@
 <?php
-namespace PhalconX\DI;
+namespace PhalconX\Di;
 
-use Phalcon\DI;
+use Phalcon\Di;
 
 trait Injectable
 {
     private $di;
 
-    public function getDI()
+    public function getDi()
     {
         if (!$this->di) {
-            $this->di = DI::getDefault();
+            $this->di = Di::getDefault();
         }
         return $this->di;
     }
 
-    public function setDI(\Phalcon\DiInterface $di)
+    public function setDi(\Phalcon\DiInterface $di)
     {
         $this->di = $di;
     }
 
     public function __get($property)
     {
-        return $this->getDI()->get($property);
+        return $this->getDi()->get($property);
     }
 }

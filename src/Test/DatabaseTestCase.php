@@ -1,10 +1,11 @@
 <?php
 namespace PhalconX\Test;
 
-use Phalcon\DI\InjectionAwareInterface;
-use PhalconX\DI\Injectable;
+use Phalcon\Di\InjectionAwareInterface;
+use PhalconX\Di\Injectable;
 
-abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase implements InjectionAwareInterface
+abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
+    implements InjectionAwareInterface
 {
     use Injectable;
     use Dataset;

@@ -1,6 +1,9 @@
 <?php
 namespace PhalconX\Test\Form;
 
+use PhalconX\Validators\StringLength;
+use PhalconX\Validators\Range;
+
 class User
 {
     public $id;
@@ -11,7 +14,7 @@ class User
     public $name;
 
     /**
-     * @Valid(type=integer, validator=@Between(minimum=0, maximum=200))
+     * @Valid(type=integer, validator=@Range(minimum=0, maximum=200))
      */
     public $age;
 }

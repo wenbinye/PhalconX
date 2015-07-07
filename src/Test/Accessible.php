@@ -1,6 +1,9 @@
 <?php
 namespace PhalconX\Test;
 
+/**
+ * Enable get/set private property
+ */
 trait Accessible
 {
     public function setValue($object, $field_name, $value)

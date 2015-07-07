@@ -3,7 +3,7 @@ namespace PhalconX;
 
 use PhalconX\Test\TestCase;
 use PhalconX\Test\Form\User;
-
+use PhalconX\Test\Models\Pet;
 use Phalcon\Validation\Message\Group as MessageGroup;
 
 class ValidatorTest extends TestCase
@@ -12,11 +12,14 @@ class ValidatorTest extends TestCase
 
     public function setUp()
     {
+        Util::di()->setShared('reflection', 'PhalconX\Reflection');
+        Util::di()->setShared('objectConverter', 'PhalconX\ObjectConverter');
+        Util::di()->setShared('validator', 'PhalconX\Validator');
         $this->validator = new Validator;
     }
 
     /**
-     * @dataProvider dataProvider
+     * @dataProvider formDataProvider
      */
     public function testValidators($validator, $result)
     {
@@ -35,7 +38,7 @@ class ValidatorTest extends TestCase
         }
     }
 
-    public function dataProvider()
+    public function formDataProvider()
     {
         return [
             [['name' => 'id', 'value' => '10', 'type' => 'integer'], true],
@@ -46,19 +49,16 @@ class ValidatorTest extends TestCase
             [['name' => 'id', 'value' => 'true', 'type' => 'boolean'], true],
             [['name' => 'id', 'value' => 'false', 'type' => 'boolean'], true],
             [['name' => 'id', 'value' => 'abc', 'type' => 'boolean'], false],
-            [['name' => 'ids', 'value' => array('10'), 'type' => 'int_array'], true],
+            [['name' => 'ids', 'value' => array('10'), 'type' => 'array', 'elementType' => 'integer'], true],
         ];
     }
 
     /**
-     * @dataProvider formDataProvider
+     * @dataProvider userDataProvider
      */
-    public function testForms($formData, $result, $field)
+    public function testUserForms($formData, $result, $field)
     {
-        $form = new User();
-        foreach ($formData as $k => $v) {
-            $form->$k = $v;
-        }
+        $form = $this->objectConverter->convert($formData, User::CLASS);
         if ($result) {
             $this->validator->validate($form);
             $this->assertTrue(true);
@@ -68,18 +68,50 @@ class ValidatorTest extends TestCase
                 $this->fail();
             } catch (ValidationException $e) {
                 $errors = $e->getErrors();
+                // print_r($errors);
                 $this->assertTrue($errors instanceof MessageGroup);
                 $this->assertEquals($errors[0]->getField(), $field);
             }
         }
     }
 
-    public function formDataProvider()
+    public function userDataProvider()
     {
         return [
             [['id'=>'1', 'name' => 'john', 'age'=>'10'], true, null],
             [['id'=>'1', 'name' => 'john', 'age'=>'1000'], false, 'age'],
             [['id'=>'1', 'name' => 'john smith william', 'age'=>'10'], false, 'name'],
+        ];
+    }
+
+    /**
+     * @dataProvider petDataProvider
+     */
+    public function testPetForms($formData, $result, $field)
+    {
+        $form = $this->objectConverter->convert($formData, Pet::CLASS);
+        
+        if ($result) {
+            $this->validator->validate($form);
+            $this->assertTrue(true);
+        } else {
+            try {
+                $this->validator->validate($form);
+                $this->fail();
+            } catch (ValidationException $e) {
+                $errors = $e->getErrors();
+                // print_r($errors);
+                $this->assertTrue($errors instanceof MessageGroup);
+                $this->assertEquals($errors[0]->getField(), $field);
+            }
+        }
+    }
+
+    public function petDataProvider()
+    {
+        return [
+            [['id'=>'1', 'name' => 'huahua'], false, 'photo_urls'],
+            [['id'=>'1', 'name' => 'huahua', 'photo_urls' => ['a'], 'category'=> ['id' => 'a']], false, 'category.id'],
         ];
     }
 
@@ -96,13 +128,27 @@ class ValidatorTest extends TestCase
     {
         try {
             $this->validator->validate([[
-                'name' => 'ids', 'value' => 'abc', 'type' => 'int_array'
+                'name' => 'ids', 'value' => 'abc', 'type' => 'array', 'elementType' => 'integer'
             ]]);
             $this->fail();
         } catch (ValidationException $e) {
             $errors = $e->getErrors();
             $this->assertTrue($errors instanceof MessageGroup);
             $this->assertEquals($errors[0]->getField(), 'ids');
+        }
+    }
+    
+    public function testIntArrayElementFail()
+    {
+        try {
+            $this->validator->validate([[
+                'name' => 'ids', 'value' => ['abc'], 'type' => 'array', 'elementType' => 'integer'
+            ]]);
+            $this->fail();
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $this->assertTrue($errors instanceof MessageGroup);
+            $this->assertEquals($errors[0]->getField(), 'ids[0]');
         }
     }
 }

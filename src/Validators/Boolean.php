@@ -16,7 +16,6 @@ class Boolean extends BaseValidator
                 Messages::format('The :attribute must be a boolean value, eg. true, false', $attribute)
             );
             $validator->appendMessage(new Message($message, $attribute));
-            var_export($message);
             return false;
         }
     }

@@ -2,7 +2,6 @@
 namespace PhalconX\Validators;
 
 use Phalcon\Validation\Message;
-
 use PhalconX\Messages;
 
 class Min extends BaseValidator

@@ -9,7 +9,7 @@ class Integer extends BaseValidator
     public function validate(\Phalcon\Validation $validator, $attribute)
     {
         $value = $validator->getValue($attribute);
-        if (is_integer($value)) {
+        if (is_int($value) || preg_match('/^[-+]?\d+$/', $value)) {
             return true;
         } else {
             $message = $this->getMessage(
