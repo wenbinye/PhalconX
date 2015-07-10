@@ -26,4 +26,3 @@ class Forward2Controller extends Controller
         echo 'yes';
     }
 }
-

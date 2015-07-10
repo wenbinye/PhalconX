@@ -23,7 +23,7 @@ function bootstrap_test()
         'fixturesDir' => __DIR__ . '/fixtures'
     ));
     $di->setShared('config', $config);
-    $di->setShared('cache', function() {
+    $di->setShared('cache', function () {
             $frontend = new Cache\Frontend\None;
             $backend = new Cache\Backend\Memory($frontend);
             return $backend;
@@ -37,4 +37,3 @@ function bootstrap_test()
     $di->setShared('logger', $logger);
 }
 bootstrap_test();
-

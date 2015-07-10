@@ -30,4 +30,3 @@ class ErrorController extends Controller
         $val = $_GET['no such key'];
     }
 }
-

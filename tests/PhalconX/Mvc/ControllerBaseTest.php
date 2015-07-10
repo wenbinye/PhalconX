@@ -28,9 +28,9 @@ abstract class ControllerBaseTest extends ControllerTestCase
         $dispatcher->setDefaultNamespace('PhalconX\Mvc');
 
         $em = new EventsManager;
-        $em->attach('dispatch:beforeException', function($event, $dispatcher, $exception) use($di) {
+        $em->attach('dispatch:beforeException', function ($event, $dispatcher, $exception) use ($di) {
                 // print_r($exception);
-            });
+        });
 
     }
 }
