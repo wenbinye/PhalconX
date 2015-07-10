@@ -1,7 +1,6 @@
 <?php
 namespace PhalconX\Mvc;
 
-// use Phalcon\Mvc\Model\Behavior\Timestampable;
 use PhalconX\Mvc\Model\TimestampBehavior as Timestampable;
 
 abstract class Model extends \Phalcon\Mvc\Model
@@ -61,7 +60,7 @@ abstract class Model extends \Phalcon\Mvc\Model
     {
         $conditions = '';
         $sep = '';
-        foreach ( $attrs as $name => $value ) {
+        foreach ($attrs as $name => $value) {
             $conditions .= $sep . "$name=:$name:";
             $sep = ' AND ';
         }

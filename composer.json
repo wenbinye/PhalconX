@@ -1,18 +1,21 @@
 {
-  "name": "wenbinye/PhalconX",
-  "description": "Phalcon extension library",
-  "type": "library",
-  "homepage": "http://github.com/wenbinye/PhalconX",
-  "license": "MIT",
-  "authors": [
-    {
-      "name": "Ye Wenbin <wenbinye@163.com>",
-      "homepage": "http://github.com/wenbinye/PhalconX"
+    "name": "wenbinye/php-phalconx",
+    "description": "Phalcon extension library",
+    "type": "library",
+    "homepage": "http://github.com/wenbinye/PhalconX",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ye Wenbin <wenbinye@163.com>",
+            "homepage": "http://github.com/wenbinye/PhalconX"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "PhalconX\\" : "src/"
+        }
+    },
+    "scripts": {
+        "post-install-cmd": ["bash contrib/setup.sh"]
     }
-  ],
-  "autoload": {
-    "psr-4": {
-      "PhalconX\\" : "src/"
-    }
-  }
 }

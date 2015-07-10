@@ -5,8 +5,14 @@ class VoltExtension
 {
     public function compileFunction($name, $arguments)
     {
-        if ( is_callable('\PhalconX\Html::' . $name) ) {
-            return '\PhalconX\Html::'.$name . '(' . $arguments . ')';
+        $cname = camelize($name);
+        if (is_callable('\PhalconX\Html::' . $cname)) {
+            return '\PhalconX\Html::'.$cname . '(' . $arguments . ')';
         }
+    }
+    
+    public static function camelize($word)
+    {
+        return preg_replace('/(^|_)([a-z])/e', 'strtoupper("\\2")', $word);
     }
 }

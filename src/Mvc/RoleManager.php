@@ -17,15 +17,15 @@ class RoleManager implements RoleManagerInterface
     
     public function __construct($options)
     {
-        if ( !isset($options['cache']) ) {
+        if (!isset($options['cache'])) {
             throw new \RuntimeException("The parameter 'cache' is required");
         }
-        if ( !isset($options['model']) ) {
+        if (!isset($options['model'])) {
             throw new \RuntimeException("The parameter 'model' is required");
         }
         $this->cache = $options['cache'];
         $this->model = $options['model'];
-        if ( isset($options['cachePrefix']) ) {
+        if (isset($options['cachePrefix'])) {
             $this->cachePrefix = $options['cachePrefix'];
         }
     }
@@ -43,17 +43,17 @@ class RoleManager implements RoleManagerInterface
 
     private function getRolesMap($user_id)
     {
-        if ( $this->isRoot($user_id) ) {
+        if ($this->isRoot($user_id)) {
             return null;
         }
-        if ( isset($this->localCache[$user_id]) ) {
+        if (isset($this->localCache[$user_id])) {
             return $this->localCache[$user_id];
         }
         $cacheKey = $this->cachePrefix . $user_id;
         $roles = $this->cache->get($cacheKey);
-        if ( $roles === null ) {
+        if ($roles === null) {
             $user = $this->getModel($user_id);
-            if ( $user == null ) {
+            if ($user == null) {
                 $roles = array();
             } else {
                 $roles = array_flip(explode(' ', $user->getRoles()));
@@ -73,36 +73,36 @@ class RoleManager implements RoleManagerInterface
     private function saveRoles($user_id, $roles)
     {
         $user = $this->getModel($user_id);
-        if ( $user === null ) {
+        if ($user === null) {
             throw new \UnexpectedValueException("user '$user_id' does not exists");
         }
         $this->localCache[$user_id] = $roles;
         $this->cache->save($this->cachePrefix . $user_id, $roles);
         $str = implode(self::DELIMITER, array_keys($roles));
-        if ( empty($str) ) {
+        if (empty($str)) {
             $str = new RawValue("''");
         }
         $user->setRoles($str);
-        if ( $user->save() ) {
+        if ($user->save()) {
             return $this;
         } else {
             $messages = array();
             foreach ($user->getMessages() as $message) {
                 $messages[] = $message;
-            }            
+            }
             throw new \RuntimeException(implode(', ', $messages));
         }
     }
     
     private function hasRoles($user_id, $roles)
     {
-        if ( $this->isRoot($user_id) ) {
+        if ($this->isRoot($user_id)) {
             return true;
         }
         
         $user_roles = $this->getRolesMap($user_id);
-        foreach ( $roles as $role ) {
-            if ( !isset($user_roles[$role]) ) {
+        foreach ($roles as $role) {
+            if (!isset($user_roles[$role])) {
                 return false;
             }
         }
@@ -111,13 +111,13 @@ class RoleManager implements RoleManagerInterface
 
     private function hasAnyRole($user_id, $roles)
     {
-        if ( $this->isRoot($user_id) ) {
+        if ($this->isRoot($user_id)) {
             return true;
         }
         
         $user_roles = $this->getRolesMap($user_id);
-        foreach ( $roles as $role ) {
-            if ( isset($user_roles[$role]) ) {
+        foreach ($roles as $role) {
+            if (isset($user_roles[$role])) {
                 return true;
             }
         }
@@ -131,12 +131,12 @@ class RoleManager implements RoleManagerInterface
     
     public function addRoles($user_id, $roles)
     {
-        if ( $this->isRoot($user_id) ) {
+        if ($this->isRoot($user_id)) {
             return $this;
         }
         
         $user_roles = $this->getRolesMap($user_id);
-        foreach ( $roles as $role ) {
+        foreach ($roles as $role) {
             $user_roles[$role] = 1;
         }
         return $this->saveRoles($user_id, $user_roles);
@@ -144,7 +144,7 @@ class RoleManager implements RoleManagerInterface
 
     public function removeRoles($user_id, $roles)
     {
-        if ( $this->isRoot($user_id) ) {
+        if ($this->isRoot($user_id)) {
             return $this;
         }
 
@@ -163,10 +163,10 @@ class RoleManager implements RoleManagerInterface
      */
     public function checkAccess($user_id, $roles)
     {
-        if ( $this->isRoot($user_id) ) {
+        if ($this->isRoot($user_id)) {
             return true;
         }
-        if ( strpos($roles, '|') !== false ) {
+        if (strpos($roles, '|') !== false) {
             return $this->hasAnyRole($user_id, explode('|', $roles));
         } else {
             return $this->hasRoles($user_id, explode('&', $roles));

@@ -30,9 +30,9 @@ class CacheAdapter extends Adapter implements AdapterInterface, InjectionAwareIn
      *  - cookie_lifetime session cookie expiration
      *  - cookie_name session cookie name
      */
-    public function __construct($options=null)
+    public function __construct($options = null)
     {
-        if(!isset($options['cache'])){
+        if (!isset($options['cache'])) {
             throw new \RuntimeException("The parameter 'cache' is required");
         }
         $this->cache = $options['cache'];
@@ -84,7 +84,7 @@ class CacheAdapter extends Adapter implements AdapterInterface, InjectionAwareIn
     {
         $sessionData = $this->cache->get($this->prefix .$sessionId);
         // $this->getDI()->getLogger()->info("read session: $sessionId " . $sessionData);
-        if ( isset($sessionData) ) {
+        if (isset($sessionData)) {
             return json_decode($sessionData, true);
         }
         return null;
@@ -100,7 +100,7 @@ class CacheAdapter extends Adapter implements AdapterInterface, InjectionAwareIn
     {
         $content = json_encode($data);
         // $this->getDI()->getLogger()->info( $_SERVER['REQUEST_URI'] . " write session: $sessionId " . $content);
-        if ( $this->lifetime > 0 ) {
+        if ($this->lifetime > 0) {
             $this->cache->save($this->prefix.$sessionId, $content, $this->lifetime);
         } else {
             $this->cache->save($this->prefix.$sessionId, $content);
@@ -111,7 +111,7 @@ class CacheAdapter extends Adapter implements AdapterInterface, InjectionAwareIn
      * Destroyes the session
      *
      */
-    public function destroy($session_id='')
+    public function destroy($session_id = '')
     {
         @session_unset();
         return $this->cache->delete($this->prefix.$session_id);

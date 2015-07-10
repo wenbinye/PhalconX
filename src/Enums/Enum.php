@@ -27,7 +27,7 @@ class Enum
     }
 
     /**
-     * Checks whether the enum value 
+     * Checks whether the enum value
      * @return boolean
      */
     public static function exists($value)

@@ -3,11 +3,11 @@ namespace PhalconX\Queue;
 
 use PhalconX\DI\Injectable;
 
-class Beanstalk extends \Phalcon\Queue\Beanstalk 
+class Beanstalk extends \Phalcon\Queue\Beanstalk
 {
     use Injectable;
     
-    public function addJob(JobInterface $job, $delay=null)
+    public function addJob(JobInterface $job, $delay = null)
     {
         $arguments = get_object_vars($job);
         $arguments['_handler'] = get_class($job);
@@ -24,7 +24,7 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
         ));
     }
     
-    public function processJobs($timeout=null)
+    public function processJobs($timeout = null)
     {
         $start_time = time();
         while (true) {

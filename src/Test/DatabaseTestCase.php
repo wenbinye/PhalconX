@@ -1,8 +1,8 @@
 <?php
 namespace PhalconX\Test;
 
-use Phalcon\DI\InjectionAwareInterface;
-use PhalconX\DI\Injectable;
+use Phalcon\Di\InjectionAwareInterface;
+use PhalconX\Di\Injectable;
 
 abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase implements InjectionAwareInterface
 {
@@ -47,12 +47,13 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase im
     public function createDataSet($file)
     {
         $path = $this->config->fixturesDir . '/' . $file;
-        if ( isset($this->cache[$path]) ) {
+        if (isset($this->cache[$path])) {
             return $this->cache[$path];
         }
-        if ( preg_match('/\.ya?ml$/', $file) ) {
+        if (preg_match('/\.ya?ml$/', $file)) {
             $dataset = new \PHPUnit_Extensions_Database_DataSet_YamlDataSet(
-                file_get_contents($path));
+                file_get_contents($path)
+            );
         } else {
             $dataset = parent::createFlatXmlDataSet($path);
         }

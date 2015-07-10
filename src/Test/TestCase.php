@@ -1,10 +1,8 @@
 <?php
 namespace PhalconX\Test;
 
-use Phalcon\DI\InjectionAwareInterface;
-use PhalconX\DI\Injectable;
-
-use Symfony\Component\Yaml\Yaml;
+use Phalcon\Di\InjectionAwareInterface;
+use PhalconX\Di\Injectable;
 
 abstract class TestCase extends \PHPUnit_Framework_TestCase implements InjectionAwareInterface
 {

@@ -7,12 +7,12 @@ class TimestampBehavior extends Behavior
 {
     public function notify($type, $model)
     {
-        if ( !$this->mustTakeAction($type) ) {
+        if (!$this->mustTakeAction($type)) {
             return;
         }
         $options = $this->getOptions($type);
-        if ( is_array($options) ) {
-            if ( $type == 'beforeCreate' && $model->readAttribute($options['field']) ) {
+        if (is_array($options)) {
+            if ($type == 'beforeCreate' && $model->readAttribute($options['field'])) {
                 return;
             }
             $format = $options['format'];

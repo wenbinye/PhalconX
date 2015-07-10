@@ -1,7 +1,9 @@
 <?php
 use Phalcon\DI\FactoryDefault;
 
+use Phalcon\Cache;
 use Phalcon\Logger\Adapter\Stream as ConsoleLogger;
+use Phalcon\Logger\Formatter\Line as LineFormatter;
 
 function bootstrap_test()
 {
@@ -21,8 +23,18 @@ function bootstrap_test()
         'fixturesDir' => __DIR__ . '/fixtures'
     ));
     $di->setShared('config', $config);
+    $di->setShared('cache', function() {
+            $frontend = new Cache\Frontend\None;
+            $backend = new Cache\Backend\Memory($frontend);
+            return $backend;
+    });
 
-    $di->setShared('logger', new ConsoleLogger('php://stderr'));
+
+    // Changing the logger format
+    $formatter = new LineFormatter("%date% [%type%] %message%\n");
+    $logger = new ConsoleLogger('php://stderr');
+    $logger->setFormatter($formatter);
+    $di->setShared('logger', $logger);
 }
 bootstrap_test();
 

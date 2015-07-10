@@ -30,9 +30,9 @@ class Auth extends Component implements AuthInterface
      */
     private $needRegenerate = false;
 
-    public function __construct($sessionKey=null)
+    public function __construct($sessionKey = null)
     {
-        if ( isset($sessionKey) ) {
+        if (isset($sessionKey)) {
             $this->sessionKey = $sessionKey;
         }
     }
@@ -46,7 +46,7 @@ class Auth extends Component implements AuthInterface
     {
         $this->session = $this->getDI()->getSession();
         $this->sessionData = $this->session->get($this->sessionKey);
-        if ( isset($this->sessionData) ) {
+        if (isset($this->sessionData)) {
             $now = time();
             $discard_time = isset($this->sessionData[self::REGENERATE_AFTER])
                 ? $this->sessionData[self::REGENERATE_AFTER]
@@ -59,14 +59,14 @@ class Auth extends Component implements AuthInterface
     
     public function __get($name)
     {
-        if ( isset($this->sessionData[$name]) ) {
+        if (isset($this->sessionData[$name])) {
             return $this->sessionData[$name];
         }
     }
 
     public function __set($name, $value)
     {
-        if ( isset($this->sessionData[$name]) ) {
+        if (isset($this->sessionData[$name])) {
             $this->sessionData[$name] = $value;
         }
     }
@@ -78,10 +78,10 @@ class Auth extends Component implements AuthInterface
      */
     public function login($identity)
     {
-        if ( $this->needRegenerate ) {
+        if ($this->needRegenerate) {
             session_regenerate_id(true);
         }
-        foreach ( $identity as $name => $val ) {
+        foreach ($identity as $name => $val) {
             $this->sessionData[$name] = $val;
         }
         $lifetime = ini_get('session.cookie_lifetime');
@@ -92,9 +92,9 @@ class Auth extends Component implements AuthInterface
     /**
      * 用户注销操作
      */
-    public function logout($destroySession=true)
+    public function logout($destroySession = true)
     {
-        if ( $destroySession ) {
+        if ($destroySession) {
             $this->session->destroy();
         } else {
             $this->session->set($this->sessionKey, false);
@@ -102,9 +102,9 @@ class Auth extends Component implements AuthInterface
         $this->sessionData = false;
     }
     
-    protected function getSessionData($key=null)
+    protected function getSessionData($key = null)
     {
-        if ( isset($key) ) {
+        if (isset($key)) {
             return $this->sessionData && isset($this->sessionData[$key])
                 ? $this->sessionData[$key] : null;
         } else {

@@ -10,9 +10,7 @@ use Phalcon\Validation\Message;
  *   new Generic(array(
  *        'validate' => function($value, $validator) {
  *            // do validation
- *            if ( !$isValid ) {
- *                $validator->setOption('message', $validator->getAttribute() . '\'s value is not valid');
- *            }
+ *            return $isValid;
  *        }
  *   ));
  * </code>
@@ -37,14 +35,14 @@ class Generic extends BaseValidator
         return $this->validator->appendMessage($message);
     }
     
-    public function validate($validator, $attribute)
+    public function validate(\Phalcon\Validation $validator, $attribute)
     {
         $this->validator = $validator;
         $this->attribute = $attribute;
         $callback = $this->getOption('validate');
         $value = $validator->getValue($attribute);
         $ret = call_user_func_array($callback, array($value, $this));
-        if ( $ret ) {
+        if ($ret) {
             return true;
         } else {
             $message = $this->getMessage("$attribute's value is invalid");

@@ -43,7 +43,7 @@ abstract class ControllerTestCase extends DatabaseTestCase
         parent::setUp();
     }
     
-    public function getResponse($format=null)
+    public function getResponse($format = null)
     {
         ob_start();
         $this->router->handle();

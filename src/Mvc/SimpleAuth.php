@@ -14,14 +14,14 @@ class SimpleAuth implements AuthInterface
     
     public function __get($name)
     {
-        if ( isset($this->sessionData[$name]) ) {
+        if (isset($this->sessionData[$name])) {
             return $this->sessionData[$name];
         }
     }
 
     public function __set($name, $value)
     {
-        if ( isset($this->sessionData[$name]) ) {
+        if (isset($this->sessionData[$name])) {
             $this->sessionData[$name] = $value;
         }
     }
@@ -29,12 +29,12 @@ class SimpleAuth implements AuthInterface
     public function login($identity)
     {
         $this->sessionData = array();
-        foreach ( $identity as $name => $val ) {
+        foreach ($identity as $name => $val) {
             $this->sessionData[$name] = $val;
         }
     }
     
-    public function logout($destroySession=true)
+    public function logout($destroySession = true)
     {
         $this->sessionData = false;
     }
@@ -44,7 +44,7 @@ class SimpleAuth implements AuthInterface
         return false === $this->sessionData;
     }
     
-    function isNeedLogin()
+    public function isNeedLogin()
     {
         return $this->isGuest();
     }
