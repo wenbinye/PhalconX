@@ -54,9 +54,13 @@ class Micro extends \Phalcon\Mvc\Micro
             if ($status === false || $this->_stopped) {
                 return $status;
             }
-            $controller = $router->getNamespaceName() . '\\' . ucfirst($router->getControllerName()) . 'Controller';
+            $controllerClass = $router->getNamespaceName() . '\\' . ucfirst($router->getControllerName()) . 'Controller';
+            $controller = $this->getSharedService($controllerClass);
+            if (method_exists($controller, 'initialize')) {
+                $controller->initialize();
+            }
             $action = $router->getActionName();
-            $returnedValue = call_user_func_array(array($this->getSharedService($controller), $action), $router->getParams());
+            $returnedValue = call_user_func_array(array($controller, $action), $router->getParams());
             if ($em) {
                 $em->fire('micro:afterExecuteRoute', $this);
             }
