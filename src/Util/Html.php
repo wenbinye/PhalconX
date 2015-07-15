@@ -1,5 +1,5 @@
 <?php
-namespace PhalconX;
+namespace PhalconX\Util;
 
 use Phalcon\Di;
 
@@ -7,7 +7,7 @@ class Html
 {
     private static $clips = array();
     private static $clipId;
-
+    
     public static function beginclip($name)
     {
         ob_start();
@@ -27,18 +27,6 @@ class Html
     public static function clip($name)
     {
         return isset(self::$clips[$name]) ? self::$clips[$name] : '';
-    }
-
-    /**
-     * @param Phalcon\Validation\Message\Group $msgs
-     */
-    public static function formErrors($msgs, $sep = ", ")
-    {
-        $str = array();
-        foreach ($msgs as $attr => $msg) {
-            $str[] = $msg->getMessage();
-        }
-        return implode($sep, $str);
     }
 
     public static function absoluteUrl($uri = null, $args = null)
@@ -80,15 +68,16 @@ class Html
     {
         static $staticBaseUri;
         static $assetsPrefix;
-        $config = Di::getDefault()->getConfig();
         if (!$staticBaseUri) {
-            $staticBaseUri = $config->staticBaseUri;
-            if (isset($config->assets)) {
-                $assetsPrefix = $config->assets[0] . "/";
+            $config = Di::getDefault()->getConfig();
+            $staticBaseUri = $config->application->staticBaseUri;
+            if (isset($config->application->assets)) {
+                $assetsPrefix = $config->application->assets[0] . "/";
             }
         }
         if (isset($assetsPrefix) && substr($path, 0, strlen($assetsPrefix)) == $assetsPrefix) {
-            $path = $assetsPrefix . $config->assets[1] . substr($path, strlen($assetsPrefix)-1);
+            $config = Di::getDefault()->getConfig();
+            $path = $assetsPrefix . $config->application->assets[1] . substr($path, strlen($assetsPrefix)-1);
         }
         return $staticBaseUri . $path;
     }

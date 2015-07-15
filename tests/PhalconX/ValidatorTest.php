@@ -1,10 +1,12 @@
 <?php
 namespace PhalconX;
 
+use Phalcon\Di;
+use Phalcon\Validation\Message\Group as MessageGroup;
 use PhalconX\Test\TestCase;
 use PhalconX\Test\Form\User;
 use PhalconX\Test\Models\Pet;
-use Phalcon\Validation\Message\Group as MessageGroup;
+use PhalconX\Exception\ValidationException;
 
 class ValidatorTest extends TestCase
 {
@@ -12,9 +14,9 @@ class ValidatorTest extends TestCase
 
     public function setUp()
     {
-        Util::di()->setShared('reflection', 'PhalconX\Reflection');
-        Util::di()->setShared('objectConverter', 'PhalconX\ObjectConverter');
-        Util::di()->setShared('validator', 'PhalconX\Validator');
+        Di::getDefault()->setShared('reflection', 'PhalconX\Util\Reflection');
+        Di::getDefault()->setShared('objectMapper', 'PhalconX\Util\ObjectMapper');
+        Di::getDefault()->setShared('validator', 'PhalconX\Validator');
         $this->validator = new Validator;
     }
 
@@ -58,7 +60,7 @@ class ValidatorTest extends TestCase
      */
     public function testUserForms($formData, $result, $field)
     {
-        $form = $this->objectConverter->convert($formData, User::CLASS);
+        $form = $this->objectMapper->map($formData, User::CLASS);
         if ($result) {
             $this->validator->validate($form);
             $this->assertTrue(true);
@@ -89,7 +91,7 @@ class ValidatorTest extends TestCase
      */
     public function testPetForms($formData, $result, $field)
     {
-        $form = $this->objectConverter->convert($formData, Pet::CLASS);
+        $form = $this->objectMapper->map($formData, Pet::CLASS);
         
         if ($result) {
             $this->validator->validate($form);

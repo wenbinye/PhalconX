@@ -6,15 +6,20 @@ use PhalconX\Validators\Range;
 
 class User
 {
+    /**
+     * @Text(label="User Id")
+     */
     public $id;
 
     /**
-     * @Valid(validator=@StringLength(max=10))
+     * @Text(label="Name")
+     * @Valid(type=string, maxLength=10)
      */
     public $name;
 
     /**
-     * @Valid(type=integer, validator=@Range(minimum=0, maximum=200))
+     * @Text(label="Age")
+     * @Valid(type=integer, minimum=0, maximum=200)
      */
     public $age;
 }

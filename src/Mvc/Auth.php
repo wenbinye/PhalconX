@@ -1,9 +1,9 @@
 <?php
 namespace PhalconX\Mvc;
 
-use Phalcon\Mvc\User\Component;
+use PhalconX\Util;
 
-class Auth extends Component implements AuthInterface
+class Auth implements AuthInterface
 {
     /**
      * 为降低用户在页面使用（ajax 调用）时出现过期情况，加入 regenerate_after 设置
@@ -30,21 +30,12 @@ class Auth extends Component implements AuthInterface
      */
     private $needRegenerate = false;
 
-    public function __construct($sessionKey = null)
+    public function __construct($options = null)
     {
-        if (isset($sessionKey)) {
-            $this->sessionKey = $sessionKey;
+        if (isset($options['sessionKey'])) {
+            $this->sessionKey = $options['sessionKey'];
         }
-    }
-    
-    public function getSessionKey()
-    {
-        return $this->sessionKey;
-    }
-
-    public function initialize()
-    {
-        $this->session = $this->getDI()->getSession();
+        $this->session = Util::service('session', $options);
         $this->sessionData = $this->session->get($this->sessionKey);
         if (isset($this->sessionData)) {
             $now = time();
@@ -55,6 +46,11 @@ class Auth extends Component implements AuthInterface
         } else {
             $this->sessionData = false;
         }
+    }
+    
+    public function getSessionKey()
+    {
+        return $this->sessionKey;
     }
     
     public function __get($name)

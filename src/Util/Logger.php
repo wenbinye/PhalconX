@@ -1,5 +1,5 @@
 <?php
-namespace PhalconX;
+namespace PhalconX\Util;
 
 use Phalcon\Di;
 

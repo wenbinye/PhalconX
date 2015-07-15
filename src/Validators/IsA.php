@@ -5,7 +5,7 @@ use Phalcon\Validation;
 use Phalcon\Validation\Message;
 use PhalconX\Messages;
 use PhalconX\Util;
-use PhalconX\ValidationException;
+use PhalconX\Exception\ValidationException;
 
 class IsA extends BaseValidator
 {

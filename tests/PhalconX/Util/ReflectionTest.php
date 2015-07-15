@@ -1,5 +1,5 @@
 <?php
-namespace PhalconX;
+namespace PhalconX\Util;
 
 use PhalconX\Test\TestCase;
 
@@ -16,7 +16,8 @@ class ReflectionTest extends TestCase
     {
         foreach ([['IsArray', 'PhalconX\Validators\IsArray'],
                   ['Validation\Message', 'Phalcon\Validation\Message'],
-                  ['ValidationException', 'PhalconX\ValidationException'],
+                  ['ValidationException', 'PhalconX\Exception\ValidationException'],
+                  ['Model', 'PhalconX\Model']
         ] as $case) {
             list($name, $clz) = $case;
             $ret = $this->reflection->resolveImport($name, \PhalconX\Validator::CLASS);

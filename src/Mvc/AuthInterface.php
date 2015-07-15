@@ -4,11 +4,6 @@ namespace PhalconX\Mvc;
 interface AuthInterface
 {
     /**
-     * 初始化操作
-     */
-    public function initialize();
-    
-    /**
      * 用户登录操作
      *
      * @param $identity 用户数据

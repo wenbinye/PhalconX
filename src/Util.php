@@ -10,8 +10,9 @@ class Util
         if (isset($options[$name])) {
             return $options[$name];
         }
-        if (Di::getDefault()->has($name)) {
-            return Di::getDefault()->getShared($name);
+        $di = Di::getDefault();
+        if ($di->has($name)) {
+            return $di->getShared($name);
         } elseif ($required) {
             throw new \UnexpectedValueException("Service '$name' is not defined yet");
         }

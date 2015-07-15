@@ -2,7 +2,7 @@
 namespace PhalconX\Db;
 
 use Phalcon\DI\Injectable;
-use PhalconX\Logger;
+use PhalconX\Util\Logger;
 
 class DbListener extends Injectable
 {

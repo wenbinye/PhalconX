@@ -1,14 +1,16 @@
 <?php
-namespace PhalconX;
+namespace PhalconX\Util;
+
+use PhalconX\Util;
 
 class Reflection
 {
-    private $cache;
+    private $modelsMetadata;
     private $logger;
     
     public function __construct($options = null)
     {
-        $this->cache = Util::service('cache', $options, false);
+        $this->modelsMetadata = Util::service('modelsMetadata', $options, false);
         $this->logger = Util::service('logger', $options, false);
     }
     
@@ -17,8 +19,8 @@ class Reflection
         if ($name[0] == '\\') {
             return $name;
         }
-        if ($this->cache) {
-            $imports = $this->cache->get($clz.'.imports');
+        if ($this->modelsMetadata) {
+            $imports = $this->modelsMetadata->read($clz.'.imports');
         }
         if (!isset($imports)) {
             $imports = [];
@@ -42,8 +44,8 @@ class Reflection
             if ($this->logger) {
                 $this->logger->info("Parse imports from class " . $clz);
             }
-            if ($this->cache) {
-                $this->cache->save($clz.'.imports', $imports);
+            if ($this->modelsMetadata) {
+                $this->modelsMetadata->write($clz.'.imports', $imports);
             }
         }
         $parts = explode('\\', $name);

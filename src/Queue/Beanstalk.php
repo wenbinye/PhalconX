@@ -1,12 +1,29 @@
 <?php
 namespace PhalconX\Queue;
 
-use PhalconX\DI\Injectable;
+use Phalcon\Di;
+use PhalconX\Util;
 
 class Beanstalk extends \Phalcon\Queue\Beanstalk
 {
-    use Injectable;
-    
+    private $cache;
+    private $logger;
+
+    public function __construct($options = null)
+    {
+        $this->cache = Util::service('cache', $options);
+        $this->logger = Util::service('logger', $options, false);
+    }
+
+    /**
+     * 添加任务到队列
+     *
+     * job 中任何公开成员变量都将作为任务参数。
+     * 如果 job.id 非空，将检查是否有相同任务存在，如果有相同任务，将替换
+     * 已经存在的任务。
+     *
+     * @param JobInterface $job 任务对象
+     */
     public function addJob(JobInterface $job, $delay = null)
     {
         $arguments = get_object_vars($job);
@@ -14,9 +31,11 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
         $jobId = $job->getId();
         if (isset($jobId)) {
             $arguments['_id'] = self::uuid();
-            $this->cache->save('job:'.$jobId, $arguments['_id']);
+            $this->cache->save($this->buildJobKey($jobId), $arguments['_id']);
         }
-        $this->logger->info('add job ' . json_encode($arguments));
+        if ($this->logger) {
+            $this->logger->info('Add job ' . json_encode($arguments));
+        }
         return $this->put($arguments, array(
             'delay' => isset($delay) ? $delay : $job->getDelay(),
             'ttr' => $job->getTtr(),
@@ -26,48 +45,54 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
     
     public function processJobs($timeout = null)
     {
-        $start_time = time();
-        while (true) {
+        $start = time();
+        do {
             $beanstalkJob = $this->jobQueue->reserve($timeout);
             if ($beanstalkJob) {
                 $this->handleJob($beanstalkJob);
             }
-            if (isset($timeout) && time() - $start_time > $timeout) {
-                break;
-            }
-        }
+        } while (isset($timeout) && time() - $start > $timeout);
     }
 
     private static function uuid()
     {
         return uniqid('', true);
     }
+
+    private function buildJobKey($jobId)
+    {
+        return 'job:' . $jobId;
+    }
+
+    private function createJob($handlerClass)
+    {
+        return Di::getDefault()->get($handlerClass);
+    }
     
     private function handleJob($beanstalkJob)
     {
         $arguments = $beanstalkJob->getBody();
-        $this->logger->info("process job " . json_encode($arguments));
-        // 兼容处理
-        if (isset($arguments['handler'])) {
-            $name = implode('', array_map('ucfirst', explode('_', $arguments['handler'])));
-            $arguments['_handler'] = 'Txf\Admin\Jobs\\'.$name;
+        if ($this->logger) {
+            $this->logger->info("process job " . json_encode($arguments));
         }
         if (isset($arguments['_handler'])) {
-            $job = $this->getDI()->get($arguments['_handler']);
+            $job = $this->createJob($arguments['_handler']);
             if (isset($arguments['_id'])) {
                 $jobId = $job->getId();
-                $id = $this->cache->get('job:'.$jobId);
-                // $this->logger->info("check id: $id <=> {$arguments['_id']}");
-                if ($id == null) {
-                    $this->cache->save('job:'.$jobId, self::uuid());
+                $jobKey = $this->buildJobKey($jobId);
+                $id = $this->cache->get($jobKey);
+                if ($id === null) {
+                    $this->cache->save($jobKey, self::uuid());
                 } elseif ($id != $arguments['_id']) {
-                    $this->logger->error("duplicate job " . json_encode($arguments));
+                    if ($this->logger) {
+                        $this->logger->error("Duplicate job " . json_encode($arguments));
+                    }
                     $beanstalkJob->delete();
                     return;
                 }
             }
             foreach ($arguments as $key => $val) {
-                if ($key{0} != '_') {
+                if ($key && $key[0] != '_') {
                     $job->$key = $val;
                 }
             }

@@ -1,10 +1,12 @@
 <?php
-namespace PhalconX;
+namespace PhalconX\Util;
+
+use PhalconX\Util;
 
 /**
  * convert array, object, json data to an instance of certain class
  */
-class ObjectConverter
+class ObjectMapper
 {
     const JSON = 'json';
     const OBJECT = 'object';
@@ -13,7 +15,7 @@ class ObjectConverter
 
     private $annotations;
     private $reflection;
-    private $cache;
+    private $modelsMetadata;
     private $logger;
 
     public function __construct($options = null)
@@ -23,11 +25,11 @@ class ObjectConverter
         }
         $this->annotations = Util::service('annotations', $options);
         $this->reflection = Util::service('reflection', $options);
-        $this->cache = Util::service('cache', $options, false);
+        $this->modelsMetadata = Util::service('modelsMetadata', $options, false);
         $this->logger = Util::service('logger', $options, false);
     }
     
-    public function convert($data, $clz, $format = null)
+    public function map($data, $clz, $format = null)
     {
         if ($format === self::JSON) {
             return $this->convertObject(json_decode($data, true), $clz, null);
@@ -46,9 +48,9 @@ class ObjectConverter
             if (isset($propertyTypes[$key])) {
                 $type = $propertyTypes[$key];
                 if ($type->isArray) {
-                    $val = $this->convertArray($val, $type->className, $format);
+                    $val = $this->arrayMap($val, $type->className, $format);
                 } else {
-                    $val = $this->convert($val, $type->className, $format);
+                    $val = $this->map($val, $type->className, $format);
                 }
             }
             $obj->$key = $val;
@@ -58,8 +60,8 @@ class ObjectConverter
 
     private function getPropertyTypes($clz)
     {
-        if ($this->cache) {
-            $propertyTypes = $this->cache->get($clz . '.types');
+        if ($this->modelsMetadata) {
+            $propertyTypes = $this->modelsMetadata->read($clz . '.types');
         }
         if (!isset($propertyTypes)) {
             $properties = $this->annotations->getProperties($clz);
@@ -76,8 +78,8 @@ class ObjectConverter
             if ($this->logger) {
                 $this->logger->info("Parse types from class " . $clz);
             }
-            if ($this->cache) {
-                $this->cache->save($clz.'.types', $propertyTypes);
+            if ($this->modelsMetadata) {
+                $this->modelsMetadata->write($clz.'.types', $propertyTypes);
             }
         }
         return $propertyTypes;
@@ -94,14 +96,14 @@ class ObjectConverter
         return (object) array('className' =>$type, 'isArray' => $isArray);
     }
     
-    public function convertArray($data, $clz, $format = null)
+    public function arrayMap($data, $clz, $format = null)
     {
         if ($format === self::JSON) {
-            return $this->convertArray(json_decode($data, true), $clz);
+            return $this->arrayMap(json_decode($data, true), $clz);
         } elseif (is_array($data)) {
             $result = [];
             foreach ($data as $elem) {
-                $result[] = $this->convert($elem, $clz, $format);
+                $result[] = $this->map($elem, $clz, $format);
             }
             return $result;
         } else {

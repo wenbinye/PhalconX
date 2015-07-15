@@ -1,26 +1,18 @@
 <?php
 namespace PhalconX\Session;
 
-use Phalcon\DI\InjectionAwareInterface;
 use Phalcon\Session\Adapter;
 use Phalcon\Session\AdapterInterface;
+use PhalconX\Di\Injectable;
+use PhalconX\Util;
 
-class CacheAdapter extends Adapter implements AdapterInterface, InjectionAwareInterface
+class CacheAdapter extends Adapter implements AdapterInterface
 {
-    private $di;
     private $cache;
     private $lifetime = 3600;
     private $prefix = 'session:';
 
-    public function setDI($di)
-    {
-        $this->di = $di;
-    }
-
-    public function getDI()
-    {
-        return $this->di;
-    }
+    use Injectable;
     
     /**
      *
@@ -32,10 +24,7 @@ class CacheAdapter extends Adapter implements AdapterInterface, InjectionAwareIn
      */
     public function __construct($options = null)
     {
-        if (!isset($options['cache'])) {
-            throw new \RuntimeException("The parameter 'cache' is required");
-        }
-        $this->cache = $options['cache'];
+        $this->cache = Util::service('cache', $options);
 
         if (isset($options['prefix'])) {
             $this->prefix = $options['prefix'];
@@ -71,7 +60,7 @@ class CacheAdapter extends Adapter implements AdapterInterface, InjectionAwareIn
 
     public function close()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -82,12 +71,7 @@ class CacheAdapter extends Adapter implements AdapterInterface, InjectionAwareIn
      */
     public function read($sessionId)
     {
-        $sessionData = $this->cache->get($this->prefix .$sessionId);
-        // $this->getDI()->getLogger()->info("read session: $sessionId " . $sessionData);
-        if (isset($sessionData)) {
-            return json_decode($sessionData, true);
-        }
-        return null;
+        return $this->cache->get($this->prefix .$sessionId);
     }
 
     /**
@@ -98,22 +82,19 @@ class CacheAdapter extends Adapter implements AdapterInterface, InjectionAwareIn
      */
     public function write($sessionId, $data)
     {
-        $content = json_encode($data);
-        // $this->getDI()->getLogger()->info( $_SERVER['REQUEST_URI'] . " write session: $sessionId " . $content);
-        if ($this->lifetime > 0) {
-            $this->cache->save($this->prefix.$sessionId, $content, $this->lifetime);
-        } else {
-            $this->cache->save($this->prefix.$sessionId, $content);
-        }
+        $this->cache->save($sessionId, $data, $this->lifetime);
     }
 
     /**
      * Destroyes the session
      *
      */
-    public function destroy($session_id = '')
+    public function destroy($session_id = null)
     {
         @session_unset();
+        if ($session_id === null) {
+            $session_id = $this->getId();
+        }
         return $this->cache->delete($this->prefix.$session_id);
     }
 
@@ -123,5 +104,6 @@ class CacheAdapter extends Adapter implements AdapterInterface, InjectionAwareIn
      */
     public function gc()
     {
+        return true;
     }
 }

@@ -1,24 +1,25 @@
 <?php
-namespace PhalconX;
+namespace PhalconX\Util;
 
+use Phalcon\Di;
 use PhalconX\Test\TestCase;
 use PhalconX\Test\Models\Pet;
 use PhalconX\Test\Models\Tag;
 use PhalconX\Test\Models\Category;
 
-class ObjectConverterTest extends TestCase
+class ObjectMapperTest extends TestCase
 {
-    private $converter;
+    private $objectMapper;
 
     public function setUp()
     {
-        Util::di()->setShared('reflection', 'PhalconX\Reflection');
-        $this->converter = new ObjectConverter;
+        Di::getDefault()->setShared('reflection', 'PhalconX\Util\Reflection');
+        $this->objectMapper = new ObjectMapper;
     }
 
-    public function testConvertArray()
+    public function testMapArray()
     {
-        $result = $this->converter->convert(array(
+        $result = $this->objectMapper->map(array(
             'id' => 1,
             'category' => array('id' => 1, 'name' => 'dog'),
             'tags' => array(
@@ -28,18 +29,18 @@ class ObjectConverterTest extends TestCase
         $this->validate($result);
     }
 
-    public function testConvertJson()
+    public function testMapJson()
     {
         $data = '{"id":1,"category":{"id":1,"name":"dog"},"tags":[{"id":1,"name":"puppy"}]}';
-        $result = $this->converter->convert($data, Pet::CLASS, 'json');
+        $result = $this->objectMapper->map($data, Pet::CLASS, 'json');
         // print_r($result);
         $this->validate($result);
     }
 
-    public function testConvertObject()
+    public function testMapObject()
     {
         $data = json_decode('{"id":1,"category":{"id":1,"name":"dog"},"tags":[{"id":1,"name":"puppy"}]}');
-        $result = $this->converter->convert($data, Pet::CLASS, 'object');
+        $result = $this->objectMapper->map($data, Pet::CLASS, 'object');
         // print_r($result);
         $this->validate($result);
     }

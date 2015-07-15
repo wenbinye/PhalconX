@@ -6,22 +6,52 @@ use Phalcon\Validation;
 use Phalcon\Validation\ValidatorInterface;
 use Phalcon\Validation\Validator\Numericality;
 use Phalcon\Validation\Validator\PresenceOf;
+use PhalconX\Exception\ValidationException;
 use PhalconX\Validators\Generic;
 use PhalconX\Validators\Integer;
 use PhalconX\Validators\IsArray;
 use PhalconX\Validators\IsA;
 use PhalconX\Validators\Boolean;
+use PhalconX\Validators\Range;
 use PhalconX\Validators\StringLength;
+
+use Phalcon\Forms\Form;
+use Phalcon\Forms\Element\Check;
+use Phalcon\Forms\Element\Date;
+use Phalcon\Forms\Element\Email;
+use Phalcon\Forms\Element\File;
+use Phalcon\Forms\Element\Hidden;
+use Phalcon\Forms\Element\Numeric;
+use Phalcon\Forms\Element\Password;
+use Phalcon\Forms\Element\Radio;
+use Phalcon\Forms\Element\Select;
+use Phalcon\Forms\Element\Submit;
+use Phalcon\Forms\Element\Text;
+use Phalcon\Forms\Element\TextArea;
 
 class Validator extends Injectable
 {
     private $validAnnotationName = 'Valid';
     private $isaAnnotationName = 'IsA';
     private $types;
+    private $elements = [
+        'Check' => Check::CLASS,
+        'Date' => Date::CLASS,
+        'Email' => Email::CLASS,
+        'File' => File::CLASS,
+        'Hidden' => Hidden::CLASS,
+        'Numeric' => Numeric::CLASS,
+        'Password' => Password::CLASS,
+        'Radio' => Radio::CLASS,
+        'Select' => Select::CLASS,
+        'Submit' => Submit::CLASS,
+        'Text' => Text::CLASS,
+        'TextArea' => TextArea::CLASS,
+    ];
 
     private $annotations;
     private $reflection;
-    private $cache;
+    private $modelsMetadata;
     private $logger;
 
     /**
@@ -57,13 +87,13 @@ class Validator extends Injectable
             if (isset($options['types'])) {
                 $this->types = array_merge($this->types, $options['types']);
             }
-            if (isset($options['validators'])) {
-                $this->validators = array_merge($this->validators, $options['validators']);
+            if (isset($options['formElements'])) {
+                $this->elements = array_merge($this->elements, $options['formElements']);
             }
         }
         $this->annotations = Util::service('annotations', $options);
         $this->reflection = Util::service('reflection', $options);
-        $this->cache = Util::service('cache', $options, false);
+        $this->modelsMetadata = Util::service('modelsMetadata', $options, false);
         $this->logger = Util::service('logger', $options, false);
     }
 
@@ -77,6 +107,12 @@ class Validator extends Injectable
      *  - default
      *  - required
      *  - validator
+     *  when type equals integer or number
+     *  - maximum
+     *  - minimum
+     *  when type equals string
+     *  - maxLength
+     *  - minLength
      */
     public function validate($form)
     {
@@ -91,28 +127,75 @@ class Validator extends Injectable
                 throw new \UnexpectedValueException("Validator should contain a name");
             }
             $name = $elem['name'];
-            if ((!isset($elem['value']) || $elem['value'] == '') && isset($elem['default'])) {
-                $elem['value'] = $elem['default'];
-            }
+            $validators = $this->toValidators($elem);
             if (isset($elem['value'])) {
                 $data[$name] = $elem['value'];
             }
-            if (!empty($elem['required'])) {
-                $validation->add($name, new PresenceOf());
-            }
-            if (isset($elem['value'])) {
-                if (isset($elem['type'])) {
-                    $validation->add($name, $this->createTypeValidator($elem));
-                }
-                if (isset($elem['validator'])) {
-                    $validation->add($name, $this->createValidator($elem['validator'], null));
-                }
+            foreach ($validators as $validator) {
+                $validation->add($name, $validator);
             }
         }
         $errors = $validation->validate($data);
         if (count($errors)) {
             throw new ValidationException($errors);
         }
+    }
+
+    private function toValidators(&$elem)
+    {
+        $validators = [];
+        if ((!isset($elem['value']) || $elem['value'] == '') && isset($elem['default'])) {
+            $elem['value'] = $elem['default'];
+        }
+        if (!empty($elem['required'])) {
+            $validators[] = new PresenceOf();
+        }
+        if (isset($elem['value'])) {
+            if (isset($elem['type'])) {
+                if (!isset($this->types[$elem['type']])) {
+                    if ($this->logger) {
+                        $this->logger->error("Cannot handle type {$elem['type']} for field {$name}");
+                    }
+                } else {
+                    $validators[] = $this->createTypeValidator($elem);
+                    // 处理 string, integer, number 类型 min, max 属性
+                    if (in_array($elem['type'], ['integer', 'number'])) {
+                        if (isset($elem['maximum']) || isset($elem['minimum'])) {
+                            $validators[] = new Range($elem);
+                        }
+                    } elseif ($elem['type'] == 'string') {
+                        if (isset($elem['maxLength']) || isset($elem['minLength'])) {
+                            $validators[] = new StringLength([
+                                'max' => isset($elem['maxLength']) ? $elem['maxLength'] : null,
+                                'min' => isset($elem['minLength']) ? $elem['minLength'] : null
+                            ]);
+                        }
+                    }
+                }
+            }
+            if (isset($elem['validator'])) {
+                $validators[] = $this->createValidator($elem['validator'], null);
+            }
+        }
+        return $validators;
+    }
+    
+    /**
+     * 创建表单对象
+     * @return \Phalcon\Forms\Form
+     */
+    public function createForm($model)
+    {
+        $form = new Form;
+        $clz = is_string($model) ? $model : get_class($model);
+        $validators = $this->getPropertyValidators($clz);
+        foreach ($this->getElements($clz) as $name => $elem) {
+            if (isset($validators[$name])) {
+                $elem->addValidators($this->toValidators($validators[$name]));
+            }
+            $form->add($elem);
+        }
+        return $form;
     }
 
     private function getAnnotations($form)
@@ -137,8 +220,8 @@ class Validator extends Injectable
 
     private function getPropertyValidators($clz)
     {
-        if ($this->cache) {
-            $validators = $this->cache->get($clz.'.validators');
+        if ($this->modelsMetadata) {
+            $validators = $this->modelsMetadata->read($clz.'.validators');
         }
         if (!isset($validators)) {
             $properties = $this->annotations->getProperties($clz);
@@ -172,11 +255,15 @@ class Validator extends Injectable
             if ($this->logger) {
                 $this->logger->info("Parse validators from class " . $clz);
             }
-            if ($this->cache) {
-                $this->cache->save($clz.'.validators', $validators);
+            if ($this->modelsMetadata) {
+                $this->modelsMetadata->write($clz.'.validators', $validators);
             }
         }
         return $validators;
+    }
+
+    private function addTypeValidator($validation, $name, $args)
+    {
     }
     
     private function createValidator($validator, $args = null)
@@ -184,14 +271,11 @@ class Validator extends Injectable
         if ($validator instanceof ValidatorInterface) {
             return $validator;
         }
-        return new $validator($args);
+        return $this->getDi()->get($validator, [$args]);
     }
 
     private function createTypeValidator($args)
     {
-        if (!isset($this->types[$args['type']])) {
-            throw new \UnexpectedValueException("Cannot handle type {$elem['type']} for field {$name}");
-        }
         if ($args['type'] === 'array' && isset($args['elementType'])) {
             $args['element'] = $this->createTypeValidator(['type' => $args['elementType']]);
         }
@@ -223,7 +307,46 @@ class Validator extends Injectable
         if ($class === IsA::CLASS) {
             return $this->createAnnoValidator($annotation, $clz);
         } else {
-            return new $class($annotation->getArguments());
+            return $this->createValidator($class, $annotation->getArguments());
+        }
+    }
+
+    private function getElements($clz)
+    {
+        if ($this->modelsMetadata) {
+            $elements = $this->modelsMetadata->read($clz.'.formElements');
+        }
+        if (!isset($elements)) {
+            $elements = [];
+            foreach ($this->annotations->getProperties($clz) as $name => $annotations) {
+                foreach ($annotations as $annotation) {
+                    if (isset($this->elements[$annotation->getName()])) {
+                        $elements[$name] = [$annotation->getName(), $annotation->getArguments()];
+                    }
+                }
+            }
+            if ($this->logger) {
+                $this->logger->info("Parse form elements from class " . $clz);
+            }
+            if ($this->modelsMetadata) {
+                $this->modelsMetadata->write($clz.'.formElements', $elements);
+            }
+        }
+        foreach ($elements as $name => $element) {
+            $elements[$name] = $this->createElement($name, $element[0], $element[1]);
+        }
+        return $elements;
+    }
+    
+    private function createElement($name, $elementType, $args)
+    {
+        $clz = $this->elements[$elementType];
+        if (isset($args[0])) {
+            array_unshift($args, $name);
+            $refl = new \ReflectionClass($clz);
+            return $refl->newInstanceArgs($args);
+        } else {
+            return new $clz($name, $args);
         }
     }
 }
