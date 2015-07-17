@@ -66,7 +66,7 @@ class Controller extends \Phalcon\Mvc\Controller
         }
         return $this->dispatcher->forward($action);
     }
-
+    
     /**
      * 读取参数信息
      */

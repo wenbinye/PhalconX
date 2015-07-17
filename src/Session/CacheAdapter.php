@@ -82,7 +82,7 @@ class CacheAdapter extends Adapter implements AdapterInterface
      */
     public function write($sessionId, $data)
     {
-        $this->cache->save($sessionId, $data, $this->lifetime);
+        $this->cache->save($this->prefix . $sessionId, $data, $this->lifetime);
     }
 
     /**

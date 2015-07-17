@@ -32,9 +32,14 @@ class Request extends \Phalcon\Http\Request
             if (function_exists('http_get_request_body')) {
                 $this->body = http_get_request_body();
             } else {
-                $this->body @file_get_contents('php://input');
+                $this->body = @file_get_contents('php://input');
             }
         }
         return $this->body;
+    }
+
+    public function setBody($body)
+    {
+        $this->body = $body;
     }
 }

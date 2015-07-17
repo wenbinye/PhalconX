@@ -52,8 +52,10 @@ class ObjectMapper
                 } else {
                     $val = $this->map($val, $type->className, $format);
                 }
+                $obj->$key = $val;
+            } elseif (property_exists($obj, $key)) {
+                $obj->$key = $val;
             }
-            $obj->$key = $val;
         }
         return $obj;
     }

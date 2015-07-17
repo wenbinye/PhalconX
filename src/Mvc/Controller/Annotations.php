@@ -8,11 +8,13 @@ use PhalconX\Mvc\Controller\Filter\RequestMethod;
 use PhalconX\Mvc\Controller\Filter\CsrfToken;
 use PhalconX\Mvc\Controller\Filter\LoginOnly;
 use PhalconX\Mvc\Controller\Filter\ACL;
+use PhalconX\Exception;
 
 class Annotations extends Injectable
 {
     private $annotations;
     private $modelsMetadata;
+    private $eventsManager;
     private $logger;
 
     private $filters = [
@@ -30,6 +32,7 @@ class Annotations extends Injectable
     {
         $this->annotations = Util::service('annotations', $options);
         $this->modelsMetadata = Util::service('modelsMetadata', $options, false);
+        $this->eventsManager = Util::service('eventsManager', $options, false);
         $this->logger = Util::service('logger', $options, false);
         if (isset($options['filters'])) {
             $this->filters = array_merge($this->filters, $options['filters']);
@@ -45,10 +48,13 @@ class Annotations extends Injectable
         if (!isset($filters)) {
             $filters = ['class' => [], 'methods' => []];
             $reflection = $this->annotations->get($controller);
-            foreach ($reflection->getClassAnnotations() as $annotation) {
-                if (isset($this->filters[$annotation->getName()])) {
-                    $filters['class'][$annotation->getName()]
-                        = [$annotation->getName(), $annotation->getArguments()];
+            $classAnnotations = $reflection->getClassAnnotations();
+            if ($classAnnotations) {
+                foreach ($classAnnotations as $annotation) {
+                    if (isset($this->filters[$annotation->getName()])) {
+                        $filters['class'][$annotation->getName()]
+                            = [$annotation->getName(), $annotation->getArguments()];
+                    }
                 }
             }
             foreach ($reflection->getMethodsAnnotations() as $method => $annotations) {
@@ -77,11 +83,20 @@ class Annotations extends Injectable
                 $methodFilters[$name] = $filter;
             }
         }
-        foreach ($methodFilters as $filter) {
-            $handler = $this->createFilter($filter);
-            if ($handler->filter($dispatcher) === false) {
-                return false;
+        try {
+            foreach ($methodFilters as $filter) {
+                $handler = $this->createFilter($filter);
+                if ($handler->filter($dispatcher) === false) {
+                    return false;
+                }
             }
+        } catch (Exception $e) {
+            if ($this->eventsManager) {
+                if ($this->eventsManager->fire('dispatch:beforeException', $dispatcher, $e) === false) {
+                    return false;
+                }
+            }
+            throw $e;
         }
     }
     

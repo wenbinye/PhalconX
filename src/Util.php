@@ -17,4 +17,9 @@ class Util
             throw new \UnexpectedValueException("Service '$name' is not defined yet");
         }
     }
+
+    public static function now($format = 'Y-m-d H:i:s')
+    {
+        return date($format);
+    }
 }

@@ -130,7 +130,7 @@ class ValidatorTest extends TestCase
     {
         try {
             $this->validator->validate([[
-                'name' => 'ids', 'value' => 'abc', 'type' => 'array', 'elementType' => 'integer'
+                'name' => 'ids', 'value' => 'abc', 'type' => 'array', 'element' => 'integer'
             ]]);
             $this->fail();
         } catch (ValidationException $e) {
@@ -144,7 +144,7 @@ class ValidatorTest extends TestCase
     {
         try {
             $this->validator->validate([[
-                'name' => 'ids', 'value' => ['abc'], 'type' => 'array', 'elementType' => 'integer'
+                'name' => 'ids', 'value' => ['abc'], 'type' => 'array', 'element' => 'integer'
             ]]);
             $this->fail();
         } catch (ValidationException $e) {

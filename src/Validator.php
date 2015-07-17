@@ -100,19 +100,8 @@ class Validator extends Injectable
     /**
      * Validates the form
      *
-     * Form may be an array of specifications:
-     *  - name
-     *  - type
-     *  - value
-     *  - default
-     *  - required
-     *  - validator
-     *  when type equals integer or number
-     *  - maximum
-     *  - minimum
-     *  when type equals string
-     *  - maxLength
-     *  - minLength
+     * @param object|array $form
+     * @throws ValidationException
      */
     public function validate($form)
     {
@@ -123,16 +112,17 @@ class Validator extends Injectable
         $data = [];
         unset($elem);
         foreach ($form as &$elem) {
-            if (!isset($elem['name'])) {
-                throw new \UnexpectedValueException("Validator should contain a name");
+            $spec = new ValidatorSpec($elem, $this);
+            // 根据默认值修改传入参数
+            if (!$spec->hasValue() && isset($spec->default)) {
+                $elem['value'] = $spec->default;
             }
-            $name = $elem['name'];
-            $validators = $this->toValidators($elem);
-            if (isset($elem['value'])) {
-                $data[$name] = $elem['value'];
-            }
-            foreach ($validators as $validator) {
-                $validation->add($name, $validator);
+            $data[$spec->name] = $spec->value;
+            // 当字段为必须提供或者值存在
+            if ($spec->required || $spec->hasValue()) {
+                foreach ($spec->toValidators() as $validator) {
+                    $validation->add($spec->name, $validator);
+                }
             }
         }
         $errors = $validation->validate($data);
@@ -140,48 +130,10 @@ class Validator extends Injectable
             throw new ValidationException($errors);
         }
     }
-
-    private function toValidators(&$elem)
-    {
-        $validators = [];
-        if ((!isset($elem['value']) || $elem['value'] == '') && isset($elem['default'])) {
-            $elem['value'] = $elem['default'];
-        }
-        if (!empty($elem['required'])) {
-            $validators[] = new PresenceOf();
-        }
-        if (isset($elem['value'])) {
-            if (isset($elem['type'])) {
-                if (!isset($this->types[$elem['type']])) {
-                    if ($this->logger) {
-                        $this->logger->error("Cannot handle type {$elem['type']} for field {$name}");
-                    }
-                } else {
-                    $validators[] = $this->createTypeValidator($elem);
-                    // 处理 string, integer, number 类型 min, max 属性
-                    if (in_array($elem['type'], ['integer', 'number'])) {
-                        if (isset($elem['maximum']) || isset($elem['minimum'])) {
-                            $validators[] = new Range($elem);
-                        }
-                    } elseif ($elem['type'] == 'string') {
-                        if (isset($elem['maxLength']) || isset($elem['minLength'])) {
-                            $validators[] = new StringLength([
-                                'max' => isset($elem['maxLength']) ? $elem['maxLength'] : null,
-                                'min' => isset($elem['minLength']) ? $elem['minLength'] : null
-                            ]);
-                        }
-                    }
-                }
-            }
-            if (isset($elem['validator'])) {
-                $validators[] = $this->createValidator($elem['validator'], null);
-            }
-        }
-        return $validators;
-    }
     
     /**
      * 创建表单对象
+     * @param string|object $model
      * @return \Phalcon\Forms\Form
      */
     public function createForm($model)
@@ -191,13 +143,25 @@ class Validator extends Injectable
         $validators = $this->getPropertyValidators($clz);
         foreach ($this->getElements($clz) as $name => $elem) {
             if (isset($validators[$name])) {
-                $elem->addValidators($this->toValidators($validators[$name]));
+                foreach ($validators[$name] as $validator) {
+                    if (is_object($model)) {
+                        $elem->setDefault($model->$name);
+                    } elseif (isset($validator['default'])) {
+                        $elem->setDefault($validator['default']);
+                    }
+                    $validator['name'] = $name;
+                    $spec = new ValidatorSpec($validator, $this);
+                    $elem->addValidators($spec->toValidators());
+                }
             }
             $form->add($elem);
         }
         return $form;
     }
 
+    /**
+     * 创建验证条件
+     */
     private function getAnnotations($form)
     {
         $clz = get_class($form);
@@ -212,12 +176,18 @@ class Validator extends Injectable
                 } else {
                     $validator['value'] = $value;
                 }
+                $validator['name'] = $name;
                 $validators[] = $validator;
             }
         }
         return $validators;
     }
 
+    /**
+     * 提取类属性验证器
+     * @param string $clz
+     * @return [ propertyName => [] ]
+     */
     private function getPropertyValidators($clz)
     {
         if ($this->modelsMetadata) {
@@ -232,18 +202,16 @@ class Validator extends Injectable
                 foreach ($annotations as $annotation) {
                     $annoName = $annotation->getName();
                     if ($annoName == $this->isaAnnotationName) {
-                        $validator = ['name' => $name];
-                        $validator['validator'] = $this->createIsaValidator($annotation, $clz);
+                        $validator = ['validator' => $this->resolveIsA($annotation, $clz)];
                         $propValidators[] = $validator;
                     } elseif ($annoName == $this->validAnnotationName) {
                         $validator = $annotation->getArguments();
-                        $validator['name'] = $name;
                         if (isset($validator['validator'])) {
-                            $validator['validator'] = $this->createAnnoValidator($validator['validator'], $clz);
+                            $validator['validator'] = $this->resolveAnnotation($validator['validator'], $clz);
                         }
                         if (isset($validator['type']) && $validator['type'] === 'array'
                             && isset($validator['element'])) {
-                            $validator['element'] = $this->createAnnoValidator($validator['element'], $clz);
+                            $validator['element'] = $this->resolveAnnotation($validator['element'], $clz);
                         }
                         $propValidators[] = $validator;
                     }
@@ -259,30 +227,89 @@ class Validator extends Injectable
                 $this->modelsMetadata->write($clz.'.validators', $validators);
             }
         }
+        unset($propValidators);
+        $result = [];
+        foreach ($validators as $name => &$propValidators) {
+            unset($validator);
+            foreach ($propValidators as &$validator) {
+                if (isset($validator['validator'])) {
+                    $validator['validator'] =
+                        $this->createValidator(
+                            $validator['validator'][0],
+                            $validator['validator'][1]
+                        );
+                } elseif (isset($validator['type']) && $validator['type'] === 'array'
+                          && isset($validator['element'])) {
+                    $validator['element'] = $this->createValidator(
+                        $validator['element'][0],
+                        $validator['element'][1]
+                    );
+                }
+            }
+        }
         return $validators;
     }
 
-    private function addTypeValidator($validation, $name, $args)
+    /**
+     * 创建 validator
+     */
+    public function createValidator($validator, $args = null)
     {
-    }
-    
-    private function createValidator($validator, $args = null)
-    {
+        if (is_array($validator) && isset($validator['type'])) {
+            return $this->createTypeValidator($validator);
+        }
         if ($validator instanceof ValidatorInterface) {
             return $validator;
+        }
+        if ($validator == IsArray::CLASS && isset($args['element'])) {
+            return $this->createTypeValidator([
+                'type' => 'array',
+                'element' => $args['element']
+            ]);
         }
         return $this->getDi()->get($validator, [$args]);
     }
 
     private function createTypeValidator($args)
     {
-        if ($args['type'] === 'array' && isset($args['elementType'])) {
-            $args['element'] = $this->createTypeValidator(['type' => $args['elementType']]);
+        if (!isset($args['type']) || !isset($this->types[$args['type']])) {
+            if ($this->logger) {
+                $this->logger->error("Cannot handle type {$args['type']}");
+                return null;
+            }
         }
-        return $this->createValidator($this->types[$args['type']], $args);
+        if ($args['type'] === 'array' && isset($args['element'])) {
+            if (is_string($args['element'])) {
+                $args['element'] = $this->createTypeValidator(['type' => $args['element']]);
+            } elseif (is_array($args) && isset($args['class'])) {
+                $args['element'] = new IsA($args);
+            }
+            return new IsArray($args);
+        } else {
+            return $this->createValidator($this->types[$args['type']], $args);
+        }
     }
-    
-    private function createIsaValidator($annotation, $clz)
+
+    /**
+     * validator=@IsA()
+     * validator=@Range()
+     * @return array
+     */
+    private function resolveAnnotation($annotation, $clz)
+    {
+        $name = $annotation->getName();
+        $class = $this->reflection->resolveImport($name, $clz);
+        if ($class === IsA::CLASS) {
+            return $this->resolveIsA($annotation, $clz);
+        } else {
+            return [$class, $annotation->getArguments()];
+        }
+    }
+
+    /**
+     * @return array
+     */
+    private function resolveIsA($annotation, $clz)
     {
         $args = $annotation->getArguments();
         $type = isset($args['class']) ? $args['class'] : $args[0];
@@ -293,24 +320,12 @@ class Validator extends Injectable
         }
         $typeClass = $this->reflection->resolveImport($type, $clz);
         if ($isArray) {
-            $validator = new IsArray(['element' => new IsA(['class' => $typeClass])]);
+            return [IsArray::CLASS, ['element' => ['class' => $typeClass]]];
         } else {
-            $validator = new IsA(['class' => $typeClass]);
+            return [IsA::CLASS, ['class' => $typeClass]];
         }
-        return $validator;
     }
     
-    private function createAnnoValidator($annotation, $clz)
-    {
-        $name = $annotation->getName();
-        $class = $this->reflection->resolveImport($name, $clz);
-        if ($class === IsA::CLASS) {
-            return $this->createAnnoValidator($annotation, $clz);
-        } else {
-            return $this->createValidator($class, $annotation->getArguments());
-        }
-    }
-
     private function getElements($clz)
     {
         if ($this->modelsMetadata) {
@@ -344,9 +359,13 @@ class Validator extends Injectable
         if (isset($args[0])) {
             array_unshift($args, $name);
             $refl = new \ReflectionClass($clz);
-            return $refl->newInstanceArgs($args);
+            $el = $refl->newInstanceArgs($args);
         } else {
-            return new $clz($name, $args);
+            $el = new $clz($name, $args);
         }
+        if (isset($args['label'])) {
+            $el->setLabel($args['label']);
+        }
+        return $el;
     }
 }
