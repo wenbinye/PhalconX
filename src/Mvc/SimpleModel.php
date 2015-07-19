@@ -1,7 +1,7 @@
 <?php
-namespace PhalconX;
+namespace PhalconX\Mvc;
 
-abstract class Model implements \ArrayAccess
+abstract class SimpleModel implements \ArrayAccess
 {
     public function __construct(array $data = null)
     {

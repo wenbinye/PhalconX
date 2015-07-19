@@ -11,6 +11,7 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
 
     public function __construct($options = null)
     {
+        parent::__construct($options);
         $this->cache = Util::service('cache', $options);
         $this->logger = Util::service('logger', $options, false);
     }
@@ -24,39 +25,50 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
      *
      * @param JobInterface $job 任务对象
      */
-    public function addJob(JobInterface $job, $delay = null)
+    public function put(JobInterface $job, $delay = null)
     {
         $arguments = get_object_vars($job);
         $arguments['_handler'] = get_class($job);
         $jobId = $job->getId();
         if (isset($jobId)) {
-            $arguments['_id'] = self::uuid();
+            $arguments['_id'] = Util::uuid();
             $this->cache->save($this->buildJobKey($jobId), $arguments['_id']);
         }
         if ($this->logger) {
             $this->logger->info('Add job ' . json_encode($arguments));
         }
-        return $this->put($arguments, array(
+        return parent::put($arguments, array(
             'delay' => isset($delay) ? $delay : $job->getDelay(),
             'ttr' => $job->getTtr(),
             'priority' => $job->getPriority()
         ));
     }
+
+    public function reserve($timeout = null)
+    {
+        return $this->convertJob(parent::reserve($timeout));
+    }
+
+    public function peekReady()
+    {
+        return $this->convertJob(parent::peekReady());
+    }
+
+    public function peekBuried()
+    {
+        return $this->convertJob(parent::peekBuried());
+    }
     
-    public function processJobs($timeout = null)
+    public function process($timeout = null)
     {
         $start = time();
         do {
-            $beanstalkJob = $this->jobQueue->reserve($timeout);
-            if ($beanstalkJob) {
-                $this->handleJob($beanstalkJob);
+            $job = $this->reserve($timeout);
+            if ($job) {
+                $job->process();
+                $job->delete();
             }
         } while (isset($timeout) && time() - $start > $timeout);
-    }
-
-    private static function uuid()
-    {
-        return uniqid('', true);
     }
 
     private function buildJobKey($jobId)
@@ -64,30 +76,33 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
         return 'job:' . $jobId;
     }
 
-    private function createJob($handlerClass)
+    private function convertJob($beanstalkJob)
     {
-        return Di::getDefault()->get($handlerClass);
+        if ($beanstalkJob) {
+            $job = $this->createJob($beanstalkJob);
+            if ($job) {
+                return $job;
+            } else {
+                $beanstalkJob->delete();
+            }
+        }
     }
     
-    private function handleJob($beanstalkJob)
+    private function createJob($beanstalkJob)
     {
         $arguments = $beanstalkJob->getBody();
-        if ($this->logger) {
-            $this->logger->info("process job " . json_encode($arguments));
-        }
         if (isset($arguments['_handler'])) {
-            $job = $this->createJob($arguments['_handler']);
+            $job = Di::getDefault()->get($arguments['_handler']);
             if (isset($arguments['_id'])) {
                 $jobId = $job->getId();
                 $jobKey = $this->buildJobKey($jobId);
                 $id = $this->cache->get($jobKey);
                 if ($id === null) {
-                    $this->cache->save($jobKey, self::uuid());
+                    $this->cache->save($jobKey, Util::uuid());
                 } elseif ($id != $arguments['_id']) {
                     if ($this->logger) {
                         $this->logger->error("Duplicate job " . json_encode($arguments));
                     }
-                    $beanstalkJob->delete();
                     return;
                 }
             }
@@ -96,8 +111,12 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
                     $job->$key = $val;
                 }
             }
-            $job->process();
+            $job->setBeanstalkJob($beanstalkJob);
+            return $job;
+        } else {
+            if ($this->logger) {
+                $this->logger->error("Job was not created properly: " . json_encode($arguments));
+            }
         }
-        $beanstalkJob->delete();
     }
 }

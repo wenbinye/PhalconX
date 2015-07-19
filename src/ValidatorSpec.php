@@ -5,8 +5,9 @@ use Phalcon\Validation\Validator\PresenceOf;
 use PhalconX\Validators\Range;
 use PhalconX\Validators\StringLength;
 use PhalconX\Validators\InclusionIn;
+use PhalconX\Mvc\SimpleModel;
 
-class ValidatorSpec extends Model
+class ValidatorSpec extends SimpleModel
 {
     public $name;
 
@@ -32,15 +33,15 @@ class ValidatorSpec extends Model
 
     public $enum;
 
-    private $v;
+    private $validatorFactory;
 
-    public function __construct($data, $validator)
+    public function __construct($data, $validatorFactory)
     {
         parent::__construct($data);
         if (empty($this->name)) {
             throw new \UnexpectedValueException("Validator should contain a name");
         }
-        $this->v = $validator;
+        $this->validatorFactory = $validatorFactory;
     }
 
     public function hasValue()
@@ -50,7 +51,7 @@ class ValidatorSpec extends Model
 
     private function createValidator($validator)
     {
-        return $this->v->createValidator($validator);
+        return $this->validatorFactory->createValidator($validator);
     }
     
     public function toValidators()

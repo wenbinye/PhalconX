@@ -3,19 +3,18 @@ namespace PhalconX;
 
 use Phalcon\DI\Injectable;
 use Phalcon\Validation;
+use PhalconX\Exception\ValidationException;
 use Phalcon\Validation\ValidatorInterface;
+use Phalcon\Forms\Form;
+
 use Phalcon\Validation\Validator\Numericality;
 use Phalcon\Validation\Validator\PresenceOf;
-use PhalconX\Exception\ValidationException;
 use PhalconX\Validators\Generic;
 use PhalconX\Validators\Integer;
 use PhalconX\Validators\IsArray;
 use PhalconX\Validators\IsA;
 use PhalconX\Validators\Boolean;
-use PhalconX\Validators\Range;
-use PhalconX\Validators\StringLength;
 
-use Phalcon\Forms\Form;
 use Phalcon\Forms\Element\Check;
 use Phalcon\Forms\Element\Date;
 use Phalcon\Forms\Element\Email;
