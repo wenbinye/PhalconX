@@ -1,7 +1,7 @@
 <?php
 namespace PhalconX\Queue;
 
-use Phalcon\Queue\Beanstalk\Job;
+use Phalcon\Queue\Beanstalk\Job as BeanstalkJob;
 
 interface JobInterface
 {
@@ -42,7 +42,7 @@ interface JobInterface
      */
     public function getId();
 
-    public function setBeanstalkJob(Job $job);
+    public function setBeanstalkJob(BeanstalkJob $job);
     
     public function getBeanstalkJob();
 }

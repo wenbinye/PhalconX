@@ -3,7 +3,20 @@ namespace PhalconX\Cli;
 
 use PhalconX\Util;
 
-class Daemon
+/**
+ *   while (!$this->shouldExit()) {
+ *     if (work_available()) {
+ *       $this->willBeginWork();
+ *       do_work();
+ *       $this->sleep(0);
+ *     } else {
+ *       $this->willBeginIdle();
+ *       $this->sleep(1);
+ *     }
+ *   }
+ *
+ */
+abstract class Daemon
 {
     const MESSAGETYPE_STDOUT    = 'stdout';
     const MESSAGETYPE_HEARTBEAT = 'heartbeat';
@@ -14,7 +27,7 @@ class Daemon
     const WORKSTATE_BUSY = 'busy';
     const WORKSTATE_IDLE = 'idle';
 
-    private static $SIGNALS;
+    protected $logger;
 
     /**
      * 是否收到信号 USR2
@@ -39,14 +52,12 @@ class Daemon
      */
     private $autoscaleDownDuration;
     
-    private $logger;
-    
     private static $sighandlerInstalled;
 
     public function __construct($options = null)
     {
         $this->logger = Util::service('logger', $options);
-        if ($options['isAutoscaleDaemon']) {
+        if (isset($options['isAutoscaleDaemon'])) {
             $this->isAutoscaleDaemon = $options['isAutoscaleDaemon'];
             $this->autoscaleDownDuration = $options['autoscaleDownDuration'];
         }
@@ -60,6 +71,8 @@ class Daemon
         pcntl_signal(SIGUSR2, array($this, 'onNotifySignal'));
         $this->beginStdoutCapture();
     }
+
+    abstract public function run();
 
     public function onGracefulSignal($signo)
     {
@@ -96,7 +109,7 @@ class Daemon
         if ($this->workState != self::WORKSTATE_BUSY) {
             $this->workState = self::WORKSTATE_BUSY;
             $this->idleSince = null;
-            $this->emitOverseerMessage(self::MESSAGETYPE_BUSY, null);
+            $this->sendOverseerMessage(self::MESSAGETYPE_BUSY, null);
         }
         return $this;
     }
@@ -117,7 +130,7 @@ class Daemon
         if ($this->workState != self::WORKSTATE_IDLE) {
             $this->workState = self::WORKSTATE_IDLE;
             $this->idleSince = time();
-            $this->emitOverseerMessage(self::MESSAGETYPE_IDLE, null);
+            $this->sendOverseerMessage(self::MESSAGETYPE_IDLE, null);
         }
         return $this;
     }
@@ -144,7 +157,7 @@ class Daemon
             // If this is an autoscaling clone and we've been idle for too long,
             // we're going to scale the pool down by exiting and not restarting. The
             // DOWN message tells the overseer that we don't want to be restarted.
-            if ($is_autoscale) {
+            if ($this->isAutoscaleDaemon) {
                 if ($this->workState == self::WORKSTATE_IDLE) {
                     if ($this->idleSince && ($this->idleSince + $this->autoscaleDownDuration < time())) {
                         $this->isExiting = true;
@@ -166,15 +179,13 @@ class Daemon
 
     public function stillWorking()
     {
-        $this->emitOverseerMessage(self::MESSAGETYPE_HEARTBEAT, null);
+        $this->sendOverseerMessage(self::MESSAGETYPE_HEARTBEAT, null);
         if ($this->logger) {
             $memuse = number_format(memory_get_usage() / 1024, 1);
             $daemon = get_class($this);
             $this->logger->debug(sprintf(
-                "<%s> %s %s\n",
-                '<RAMS>',
+                "<RAMS> %s Memory Usage: %d KB",
                 $daemon,
-                'Memory Usage: %d KB',
                 $memuse
             ));
         }
@@ -216,54 +227,5 @@ class Daemon
         $this->endStdoutCapture();
         echo $this->encodeOverseerMessage($type, $data);
         $this->beginStdoutCapture();
-    }
-
-    public static function sigName($signo)
-    {
-        if (!self::$SIGNALS) {
-            $names = [
-                'SIGHUP',
-                'SIGINT',
-                'SIGQUIT',
-                'SIGILL',
-                'SIGTRAP',
-                'SIGABRT',
-                'SIGIOT',
-                'SIGBUS',
-                'SIGFPE',
-                'SIGUSR1',
-                'SIGSEGV',
-                'SIGUSR2',
-                'SIGPIPE',
-                'SIGALRM',
-                'SIGTERM',
-                'SIGSTKFLT',
-                'SIGCLD',
-                'SIGCHLD',
-                'SIGCONT',
-                'SIGTSTP',
-                'SIGTTIN',
-                'SIGTTOU',
-                'SIGURG',
-                'SIGXCPU',
-                'SIGXFSZ',
-                'SIGVTALRM',
-                'SIGPROF',
-                'SIGWINCH',
-                'SIGPOLL',
-                'SIGIO',
-                'SIGPWR',
-                'SIGSYS',
-                'SIGBABY',
-            ];
-            $signals = array();
-            foreach ($names as $constant) {
-                if (defined($constant)) {
-                    $signals[constant($constant)] = $constant;
-                }
-            }
-            self::$SIGNALS = $signals;
-        }
-        return isset(self::$SIGNALS[$signo]) ? self::$SIGNALS[$signo] : '';
     }
 }

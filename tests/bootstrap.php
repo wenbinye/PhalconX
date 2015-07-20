@@ -39,5 +39,6 @@ function bootstrap_test()
     $logger = new ConsoleLogger('php://stderr');
     $logger->setFormatter($formatter);
     $di->setShared('logger', $logger);
+    return $di;
 }
-bootstrap_test();
+return bootstrap_test();

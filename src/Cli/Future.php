@@ -8,12 +8,12 @@ namespace PhalconX\Cli;
  *
  * @stable
  */
-abstract class Future {
+abstract class Future
+{
+    protected static $handlerInstalled = null;
 
-  protected static $handlerInstalled = null;
-
-  protected $result;
-  protected $exception;
+    protected $result;
+    protected $exception;
 
   /**
    * Is this future's process complete? Specifically, can this future be
@@ -22,7 +22,7 @@ abstract class Future {
    * @return bool  If true, the external process is complete and resolving this
    *               future will not block.
    */
-  abstract public function isReady();
+    abstract public function isReady();
 
   /**
    * Resolve a future and return its result, blocking until the result is ready
@@ -32,55 +32,59 @@ abstract class Future {
    *               execution will return to the caller.
    * @return mixed Future result, or null if the timeout is hit.
    */
-  public function resolve($timeout = null) {
-    $start = microtime(true);
-    $wait  = $this->getDefaultWait();
-    do {
-      $this->checkException();
-      if ($this->isReady()) {
-        break;
-      }
+    public function resolve($timeout = null)
+    {
+        $start = microtime(true);
+        $wait  = $this->getDefaultWait();
+        do {
+            $this->checkException();
+            if ($this->isReady()) {
+                break;
+            }
 
-      $read = $this->getReadSockets();
-      $write = $this->getWriteSockets();
+            $read = $this->getReadSockets();
+            $write = $this->getWriteSockets();
 
-      if ($timeout !== null) {
-        $elapsed = microtime(true) - $start;
+            if ($timeout !== null) {
+                $elapsed = microtime(true) - $start;
 
-        if ($elapsed > $timeout) {
-          $this->checkException();
-          return null;
-        } else {
-          $wait = $timeout - $elapsed;
-        }
-      }
+                if ($elapsed > $timeout) {
+                    $this->checkException();
+                    return null;
+                } else {
+                    $wait = $timeout - $elapsed;
+                }
+            }
 
-      if ($read || $write) {
-        self::waitForSockets($read, $write, $wait);
-      }
-    } while (true);
+            if ($read || $write) {
+                self::waitForSockets($read, $write, $wait);
+            }
+        } while (true);
 
-    $this->checkException();
-    return $this->getResult();
-  }
+        $this->checkException();
+        return $this->getResult();
+    }
 
-  public function setException(\Exception $ex) {
-    $this->exception = $ex;
-    return $this;
-  }
+    public function setException(\Exception $ex)
+    {
+        $this->exception = $ex;
+        return $this;
+    }
 
-  public function getException() {
-    return $this->exception;
-  }
+    public function getException()
+    {
+        return $this->exception;
+    }
 
   /**
    * If an exception was set by setException(), throw it.
    */
-  private function checkException() {
-    if ($this->exception) {
-      throw $this->exception;
+    private function checkException()
+    {
+        if ($this->exception) {
+            throw $this->exception;
+        }
     }
-  }
 
   /**
    * Retrieve a list of sockets which we can wait to become readable while
@@ -91,9 +95,10 @@ abstract class Future {
    *
    * @return list  A list of sockets which we expect to become readable.
    */
-  public function getReadSockets() {
-    return array();
-  }
+    public function getReadSockets()
+    {
+        return array();
+    }
 
 
   /**
@@ -102,9 +107,10 @@ abstract class Future {
    *
    * @return list  A list of sockets which we expect to become writable.
    */
-  public function getWriteSockets() {
-    return array();
-  }
+    public function getWriteSockets()
+    {
+        return array();
+    }
 
 
   /**
@@ -115,46 +121,49 @@ abstract class Future {
    * @param  float Timeout, in seconds.
    * @return void
    */
-  public static function waitForSockets(
-    array $read_list,
-    array $write_list,
-    $timeout = 1) {
-    if (!self::$handlerInstalled) {
-      //  If we're spawning child processes, we need to install a signal handler
-      //  here to catch cases like execing '(sleep 60 &) &' where the child
-      //  exits but a socket is kept open. But we don't actually need to do
-      //  anything because the SIGCHLD will interrupt the stream_select(), as
-      //  long as we have a handler registered.
-      if (function_exists('pcntl_signal')) {
-        if (!pcntl_signal(SIGCHLD, array(__CLASS__, 'handleSIGCHLD'))) {
-          throw new Exception(pht('Failed to install signal handler!'));
+    public static function waitForSockets(
+        array $read_list,
+        array $write_list,
+        $timeout = 1
+    ) {
+        if (!self::$handlerInstalled) {
+          //  If we're spawning child processes, we need to install a signal handler
+          //  here to catch cases like execing '(sleep 60 &) &' where the child
+          //  exits but a socket is kept open. But we don't actually need to do
+          //  anything because the SIGCHLD will interrupt the stream_select(), as
+          //  long as we have a handler registered.
+            if (function_exists('pcntl_signal')) {
+                if (!pcntl_signal(SIGCHLD, array(__CLASS__, 'handleSIGCHLD'))) {
+                    throw new Exception(pht('Failed to install signal handler!'));
+                }
+            }
+            self::$handlerInstalled = true;
         }
-      }
-      self::$handlerInstalled = true;
+
+        $timeout_sec = (int)$timeout;
+        $timeout_usec = (int)(1000000 * ($timeout - $timeout_sec));
+
+        $exceptfds = array();
+        $ok = @stream_select(
+            $read_list,
+            $write_list,
+            $exceptfds,
+            $timeout_sec,
+            $timeout_usec
+        );
+
+        if ($ok === false) {
+          // Hopefully, means we received a SIGCHLD. In the worst case, we degrade
+          // to a busy wait.
+        }
     }
 
-    $timeout_sec = (int)$timeout;
-    $timeout_usec = (int)(1000000 * ($timeout - $timeout_sec));
-
-    $exceptfds = array();
-    $ok = @stream_select(
-      $read_list,
-      $write_list,
-      $exceptfds,
-      $timeout_sec,
-      $timeout_usec);
-
-    if ($ok === false) {
-      // Hopefully, means we received a SIGCHLD. In the worst case, we degrade
-      // to a busy wait.
+    public static function handleSIGCHLD($signo)
+    {
+      // This function is a dummy, we just need to have some handler registered
+      // so that PHP will get interrupted during stream_select(). If we don't
+      // register a handler, stream_select() won't fail.
     }
-  }
-
-  public static function handleSIGCHLD($signo) {
-    // This function is a dummy, we just need to have some handler registered
-    // so that PHP will get interrupted during stream_select(). If we don't
-    // register a handler, stream_select() won't fail.
-  }
 
 
   /**
@@ -169,22 +178,24 @@ abstract class Future {
    *
    * @return mixed   Final resolution of this future.
    */
-  protected function getResult() {
-    return $this->result;
-  }
+    protected function getResult()
+    {
+        return $this->result;
+    }
 
   /**
    * Default amount of time to wait on stream select for this future. Normally
    * 1 second is fine, but if the future has a timeout sooner than that it
    * should return the amount of time left before the timeout.
    */
-  public function getDefaultWait() {
-    return 1;
-  }
+    public function getDefaultWait()
+    {
+        return 1;
+    }
 
-  public function start() {
-    $this->isReady();
-    return $this;
-  }
-
+    public function start()
+    {
+        $this->isReady();
+        return $this;
+    }
 }

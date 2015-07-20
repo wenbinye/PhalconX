@@ -2,29 +2,27 @@
 namespace PhalconX\Queue;
 
 use Phalcon\Queue\Beanstalk\Job as BeanstalkJob;
+use PhalconX\Util;
+use PhalconX\Mvc\SimpleModel;
 
-abstract class Job implements JobInterface
+abstract class Job extends SimpleModel implements JobInterface
 {
     const DEFAULT_DELAY = 0;       // no delay
     const DEFAULT_PRIORITY = 1024; // most urgent: 0, least urgent: 4294967295
     const DEFAULT_TTR = 60;        // 1 minute
 
     private $beanstalkJob;
-    
+
+    protected $logger;
     protected $id;
     protected $delay = self::DEFAULT_DELAY;
     protected $priority = self::DEFAULT_PRIORITY;
     protected $ttr = self::DEFAULT_TTR;
 
-    public function __construct($data = null)
+    public function __construct($options = null)
     {
-        if ($data !== null) {
-            foreach ($data as $key => $val) {
-                if (property_exists($this, $key)) {
-                    $this->$key = $val;
-                }
-            }
-        }
+        parent::__construct($options);
+        $this->logger = Util::service('logger', $options, false);
     }
     
     public function getDelay()
