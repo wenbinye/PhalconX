@@ -113,6 +113,10 @@ class Annotations extends Injectable
         if ($this->logger) {
             $this->logger->info("Apply filter " . $filter[0] . ' handler=' . $filterClass);
         }
-        return $this->getDi()->get($filterClass, [$args]);
+        if (empty($args)) {
+            return $this->getDi()->get($filterClass);
+        } else {
+            return $this->getDi()->get($filterClass, [$args]);
+        }
     }
 }
