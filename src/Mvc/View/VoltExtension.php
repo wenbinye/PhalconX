@@ -6,18 +6,18 @@ use PhalconX\Util;
 
 class VoltExtension
 {
-    private $voltFunctions;
+    private $viewHelper;
     
     public function __construct()
     {
-        $this->voltFunctions = Util::service('voltFunctions');
+        $this->viewHelper = Util::service('viewHelper');
     }
     
     public function compileFunction($name, $arguments)
     {
         $cname = Text::camelize($name);
-        if (method_exists($this->voltFunctions, $cname)) {
-            return '$this->voltFunctions->'.$cname . '(' . $arguments . ')';
+        if (method_exists($this->viewHelper, $cname)) {
+            return '$this->viewHelper->'.$cname . '(' . $arguments . ')';
         }
     }
 }

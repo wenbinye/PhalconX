@@ -8,6 +8,7 @@ use PhalconX\Mvc\Controller\Filter\RequestMethod;
 use PhalconX\Mvc\Controller\Filter\CsrfToken;
 use PhalconX\Mvc\Controller\Filter\LoginOnly;
 use PhalconX\Mvc\Controller\Filter\ACL;
+use PhalconX\Mvc\Controller\Filter\DisableView;
 use PhalconX\Exception;
 
 class Annotations extends Injectable
@@ -25,7 +26,8 @@ class Annotations extends Injectable
         'RequestMethod' => RequestMethod::CLASS,
         'CsrfToken' => CsrfToken::CLASS,
         'LoginOnly' => LoginOnly::CLASS,
-        'Acl' => Acl::CLASS
+        'Acl' => Acl::CLASS,
+        'DisableView' => DisableView::CLASS
     ];
     
     public function __construct($options = null)
