@@ -2,9 +2,9 @@
 namespace PhalconX;
 
 use Phalcon\Validation\Validator\PresenceOf;
+use Phalcon\Validation\Validator\InclusionIn;
 use PhalconX\Validators\Range;
 use PhalconX\Validators\StringLength;
-use PhalconX\Validators\InclusionIn;
 use PhalconX\Mvc\SimpleModel;
 
 class ValidatorSpec extends SimpleModel

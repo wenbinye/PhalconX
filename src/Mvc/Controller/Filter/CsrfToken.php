@@ -2,11 +2,18 @@
 namespace PhalconX\Mvc\Controller\Filter;
 
 use Phalcon\Di\Injectable;
+use PhalconX\Util;
 use PhalconX\Exception;
 
 class CsrfToken extends Injectable implements FilterInterface
 {
     private static $ALLOWED_METHODS = ['PUT', 'POST'];
+    private $repeatOk;
+
+    public function __construct($options = null)
+    {
+        $this->repeatOk = Util::fetch($options, 'repeatOk', false);
+    }
     
     public function filter($dispatcher)
     {
@@ -17,7 +24,8 @@ class CsrfToken extends Injectable implements FilterInterface
                 Exception::ERROR_HTTP_METHOD_INVALID
             );
         }
-        if (!$this->security->checkToken()) {
+        $destroy = !$this->repeatOk;
+        if (!$this->security->checkToken(null, null, $destroy)) {
             $this->response->setStatusCode(400);
             throw new Exception(
                 'Invalid request, likely attacking',

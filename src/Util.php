@@ -19,6 +19,11 @@ class Util
         }
     }
 
+    public static function fetch($array, $key, $default = null)
+    {
+        return isset($array[$key]) ? $array[$key] : $default;
+    }
+    
     public static function now($format = 'Y-m-d H:i:s')
     {
         return date($format);
@@ -54,5 +59,12 @@ class Util
             mt_rand(0, 0xffff),
             mt_rand(0, 0xffff)
         );
+    }
+
+    public static function template($template, $context)
+    {
+        return preg_replace_callback('/{([^{}]+)}/', function ($matches) use ($context) {
+            return self::fetch($context, $matches[1], $matches[0]);
+        }, $template);
     }
 }

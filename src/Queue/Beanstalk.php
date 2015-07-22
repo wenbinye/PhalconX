@@ -25,23 +25,27 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
      *
      * @param JobInterface $job 任务对象
      */
-    public function put(JobInterface $job, $delay = null)
+    public function put($job, $options = null)
     {
-        $arguments = get_object_vars($job);
-        $arguments['_handler'] = get_class($job);
-        $jobId = $job->getId();
-        if (isset($jobId)) {
-            $arguments['_id'] = Util::uuid();
-            $this->cache->save($this->buildJobKey($jobId), $arguments['_id']);
+        if ($job instanceof JobInterface) {
+            $arguments = get_object_vars($job);
+            $arguments['_handler'] = get_class($job);
+            $jobId = $job->getId();
+            if (isset($jobId)) {
+                $arguments['_id'] = Util::uuid();
+                $this->cache->save($this->buildJobKey($jobId), $arguments['_id']);
+            }
+            if ($this->logger) {
+                $this->logger->info('Add job ' . json_encode($arguments));
+            }
+            return parent::put($arguments, [
+                'delay' => $job->getDelay(),
+                'ttr' => $job->getTtr(),
+                'priority' => $job->getPriority()
+            ]);
+        } else {
+            return parent::put($job, $options);
         }
-        if ($this->logger) {
-            $this->logger->info('Add job ' . json_encode($arguments));
-        }
-        return parent::put($arguments, array(
-            'delay' => isset($delay) ? $delay : $job->getDelay(),
-            'ttr' => $job->getTtr(),
-            'priority' => $job->getPriority()
-        ));
     }
 
     public function reserve($timeout = null)

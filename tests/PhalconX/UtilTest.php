@@ -21,4 +21,13 @@ class UtilTest extends TestCase
         $router = Util::service('router', $options);
         $this->assertEquals($router, $options['router']);
     }
+
+    function testTemplate()
+    {
+        $ret = Util::template("hello, {name}", ['name' => 'world']);
+        $this->assertEquals($ret, 'hello, world');
+
+        $ret = Util::template("Hello, {name}!\nByebye, {name}!", ['name' => 'world']);
+        $this->assertEquals($ret, "Hello, world!\nByebye, world!");
+    }
 }
