@@ -67,4 +67,10 @@ class Util
             return self::fetch($context, $matches[1], $matches[0]);
         }, $template);
     }
+
+    public static function iterator($array)
+    {
+        $arr = new \ArrayObject($array);
+        return $arr->getIterator();
+    }
 }
