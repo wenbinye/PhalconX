@@ -5,7 +5,7 @@ use Phalcon\DI\Injectable;
 use Phalcon\Validation;
 use PhalconX\Exception\ValidationException;
 use Phalcon\Validation\ValidatorInterface;
-use Phalcon\Forms\Form;
+use PhalconX\Forms\Form;
 
 use Phalcon\Validation\Validator\Numericality;
 use Phalcon\Validation\Validator\PresenceOf;
@@ -133,27 +133,41 @@ class Validator extends Injectable
     /**
      * 创建表单对象
      * @param string|object $model
+     * @param array $data
      * @return \Phalcon\Forms\Form
      */
-    public function createForm($model)
+    public function createForm($model, $data = null)
     {
+        if (is_string($model)) {
+            $clz = $model;
+            $model = new $clz;
+        } else {
+            $clz = get_class($model);
+            $data = (array) $model;
+        }
         $form = new Form;
-        $clz = is_string($model) ? $model : get_class($model);
         $validators = $this->getPropertyValidators($clz);
         foreach ($this->getElements($clz) as $name => $elem) {
             if (isset($validators[$name])) {
                 foreach ($validators[$name] as $validator) {
-                    if (is_object($model)) {
-                        $elem->setDefault($model->$name);
-                    } elseif (isset($validator['default'])) {
-                        $elem->setDefault($validator['default']);
-                    }
                     $validator['name'] = $name;
                     $spec = new ValidatorSpec($validator, $this);
-                    $elem->addValidators($spec->toValidators());
+                    $spec->value = Util::fetch($data, $name);
+                    if ($spec->hasValue()) {
+                        $elem->setDefault($spec->value);
+                    } elseif ($spec->default) {
+                        $elem->setDefault($spec->default);
+                    }
+                    if ($spec->required || $spec->hasValue()) {
+                        $elem->addValidators($spec->toValidators());
+                    }
                 }
             }
             $form->add($elem);
+        }
+        if ($data) {
+            $form->bind($data, $model);
+            $form->setEntity($model);
         }
         return $form;
     }

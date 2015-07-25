@@ -42,7 +42,7 @@ class ViewHelper extends Injectable
     public function absoluteUrl($uri = null, $args = null)
     {
         if (isset($uri)) {
-            $uri = ltrim($uri, "/");
+            $uri = '/'. ltrim($uri, "/");
             return $this->baseUrl() . $this->url->get($uri, $args);
         } else {
             return $this->baseUrl() . $this->url->getBaseUri();

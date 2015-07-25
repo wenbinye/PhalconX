@@ -1,6 +1,8 @@
 <?php
 namespace PhalconX\Mvc;
 
+use Phalcon\Text;
+
 /**
  * 组件依赖如下：
  *  - 用户登录依赖 auth 组件
@@ -42,7 +44,7 @@ class Controller extends \Phalcon\Mvc\Controller
         if (isset($vars)) {
             $view->setVars($vars);
         }
-        $view->start()->render($controllerName, $actionName, $vars);
+        $view->start()->render($controllerName, Text::uncamelize($actionName), $vars);
         $view->finish();
         if ($return) {
             return $view->getContent();
