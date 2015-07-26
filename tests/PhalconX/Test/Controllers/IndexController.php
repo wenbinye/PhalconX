@@ -7,7 +7,7 @@ namespace PhalconX\Test\Controllers;
 class IndexController
 {
     /**
-     * @Get("")
+     * @Get
      */
     public function indexAction()
     {

@@ -42,6 +42,7 @@ class AnnotationsTest extends TestCase
     public function uriData()
     {
         return [
+            // UserController 没有默认匹配，必须对每个 action 设置 route
             ["GET", "/user", [
                 'controller' => 'user',
                 'action' => 'index',
@@ -54,17 +55,24 @@ class AnnotationsTest extends TestCase
                 'params' => ['id' => "1"]
             ]],
             ["POST", "/user/edit/abc", null],
+            ["GET", "/user/view/1", null],
 
+            // AppController 设置默认匹配
             ["GET", "/app", [
                 'controller' => 'app',
                 'action' => 'index',
+                'namespace' => 'PhalconX\Test\Controllers',
+            ]],
+            ["GET", "/app/list", [
+                'controller' => 'app',
+                'action' => 'list',
                 'namespace' => 'PhalconX\Test\Controllers',
             ]],
             ["POST", "/app/edit/1", [
                 'controller' => 'app',
                 'action' => 'edit',
                 'namespace' => 'PhalconX\Test\Controllers',
-                'params' => ['id' => "1"]
+                'params' => ["1"]
             ]],
 
             ["GET", "/", [

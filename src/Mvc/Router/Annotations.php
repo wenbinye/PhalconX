@@ -9,7 +9,8 @@ class Annotations extends Router
 {
     const ROUTE_PREFIX = 'RoutePrefix';
     const ROUTE = 'ROUTE';
-    
+
+    private $defaultAction;
     private $processed;
     private $handlers = [];
     private $controllerSuffix;
@@ -23,6 +24,7 @@ class Annotations extends Router
 
     public function __construct($options = null)
     {
+        $this->defaultAction = Util::fetch($options, 'defaultAction', 'index');
         $this->controllerSuffix = Util::fetch($options, 'controllerSuffix', 'Controller');
         $this->actionSuffix = Util::fetch($options, 'actionSuffix', 'Action');
         $this->modelsMetadata = Util::service('modelsMetadata', $options, false);
@@ -100,15 +102,16 @@ class Annotations extends Router
                 if (!empty($prefix) && !Text::startsWith($uri, $prefix)) {
                     continue;
                 }
-                $this->processHandler($scope[1] . $this->controllerSuffix, $prefix, $scope[2]);
+                $this->processHandler($scope[1], $prefix, $scope[2]);
             }
             $this->processed = true;
         }
         return parent::handle($uri);
     }
 
-    public function processHandler($handlerClass, $prefix, $module)
+    public function processHandler($handler, $prefix, $module)
     {
+        $handlerClass = $handler . $this->controllerSuffix;
         if ($this->modelsMetadata) {
             $routes = $this->modelsMetadata->read($handlerClass . ':routes');
         }
@@ -122,7 +125,8 @@ class Annotations extends Router
                     'module' => $module,
                     'prefix' => $prefix,
                     'namespace' => $namespace,
-                    'controller' => strtolower(substr($class, 0, -strlen($this->controllerSuffix))),
+                    'controller' => Text::uncamelize(substr($class, 0, -strlen($this->controllerSuffix))),
+                    'action' => null
                 ];
                 $annotations = $handlerAnnotations->getClassAnnotations();
                 if ($annotations) {
@@ -131,6 +135,7 @@ class Annotations extends Router
                     }
                 }
                 $methodAnnotations = $handlerAnnotations->getMethodsAnnotations();
+                $methodRoutes = [];
                 if ($methodAnnotations) {
                     foreach ($methodAnnotations as $method => $collection) {
                         if (!Text::endsWith($method, $this->actionSuffix)) {
@@ -139,10 +144,20 @@ class Annotations extends Router
                         $context['action'] = substr($method, 0, -strlen($this->actionSuffix));
                         if ($collection) {
                             foreach ($collection as $annotation) {
-                                $this->processAnnotation($annotation, $context);
+                                $methodRoutes[strtolower($method)] =  $this->processAnnotation($annotation, $context);
                             }
                         }
                     }
+                }
+                $defaultAction = strtolower($this->defaultAction.$this->actionSuffix);
+                if (method_exists($handlerClass, $defaultAction)
+                    && !isset($methodRoutes[$defaultAction])) {
+                    $this->add($context["prefix"].'[/]?', [
+                        'module' => $context['module'],
+                        'namespace' => $context['namespace'],
+                        'controller' => $context['controller'],
+                        'action' => $this->defaultAction
+                    ]);
                 }
             }
             $routes = $this->_routes;
@@ -171,10 +186,15 @@ class Annotations extends Router
             }
         }
         $value = $annotation->getArgument(0);
-        if (!isset($value)) {
-            $value = $context['action'];
+        if (isset($value)) {
+            $value = ltrim($value, '/');
+        } else {
+            if ($this->defaultAction == $context['action']) {
+                $value = '';
+            } else {
+                $value = $context['action'];
+            }
         }
-        $value = ltrim($value, '/');
         $uri = rtrim($context['prefix'], '/');
         if (empty($value)) {
             $uri .= '[/]?';
@@ -204,6 +224,7 @@ class Annotations extends Router
         if ($routeName) {
             $route->setName($routeName);
         }
+        return $route;
     }
     
     private function splitClassName($class)

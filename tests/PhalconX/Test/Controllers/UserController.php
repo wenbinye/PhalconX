@@ -7,7 +7,7 @@ namespace PhalconX\Test\Controllers;
 class UserController
 {
     /**
-     * @Get("")
+     * @Get
      */
     public function indexAction()
     {

@@ -4,7 +4,7 @@ use Phalcon\DI\FactoryDefault;
 use Phalcon\Cache;
 use Phalcon\Logger\Adapter\Stream as ConsoleLogger;
 use Phalcon\Logger\Formatter\Line as LineFormatter;
-use PhalconX\Test\MemoryMetaData as MetadataAdapter;
+use PhalconX\Mvc\Metadata\Memory as MetadataAdapter;
 
 function bootstrap_test()
 {

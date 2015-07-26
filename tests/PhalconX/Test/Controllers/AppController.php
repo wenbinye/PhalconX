@@ -3,26 +3,19 @@ namespace PhalconX\Test\Controllers;
 
 /**
  * @RoutePrefix("/app")
+ * @Route(":action/:params", paths=[action=1, params=2])
+ * @Route(":action", paths=[action=1])
  */
 class AppController
 {
-    /**
-     * @Get("/")
-     */
     public function indexAction()
     {
     }
 
-    /**
-     * @GET
-     */
     public function listAction()
     {
     }
 
-    /**
-     * @POST("edit/{id}")
-     */
     public function editAction($id)
     {
     }
