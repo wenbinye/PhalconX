@@ -10,6 +10,8 @@ class Annotations extends Router
     const ROUTE_PREFIX = 'RoutePrefix';
     const ROUTE = 'ROUTE';
 
+    protected $_defaultParams = [];
+
     private $defaultAction;
     private $processed;
     private $handlers = [];
@@ -59,7 +61,7 @@ class Annotations extends Router
     {
         $classes = $this->reflection->getClasses($file);
         foreach ($classes as $class) {
-            if (!Text::endsWith($class, $this->controllerSuffix)) {
+            if ($this->controllerSuffix && !Text::endsWith($class, $this->controllerSuffix)) {
                 continue;
             }
             $handlerAnnotations = $this->annotations->get($class);
@@ -138,10 +140,14 @@ class Annotations extends Router
                 $methodRoutes = [];
                 if ($methodAnnotations) {
                     foreach ($methodAnnotations as $method => $collection) {
-                        if (!Text::endsWith($method, $this->actionSuffix)) {
+                        if ($this->actionSuffix && !Text::endsWith($method, $this->actionSuffix)) {
                             continue;
                         }
-                        $context['action'] = substr($method, 0, -strlen($this->actionSuffix));
+                        if ($this->actionSuffix) {
+                            $context['action'] = substr($method, 0, -strlen($this->actionSuffix));
+                        } else {
+                            $context['action'] = $method;
+                        }
                         if ($collection) {
                             foreach ($collection as $annotation) {
                                 $methodRoutes[strtolower($method)] =  $this->processAnnotation($annotation, $context);
