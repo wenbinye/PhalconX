@@ -73,4 +73,16 @@ class Util
         $arr = new \ArrayObject($array);
         return $arr->getIterator();
     }
+
+    public static function walkdir($dir, $callback)
+    {
+        $it = new \RecursiveDirectoryIterator($dir);
+        foreach (new \RecursiveIteratorIterator($it) as $file => $fileInfo) {
+            $name = $fileInfo->getFilename();
+            if ($name == '.' || $name == '..') {
+                continue;
+            }
+            call_user_func($callback, $file, $fileInfo);
+        }
+    }
 }

@@ -3,7 +3,7 @@ namespace PhalconX\Mvc;
 
 class ControllerForwardTest extends ControllerBaseTest
 {
-    function testForward()
+    public function testForward()
     {
         $_GET['_url'] = '/forward1/';
         $response = $this->getResponse();
@@ -23,6 +23,6 @@ class Forward2Controller extends Controller
 {
     public function indexAction()
     {
-        echo 'yes';
+        $this->response->setContent('yes');
     }
 }

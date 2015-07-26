@@ -5,12 +5,7 @@ use Phalcon\Mvc\View;
 
 class ControllerTest extends ControllerBaseTest
 {
-    function createController()
-    {
-        return $this->getDI()->get('PhalconX\Mvc\TestController');
-    }
-    
-    function testIndexAction()
+    public function testIndexAction()
     {
         $_GET['_url'] = '/test/index';
         $response = $this->getResponse();
@@ -22,6 +17,6 @@ class TestController extends Controller
 {
     public function indexAction()
     {
-        echo "hello";
+        $this->response->setContent("hello");
     }
 }

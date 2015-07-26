@@ -12,6 +12,7 @@ use Phalcon\Text;
 class Controller extends \Phalcon\Mvc\Controller
 {
     protected $pathParamOffset = 2;
+    protected $viewPrefix = '';
 
     private $pathParameters;
     
@@ -44,7 +45,8 @@ class Controller extends \Phalcon\Mvc\Controller
         if (isset($vars)) {
             $view->setVars($vars);
         }
-        $view->start()->render($controllerName, Text::uncamelize($actionName), $vars);
+        $view->pick($this->pickView($controllerName, $actionName));
+        $view->start()->render(null, null, $vars);
         $view->finish();
         if ($return) {
             return $view->getContent();
@@ -92,5 +94,11 @@ class Controller extends \Phalcon\Mvc\Controller
         } else {
             return $defaultValue;
         }
+    }
+
+    private function pickView($controllerName, $actionName)
+    {
+        return $this->viewPrefix . '/' . Text::uncamelize($controllerName)
+            . '/' . Text::uncamelize($actionName);
     }
 }

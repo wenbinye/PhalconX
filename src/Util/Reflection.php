@@ -2,6 +2,7 @@
 namespace PhalconX\Util;
 
 use PhalconX\Util;
+use PhalconX\Exception;
 
 class Reflection
 {
@@ -55,6 +56,63 @@ class Reflection
             $ns = $this->getNamespace($clz);
         }
         return $ns . '\\' . $name;
+    }
+
+    public function getClasses($file)
+    {
+        $classes = [];
+        $code = file_get_contents($file);
+        $tokens = token_get_all($code);
+        $it = Util::iterator($tokens);
+        $namespace = null;
+        try {
+            while ($it->valid()) {
+                $token = $it->current();
+                if (is_array($token)) {
+                    if ($token[0] == T_NAMESPACE) {
+                        $namespace = $this->matchClassname($it);
+                    } elseif ($token[0] == T_DOUBLE_COLON) {
+                        $it->next();
+                        if ($it->valid()) {
+                            $it->next();
+                        }
+                    } elseif ($token[0] == T_CLASS || $token[0] == T_INTERFACE) {
+                        $class = $this->matchClassname($it);
+                        $classes[] = $namespace ? $namespace . '\\' . $class : $class;
+                    }
+                }
+                $it->next();
+            }
+        } catch (Exception $e) {
+            throw new Exception("解析文件类名错误 $file");
+        }
+        return $classes;
+    }
+    
+    private function matchClassname($it)
+    {
+        $it->next();
+        while ($it->valid()) {
+            $token = $it->current();
+            if ($token[0] != T_WHITESPACE) {
+                break;
+            }
+            $it->next();
+        }
+        $class = '';
+        while ($it->valid()) {
+            $token = $it->current();
+            if ($token[0] == T_STRING || $token[0] == T_NS_SEPARATOR) {
+                $class .= $token[1];
+            } else {
+                break;
+            }
+            $it->next();
+        }
+        if (!$class) {
+            throw new Exception("解析错误");
+        }
+        return $class;
     }
 
     private static function getNamespace($clz)

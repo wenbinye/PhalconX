@@ -14,9 +14,6 @@ class ValidatorTest extends TestCase
 
     public function setUp()
     {
-        Di::getDefault()->setShared('reflection', 'PhalconX\Util\Reflection');
-        Di::getDefault()->setShared('objectMapper', 'PhalconX\Util\ObjectMapper');
-        Di::getDefault()->setShared('validator', 'PhalconX\Validator');
         $this->validator = new Validator;
     }
 

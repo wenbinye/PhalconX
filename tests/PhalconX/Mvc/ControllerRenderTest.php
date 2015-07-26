@@ -5,40 +5,35 @@ use Phalcon\Mvc\View;
 
 class ControllerRenderTest extends ControllerBaseTest
 {
-    function createController()
-    {
-        return $this->getDI()->get('PhalconX\Mvc\TestController');
-    }
-
-    function testRenderAction()
+    public function testRenderAction()
     {
         $_GET['_url'] = '/render/';
         $response = $this->getResponse();
         $this->assertEquals('render test', $response);
     }
 
-    function testRenderVarsAction()
+    public function testRenderVarsAction()
     {
         $_GET['_url'] = '/render/vars';
         $response = $this->getResponse();
         $this->assertEquals('render for hello', $response);
     }
 
-    function testRenderActionAction()
+    public function testRenderActionAction()
     {
         $_GET['_url'] = '/render/action';
         $response = $this->getResponse();
         $this->assertEquals('render for action', $response);
     }
 
-    function testRenderFull()
+    public function testRenderFull()
     {
         $_GET['_url'] = '/render/full';
         $response = $this->getResponse();
         $this->assertEquals('render for full', $response);
     }
 
-    function testRenderReturn()
+    public function testRenderReturn()
     {
         $_GET['_url'] = '/render/return';
         $response = $this->getResponse();
@@ -77,6 +72,6 @@ class RenderController extends Controller
     public function returnAction()
     {
         $msg = $this->render('other/vars', array('msg' => 'return'), true);
-        echo "msg = $msg";
+        $this->response->setContent("msg = $msg");
     }
 }
