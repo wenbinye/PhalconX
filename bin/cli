@@ -1,0 +1,32 @@
+#!/usr/bin/env php
+<?php
+use Phalcon\Logger;
+use Phalcon\Logger\Adapter\Stream as ConsoleAppender;
+use Phalcon\Logger\Formatter\Line as LineFormatter;
+use Phalcon\Di\FactoryDefault\CLI;
+use Phalcon\CLI\Console as Application;
+use PhalconX\Cli\Router;
+
+$loader = require(__DIR__.'/../vendor/autoload.php');
+$di = new CLI;
+$di['router'] = function () {
+    $router = new Router;
+    return $router;
+};
+$di['logger'] = function() {
+    $formatter = new LineFormatter("%date% [%type%] %message%\n");
+    $logger = new ConsoleAppender('php://stderr');
+    $logger->setFormatter($formatter);
+    $logger->setLogLevel(Logger::INFO);
+    return $logger;
+};
+
+$console = new Application($di);
+
+try {
+    // handle incoming arguments
+    $console->handle($argv);
+} catch (\Exception $e) {
+    $di->getLogger()->error($e->getMessage() . "\n" . $e->getTraceAsString());
+    exit(-1);
+}
