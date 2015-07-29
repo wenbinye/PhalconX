@@ -1,6 +1,7 @@
 <?php
 namespace PhalconX\Cli;
 
+use PhalconX\Exception;
 use PhalconX\Di\Injectable;
 
 class Application
@@ -54,6 +55,7 @@ class Application
             }
         }
         $router = $this->router;
+        $router->scan(__DIR__.'/Tasks', 'cli');
         $router->handle($arguments);
         if ($router->wasMatched()) {
             if ($em) {

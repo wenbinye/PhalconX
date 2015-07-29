@@ -7,7 +7,7 @@ namespace PhalconX\Test\Tasks;
 class AddTask extends BaseTask
 {
     /**
-     * @Option("-i", help="Add modified contents interactively.")
+     * @Option("-i", optional=true, help="Add modified contents interactively.")
      */ 
     public $interactive;
 

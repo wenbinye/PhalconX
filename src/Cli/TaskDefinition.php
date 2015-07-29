@@ -10,4 +10,9 @@ class TaskDefinition extends SimpleModel
     public $help;
     public $options = [];
     public $arguments = [];
+
+    public function getId()
+    {
+        return $this->namespace . '\\' . $this->task;
+    }
 }

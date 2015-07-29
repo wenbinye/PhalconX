@@ -6,6 +6,7 @@ use PhalconX\Util;
 
 class Router
 {
+    const COMMAND_GROUP = 'CommandGroup';
     const COMMAND = 'Command';
     const OPTION = 'Option';
     const ARGUMENT = 'Argument';
@@ -15,6 +16,7 @@ class Router
     private $scriptName;
     private $task;
 
+    private $defaultTask;
     private $arguments;
     private $globalOptions;
     private $tasks;
@@ -27,6 +29,7 @@ class Router
     {
         $this->globalOptions = Util::fetch($options, 'globalOptions');
         $this->taskSuffix = Util::fetch($options, 'taskSuffix', 'Task');
+        $this->defaultTask = Util::fetch($options, 'defaultTask', 'help');
 
         $this->reflection = Util::service('reflection', $options);
         $this->annotations = Util::service('annotations', $options);
@@ -59,6 +62,13 @@ class Router
             foreach ($annotations as $annotation) {
                 if ($annotation->getName() == self::COMMAND) {
                     $this->addResource($class, $annotation->getNamedArgument('group'), $module);
+                } elseif ($annotation->getName() == self::COMMAND_GROUP) {
+                    $group = $annotation->getArgument(0);
+                    $name = $module ? $module . self::SEPARATOR . $group : $group;
+                    $this->tasks['commands'][$name] = new TaskGroupDefinition([
+                        'name' => $name,
+                        'help' => $annotation->getNamedArgument('help')
+                    ]);
                 }
             }
         }
@@ -72,7 +82,7 @@ class Router
             $this->tasks['groups'][$name][$task] = $handler;
         } else {
             $name = $module ? $module . self::SEPARATOR . $task : $task;
-            $this->tasks['commands'][$task] = $handler;
+            $this->tasks['commands'][$name] = $handler;
         }
     }
     
@@ -147,6 +157,12 @@ class Router
     
     private function parseTask()
     {
+        if (empty($this->arguments)) {
+            if ($this->hasCommand($this->defaultTask)) {
+                $this->setMatched($this->defaultTask);
+                return;
+            }
+        }
         $arg = array_shift($this->arguments);
         if ($this->hasGroup($arg)) {
             $cmd = array_shift($this->arguments);
@@ -166,11 +182,7 @@ class Router
         } else {
             $task = $this->tasks['commands'][$command];
         }
-        if (is_string($task)) {
-            $this->task = $this->parseTaskDefinition($task);
-        } else {
-            $this->task = $task;
-        }
+        $this->task = $this->parseTaskDefinition($task);
     }
 
     private function parseTaskArguments()
@@ -192,6 +204,9 @@ class Router
 
     private function hasGroup($group)
     {
+        if (!isset($this->tasks['groups'])) {
+            return false;
+        }
         if (isset($this->tasks['groups'][$group])) {
             return true;
         }
@@ -207,6 +222,8 @@ class Router
     {
         if (isset($group)) {
             return isset($this->tasks['groups'][$group][$command]);
+        } elseif (!isset($this->tasks['commands'])) {
+            return false;
         } elseif (isset($this->tasks['commands'][$command])) {
             return true;
         } else {
@@ -257,6 +274,9 @@ class Router
 
     private function parseTaskDefinition($handler)
     {
+        if (!is_string($handler)) {
+            return $handler;
+        }
         $def = new TaskDefinition;
         $def->task = $this->parseTaskName($handler);
         $pos = strrpos($handler, '\\');
@@ -295,7 +315,7 @@ class Router
         if (!isset($args['name'])) {
             $args['name'] = $prop;
         }
-        if ($args['type'] == 'boolean') {
+        if (isset($args['type']) && $args['type'] == 'boolean') {
             $args['optional'] = true;
         }
         $option = new Option($args);
@@ -317,5 +337,62 @@ class Router
             $args['name'] = $prop;
         }
         return new Argument($args);
+    }
+
+    public function getScriptName()
+    {
+        return $this->scriptName;
+    }
+
+    public function getTaskDefinition($task, $group = null)
+    {
+        if (isset($group)) {
+            if ($this->hasCommand($task, $group)) {
+                $def = $this->tasks['groups'][$group][$task];
+                return $this->parseTaskDefinition($def);
+            }
+        } elseif ($this->hasGroup($task)) {
+            $group = $this->tasks['groups'][$task];
+            if ($this->hasCommand($task)) {
+                $def = $this->tasks['commands'][$task];
+            } else {
+                $def = new TaskGroupDefinition(['name' => $task]);
+            }
+            foreach ($group as $name => $taskDef) {
+                $def->tasks[$name] = $this->parseTaskDefinition($taskDef);
+            }
+            return $def;
+        } elseif ($this->hasCommand($task)) {
+            $def = $this->tasks['commands'][$task];
+            return $this->parseTaskDefinition($def);
+        }
+    }
+    
+    public function getTaskDefinitions()
+    {
+        $tasks = [];
+        if (isset($this->tasks['commands'])) {
+            foreach ($this->tasks['commands'] as $name => $task) {
+                if (is_string($task)) {
+                    $task = $this->parseTaskDefinition($task);
+                }
+                $tasks[$name] = $task;
+            }
+        }
+        if (isset($this->tasks['groups'])) {
+            foreach ($this->tasks['groups'] as $group => $commands) {
+                if (!isset($tasks[$group])) {
+                    $tasks[$group] = new TaskGroupDefinition([
+                        'name' => $group,
+                    ]);
+                }
+            }
+        }
+        return $tasks;
+    }
+
+    public function getGlobalOptions()
+    {
+        return $this->globalOptions;
     }
 }
