@@ -8,7 +8,6 @@ class Application
 {
     use Injectable;
 
-    private $taskSuffix = 'Task';
     private $errorHandler;
     private $notFoundHandler;
     private $beforeHandlers;
@@ -67,8 +66,7 @@ class Application
             if ($status === false || $this->stopped) {
                 return $status;
             }
-            $taskClass = $router->getNamespaceName() . '\\'
-                . ucfirst($router->getTaskName()) . $this->taskSuffix;
+            $taskClass = $router->getNamespaceName() . '\\' . $router->getTaskName();
             $task = $this->getDi()->get($taskClass, [$router->getParams()]);
             if (method_exists($task, 'initialize')) {
                 $task->initialize();
@@ -124,17 +122,6 @@ class Application
             }
         }
         return $this->stopped ? $status : true;
-    }
-
-    public function getTaskSuffix()
-    {
-        return $this->taskSuffix;
-    }
-
-    public function setTaskSuffix($taskSuffix)
-    {
-        $this->taskSuffix = $taskSuffix;
-        return $this;
     }
 
     public function error($errorHandler)

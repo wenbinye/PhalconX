@@ -135,7 +135,7 @@ class Router
 
     public function getTaskName()
     {
-        return $this->task->task;
+        return $this->task->class;
     }
 
     private function reset()
@@ -279,9 +279,11 @@ class Router
         }
         $def = new TaskDefinition;
         $def->task = $this->parseTaskName($handler);
+        $def->class = $handler;
         $pos = strrpos($handler, '\\');
         if ($pos !== false) {
             $def->namespace = substr($handler, 0, $pos);
+            $def->class = substr($handler, $pos+1);
         }
         $anno = $this->annotations->get($handler);
         $class_anno = $anno->getClassAnnotations();

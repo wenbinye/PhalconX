@@ -7,6 +7,7 @@ class TaskDefinition extends SimpleModel
 {
     public $namespace;
     public $task;
+    public $class;
     public $help;
     public $options = [];
     public $arguments = [];
