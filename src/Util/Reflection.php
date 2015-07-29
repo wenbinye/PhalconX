@@ -14,34 +14,16 @@ class Reflection
         $this->modelsMetadata = Util::service('modelsMetadata', $options, false);
         $this->logger = Util::service('logger', $options, false);
     }
-    
-    public function resolveImport($name, $clz)
+
+    public function getImports($clz)
     {
-        if ($name[0] == '\\') {
-            return $name;
-        }
         if ($this->modelsMetadata) {
             $imports = $this->modelsMetadata->read($clz.'.imports');
         }
         if (!isset($imports)) {
-            $imports = [];
             $reflect = new \ReflectionClass($clz);
             $file = $reflect->getFileName();
-            $tokens = token_get_all(file_get_contents($file));
-            reset($tokens);
-            $token = '';
-            while ($token !== false) {
-                $token = next($tokens);
-                if (!is_array($token)) {
-                    continue;
-                }
-                if ($token[0] === T_USE) {
-                    $stmt = $this->parseUseStatement($tokens);
-                    $imports += $stmt;
-                } elseif ($token[0] === T_CLASS) {
-                    break;
-                }
-            }
+            $imports = $this->getImportsFromFile($file);
             if ($this->logger) {
                 $this->logger->info("Parse imports from class " . $clz);
             }
@@ -49,6 +31,36 @@ class Reflection
                 $this->modelsMetadata->write($clz.'.imports', $imports);
             }
         }
+        return $imports;
+    }
+
+    public function getImportsFromFile($file)
+    {
+        $imports = [];
+        $tokens = token_get_all(file_get_contents($file));
+        reset($tokens);
+        $token = '';
+        while ($token !== false) {
+            $token = next($tokens);
+            if (!is_array($token)) {
+                continue;
+            }
+            if ($token[0] === T_USE) {
+                $stmt = $this->parseUseStatement($tokens);
+                $imports += $stmt;
+            } elseif ($token[0] === T_CLASS) {
+                break;
+            }
+        }
+        return $imports;
+    }
+    
+    public function resolveImport($name, $clz)
+    {
+        if ($name[0] == '\\') {
+            return $name;
+        }
+        $imports = $this->getImports($clz);
         $parts = explode('\\', $name);
         if (isset($imports[$parts[0]])) {
             $ns = $this->getNamespace($imports[$parts[0]]);

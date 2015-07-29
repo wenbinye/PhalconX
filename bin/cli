@@ -3,16 +3,14 @@
 use Phalcon\Logger;
 use Phalcon\Logger\Adapter\Stream as ConsoleAppender;
 use Phalcon\Logger\Formatter\Line as LineFormatter;
-use Phalcon\Di\FactoryDefault\CLI;
-use Phalcon\CLI\Console as Application;
+use Phalcon\Di\FactoryDefault;
+use PhalconX\Cli\Application;
 use PhalconX\Cli\Router;
 
 $loader = require(__DIR__.'/../vendor/autoload.php');
-$di = new CLI;
-$di['router'] = function () {
-    $router = new Router;
-    return $router;
-};
+$loader->add('PhalconX', __DIR__.'/../tests');
+
+$di = new FactoryDefault;
 $di['logger'] = function() {
     $formatter = new LineFormatter("%date% [%type%] %message%\n");
     $logger = new ConsoleAppender('php://stderr');
@@ -20,12 +18,18 @@ $di['logger'] = function() {
     $logger->setLogLevel(Logger::INFO);
     return $logger;
 };
+$di['router'] = function() {
+    $router = new Router;
+    $router->scan(__DIR__ . '/../tests/PhalconX/Test/Tasks');
+    return $router;
+};
+$di['reflection'] = 'PhalconX\Util\Reflection';
 
-$console = new Application($di);
+$app = new Application($di);
 
 try {
     // handle incoming arguments
-    $console->handle($argv);
+    $app->handle($argv);
 } catch (\Exception $e) {
     $di->getLogger()->error($e->getMessage() . "\n" . $e->getTraceAsString());
     exit(-1);

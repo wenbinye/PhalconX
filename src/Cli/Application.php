@@ -1,0 +1,167 @@
+<?php
+namespace PhalconX\Cli;
+
+use PhalconX\Di\Injectable;
+
+class Application
+{
+    use Injectable;
+
+    private $taskSuffix = 'Task';
+    private $errorHandler;
+    private $notFoundHandler;
+    private $beforeHandlers;
+    private $afterHandlers;
+    private $finishHandlers;
+    private $stopped;
+    
+    public function __construct(\Phalcon\DiInterface $di = null)
+    {
+        if ($di != null) {
+            $this->setDi($di);
+        }
+    }
+
+    public function handle($arguments = null)
+    {
+        try {
+            $returnedValue = $this->tryHandle($arguments);
+        } catch (\Exception $e) {
+            $em = $this->eventsManager;
+            if ($em) {
+                if ($em->fire('dispatch:beforeException', $this, $e) === false) {
+                    return false;
+                }
+            }
+            if ($this->errorHandler) {
+                if (!is_callable($this->errorHandler)) {
+                    throw new Exception("Error handler is not callable");
+                }
+                $returnedValue = call_user_func($this->errorHandler, $e);
+            } else {
+                throw $e;
+            }
+        }
+        return $returnedValue;
+    }
+
+    private function tryHandle($arguments)
+    {
+        $em = $this->eventsManager;
+        if ($em) {
+            if ($em->fire('dispatch:beforeHandleRoute', $this) === false) {
+                return false;
+            }
+        }
+        $router = $this->router;
+        $router->handle($arguments);
+        if ($router->wasMatched()) {
+            if ($em) {
+                if ($em->fire('dispatch::beforeExecuteRoute', $this) === false) {
+                    return false;
+                }
+            }
+            $status = $this->callHandlers($this->beforeHandlers, 'before');
+            if ($status === false || $this->stopped) {
+                return $status;
+            }
+            $taskClass = $router->getNamespaceName() . '\\'
+                . ucfirst($router->getTaskName()) . $this->taskSuffix;
+            $task = $this->getDi()->get($taskClass, [$router->getParams()]);
+            if (method_exists($task, 'initialize')) {
+                $task->initialize();
+            }
+            $returnedValue = $task->execute();
+            if ($em) {
+                $em->fire('dispatch:afterExecuteRoute', $this);
+            }
+            $status = $this->callHandlers($this->afterHandlers, 'after');
+            if ($status === false || $this->stopped) {
+                return $status;
+            }
+        } else {
+            if ($em) {
+                if ($em->fire('dispatch:beforeNotFound', $this) === false) {
+                    return false;
+                }
+            }
+            if (!is_callable($this->notFoundHandler)) {
+                throw new Exception("Not-Found handler is not callable");
+            }
+            $returnedValue = call_user_func($this->notFoundHandler, $this);
+        }
+        if ($em) {
+            $em->fire('dispatch:afterHandleRoute', $this, $returnedValue);
+        }
+        $this->callHandlers($this->finishHandlers, 'finish');
+        return $returnedValue;
+    }
+
+    private function callHandlers($handlers, $type)
+    {
+        if (!is_array($handlers)) {
+            return;
+        }
+        $this->stopped = false;
+        foreach ($handlers as $handler) {
+            if (is_object($handler) && $handler instanceof MiddlewareInterface) {
+                $status = $handler->call($this);
+                if ($this->stopped) {
+                    break;
+                }
+                continue;
+            }
+            if (!is_callable($handler)) {
+                throw new Exception("'$type' handler is not callable");
+            }
+            if (call_user_func($handler, $this) === false) {
+                return false;
+            }
+            if ($this->stopped) {
+                return $status;
+            }
+        }
+        return $this->stopped ? $status : true;
+    }
+
+    public function getTaskSuffix()
+    {
+        return $this->taskSuffix;
+    }
+
+    public function setTaskSuffix($taskSuffix)
+    {
+        $this->taskSuffix = $taskSuffix;
+        return $this;
+    }
+
+    public function error($errorHandler)
+    {
+        $this->errorHandler = $errorHandler;
+        return $this;
+    }
+
+    public function notFound($notFoundHandler)
+    {
+        $this->notFoundHandler = $notFoundHandler;
+        return $this;
+    }
+
+    public function before($handler)
+    {
+        $this->beforeHandlers[] = $handler;
+        return $this;
+    }
+
+    public function after($handler)
+    {
+        $this->afterHandlers[] = $handler;
+        return $this;
+    }
+
+    public function finish($handler)
+    {
+        $this->finishHandlers[] = $handler;
+        return $this;
+    }
+}

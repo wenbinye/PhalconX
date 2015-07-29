@@ -85,4 +85,21 @@ class Util
             call_user_func($callback, $file, $fileInfo);
         }
     }
+
+    public static function parseShellArguments($args)
+    {
+        preg_match_all('#(?<!\\\\)("|\')(?:[^\\\\]|\\\\.)*?\1|\S+#s', $args, $matches);
+        $argv = [];
+        foreach ($matches[0] as $arg) {
+            if (in_array($arg[0], ['"', '\''])) {
+                $len = strlen($arg);
+                if ($len < 2 || substr($arg, $len-1, 1) != $arg[0]) {
+                    throw new Exception("Parse argument error at '$arg', unmatch quotes");
+                }
+                $arg = stripcslashes(substr($arg, 1, -1));
+            }
+            $argv[] = $arg;
+        }
+        return $argv;
+    }
 }
