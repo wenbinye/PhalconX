@@ -37,7 +37,6 @@ class HelpTask extends Task
             echo "Task '$task' does not exist!\n";
         }
         if ($def instanceof Definition) {
-            $def->parseOptions();
             echo sprintf(
                 "usage: %s %s %s%s\n\n",
                 $router->getScriptName(),
@@ -47,6 +46,9 @@ class HelpTask extends Task
             );
             echo $this->formatOptionDetail($def->options), "\n";
         } else {
+            if (!$def->tasks) {
+                throw new Exception("No tasks in group " . json_encode($def));
+            }
             echo sprintf(
                 "usage: %s %s <task> [<args>]\n\n",
                 $router->getScriptName(),
@@ -55,11 +57,11 @@ class HelpTask extends Task
             echo "可用命令有：\n";
             $tasks = $def->tasks;
             $len = 0;
-            foreach ($tasks as $name => $task) {
-                $len = max(strlen($name), $len);
+            foreach ($tasks as $task) {
+                $len = max(strlen($task->name), $len);
             }
-            foreach ($tasks as $name => $task) {
-                printf('  %-' . $len . "s  %s\n", $name, $task->help);
+            foreach ($tasks as $task) {
+                printf('  %-' . $len . "s  %s\n", $task->name, $task->help);
             }
         }
     }

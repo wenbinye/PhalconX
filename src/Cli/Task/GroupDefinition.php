@@ -8,6 +8,7 @@ class GroupDefinition extends SimpleModel
 {
     public $help;
     public $namespace;
+    public $class;
     public $name;
     public $module;
     public $tasks;

@@ -273,6 +273,7 @@ class Router
             }
             $def->module = $module;
             $def->namespace = $this->getClassNamespace($groupClass);
+            $def->class = $this->getClassName($groupClass);
             $this->groups[] = $def;
         }
     }
@@ -289,6 +290,8 @@ class Router
                 if ($annotation->getName() == self::TASK) {
                     $this->addResource($class, null, $module, $annotation->getArguments());
                     return;
+                } elseif ($annotation->getName() == self::TASK_GROUP) {
+                    $this->parseTaskGroupDefinition($class, $module);
                 }
             }
         }
@@ -356,7 +359,11 @@ class Router
                 }
                 $groups[$name] = $group;
                 if ($group->namespace) {
-                    $groupNamespaces[$group->namespace] = $group;
+                    if ($group->class == self::TASK_GROUP) {
+                        $groupNamespaces[$group->namespace] = $group;
+                    } else {
+                        $groupNamespaces[$group->namespace . '\\' . $group->class] = $group;
+                    }
                 }
             }
             foreach ($this->groups as $group) {
@@ -367,10 +374,16 @@ class Router
         }
         // 将同名字空间下 task 设置为同一个 taskGroup
         foreach ($this->tasks as $task) {
-            if ($task->namespace && empty($task->group)
-                && isset($groupNamespaces[$task->namespace])) {
-                $group = $groupNamespaces[$task->namespace];
-                $task->group = $group->name;
+            if (empty($task->group)) {
+                if ($task->namespace && isset($groupNamespaces[$task->namespace])) {
+                    $task->group = $groupNamespaces[$task->namespace]->name;
+                } else {
+                    $class = $task->namespace ? $task->namespace . '\\' . $task->class
+                        : $task->class;
+                    if (isset($groupNamespaces[$class])) {
+                        $task->group = $groupNamespaces[$class]->name;
+                    }
+                }
             }
         }
         $tasks = [];
@@ -511,6 +524,9 @@ class Router
 
     private function createArgument($args, $name)
     {
+        if (isset($args[0])) {
+            $args['name'] = $args[0];
+        }
         if (!isset($args['name'])) {
             $args['name'] = $name;
         }
@@ -518,6 +534,9 @@ class Router
             throw new Exception("Argument name is not defined for "
                                 . $this->getName()
                                 ." args=" . json_encode($args));
+        }
+        if (isset($args['default'])) {
+            $args['value'] = $args['default'];
         }
         return new Argument($args);
     }
