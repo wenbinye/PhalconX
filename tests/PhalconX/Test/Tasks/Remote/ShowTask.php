@@ -4,7 +4,7 @@ namespace PhalconX\Test\Tasks\Remote;
 use PhalconX\Test\Tasks\BaseTask;
 
 /**
- * @Command(group="remote", help="Gives some information about the remote <name>")
+ * @Task(help="Gives some information about the remote <name>")
  */
 class ShowTask extends BaseTask
 {

@@ -4,8 +4,7 @@ namespace PhalconX\Test\Tasks\Remote;
 use PhalconX\Test\Tasks\BaseTask;
 
 /**
- * @CommandGroup("remote", help="Manage set of tracked repositories")
- * @Command(group="remote", help="Adds a remote")
+ * @Task(help="Adds a remote")
  */
 class AddTask extends BaseTask
 {

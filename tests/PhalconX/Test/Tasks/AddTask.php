@@ -2,7 +2,7 @@
 namespace PhalconX\Test\Tasks;
 
 /**
- * @Command(help="Add file contents to the index")
+ * @Task(help="Add file contents to the index")
  */
 class AddTask extends BaseTask
 {

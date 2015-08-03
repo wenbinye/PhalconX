@@ -2,25 +2,69 @@
 namespace PhalconX\Cli;
 
 use Phalcon\Text;
+use PhalconX\Exception;
 use PhalconX\Util;
+use PhalconX\Cli\Task\Definition;
+use PhalconX\Cli\Task\GroupDefinition;
+use PhalconX\Cli\Task\Getopt;
+use PhalconX\Cli\Task\Option;
+use PhalconX\Cli\Task\Argument;
 
 class Router
 {
-    const COMMAND_GROUP = 'CommandGroup';
-    const COMMAND = 'Command';
+    const TASK_GROUP = 'TaskGroup';
+    const TASK = 'Task';
     const OPTION = 'Option';
     const ARGUMENT = 'Argument';
     const SEPARATOR = ':';
-    
-    private $matched;
-    private $scriptName;
-    private $task;
 
-    private $defaultTask;
-    private $arguments;
-    private $globalOptions;
+    /**
+     * @var boolean
+     */
+    private $matched;
+    /**
+     * @var string
+     */
+    private $scriptName;
+    /**
+     * @var Definition
+     */
+    private $task;
+    /**
+     * @var Definition[]
+     */
     private $tasks;
+    /**
+     * @var GroupDefinition[]
+     */
+    private $groups;
+    /**
+     * @var string
+     */
+    private $defaultTask;
+    /**
+     * @var string[]
+     */
+    private $arguments;
+    /**
+     * @var Option[]
+     */
+    private $globalOptions;
+    /**
+     * @var string
+     */
     private $taskSuffix;
+    /**
+     * @var string
+     */
+    private $actionSuffix;
+    /**
+     * @var boolean
+     */
+    private $processed;
+
+    private $tasksMap;
+    private $groupsMap;
     private $reflection;
     private $annotations;
     private $logger;
@@ -29,13 +73,18 @@ class Router
     {
         $this->globalOptions = Util::fetch($options, 'globalOptions');
         $this->taskSuffix = Util::fetch($options, 'taskSuffix', 'Task');
+        $this->actionSuffix = Util::fetch($options, 'actionSuffix', 'Action');
         $this->defaultTask = Util::fetch($options, 'defaultTask', 'help');
 
         $this->reflection = Util::service('reflection', $options);
         $this->annotations = Util::service('annotations', $options);
         $this->logger = Util::service('logger', $options);
     }
-    
+
+    /**
+     * @param string $dir
+     * @param string $module
+     */
     public function scan($dir, $module = null)
     {
         $self = $this;
@@ -48,47 +97,19 @@ class Router
     {
         $classes = $this->reflection->getClasses($file);
         foreach ($classes as $class) {
-            if ($this->taskSuffix && !Text::endsWith($class, $this->taskSuffix)) {
-                continue;
-            }
-            $anno = $this->annotations->get($class);
-            if (!$anno) {
-                continue;
-            }
-            $annotations = $anno->getClassAnnotations();
-            if (!$annotations) {
-                continue;
-            }
-            foreach ($annotations as $annotation) {
-                if ($annotation->getName() == self::COMMAND) {
-                    $this->addResource($class, $annotation->getNamedArgument('group'), $module);
-                } elseif ($annotation->getName() == self::COMMAND_GROUP) {
-                    $group = $annotation->getArgument(0);
-                    $name = $module ? $module . self::SEPARATOR . $group : $group;
-                    $this->tasks['commands'][$name] = new TaskGroupDefinition([
-                        'name' => $name,
-                        'help' => $annotation->getNamedArgument('help')
-                    ]);
-                }
+            if ($this->getClassName($class) == self::TASK_GROUP) {
+                $this->parseTaskGroupDefinition($class, $module);
+            } elseif (!$this->taskSuffix || Text::endsWith($class, $this->taskSuffix)) {
+                $this->parseTaskDefinition($class, $module);
             }
         }
-    }
-
-    public function addResource($handler, $group = null, $module = null)
-    {
-        $task = $this->parseTaskName($handler);
-        if ($group) {
-            $name = $module ? $module . self::SEPARATOR . $group : $group;
-            $this->tasks['groups'][$name][$task] = $handler;
-        } else {
-            $name = $module ? $module . self::SEPARATOR . $task : $task;
-            $this->tasks['commands'][$name] = $handler;
-        }
+        $this->proccesed = false;
     }
     
     public function handle($arguments = null)
     {
         $this->reset();
+        $this->processTasks();
         if ($arguments == null) {
             global $argv;
             $arguments = $argv;
@@ -98,8 +119,8 @@ class Router
         $this->scriptName = array_shift($arguments);
         $this->arguments = $arguments;
         $this->parseGlobalArguments();
-        $this->parseTask();
-        if ($this->matched) {
+        $this->matchTask();
+        if ($this->wasMatched()) {
             $this->parseTaskArguments();
         }
     }
@@ -107,6 +128,16 @@ class Router
     public function wasMatched()
     {
         return $this->matched;
+    }
+
+    public function getScriptName()
+    {
+        return $this->scriptName;
+    }
+
+    public function getGlobalOptions()
+    {
+        return $this->globalOptions;
     }
 
     public function getGlobalParams()
@@ -138,6 +169,29 @@ class Router
         return $this->task->class;
     }
 
+    public function getActionName()
+    {
+        return $this->task->method ? $this->task->method : 'execute';
+    }
+
+    public function getDefinition($name)
+    {
+        $this->processTasks();
+        if ($this->hasTask($name)) {
+            $task = $this->tasksMap[$name];
+            $this->parseOptions($task);
+            return $task;
+        } elseif ($this->hasGroup($name)) {
+            return $this->groupsMap[$name];
+        }
+    }
+    
+    public function getDefinitions()
+    {
+        $this->processTasks();
+        return $this->tasksMap;
+    }
+    
     private function reset()
     {
         $this->scriptName = null;
@@ -154,102 +208,228 @@ class Router
         $getopt->parse($this->arguments);
         $this->arguments = $getopt->getOperands();
     }
-    
-    private function parseTask()
-    {
-        if (empty($this->arguments)) {
-            if ($this->hasCommand($this->defaultTask)) {
-                $this->setMatched($this->defaultTask);
-                return;
-            }
-        }
-        $arg = array_shift($this->arguments);
-        if ($this->hasGroup($arg)) {
-            $cmd = array_shift($this->arguments);
-            if ($this->hasCommand($cmd, $arg)) {
-                $this->setMatched($cmd, $arg);
-            }
-        } elseif ($this->hasCommand($arg)) {
-            $this->setMatched($arg);
-        }
-    }
-
-    private function setMatched($command, $group = null)
-    {
-        $this->matched = true;
-        if ($group) {
-            $task = $this->tasks['groups'][$group][$command];
-        } else {
-            $task = $this->tasks['commands'][$command];
-        }
-        $this->task = $this->parseTaskDefinition($task);
-    }
 
     private function parseTaskArguments()
     {
         $getopt = new Getopt($this->task->options);
         $getopt->parse($this->arguments);
-        $this->arguments = $getopt->getOperands();
+        $arguments = $getopt->getOperands();
         if ($this->task->arguments) {
             foreach ($this->task->arguments as $argument) {
                 if ($argument->type == 'array') {
-                    $argument->value = $this->arguments;
+                    $argument->value = $arguments;
                     break;
                 } else {
-                    $argument->value = array_shift($this->arguments);
+                    $argument->value = array_shift($arguments);
                 }
             }
         }
     }
 
+    private function matchTask()
+    {
+        if (empty($this->arguments)) {
+            if ($this->hasTask($this->defaultTask)) {
+                $this->setMatched($this->defaultTask);
+            }
+        } else {
+            $arg = array_shift($this->arguments);
+            if ($this->hasGroup($arg)) {
+                $task = $arg . ' ' . array_shift($this->arguments);
+                if ($this->hasTask($task)) {
+                    $this->setMatched($task);
+                }
+            } elseif ($this->hasTask($arg)) {
+                $this->setMatched($arg);
+            }
+        }
+    }
+
+    private function setMatched($task)
+    {
+        $this->matched = true;
+        $this->task = $this->tasksMap[$task];
+        $this->parseOptions($this->task);
+    }
+
+    private function parseTaskGroupDefinition($groupClass, $module)
+    {
+        $anno = $this->annotations->get($groupClass);
+        $classAnnotations = $anno->getClassAnnotations();
+        if (!$classAnnotations) {
+            return;
+        }
+        foreach ($classAnnotations as $annotation) {
+            if ($annotation->getName() != self::TASK_GROUP) {
+                continue;
+            }
+            $def = new GroupDefinition($annotation->getArguments());
+            $name = $annotation->getArgument(0);
+            if ($name) {
+                $def->name = $name;
+            }
+            if (!$def->name) {
+                throw new Exception("Group name is required which defined in '$groupClass'");
+            }
+            $def->module = $module;
+            $def->namespace = $this->getClassNamespace($groupClass);
+            $def->class = $this->getClassName($groupClass);
+            $this->groups[] = $def;
+        }
+    }
+
+    private function parseTaskDefinition($class, $module)
+    {
+        $anno = $this->annotations->get($class);
+        if (!$anno) {
+            continue;
+        }
+        $classAnnotations = $anno->getClassAnnotations();
+        if ($classAnnotations) {
+            foreach ($classAnnotations as $annotation) {
+                if ($annotation->getName() == self::TASK) {
+                    $this->addResource($class, null, $module, $annotation->getArguments());
+                    return;
+                } elseif ($annotation->getName() == self::TASK_GROUP) {
+                    $this->parseTaskGroupDefinition($class, $module);
+                }
+            }
+        }
+        $methodAnnotations = $anno->getMethodsAnnotations();
+        if ($methodAnnotations) {
+            foreach ($methodAnnotations as $method => $annotations) {
+                if ($this->actionSuffix && !Text::endsWith($method, $this->actionSuffix)) {
+                    continue;
+                }
+                foreach ($annotations as $annotation) {
+                    if ($annotation->getName() == self::TASK) {
+                        $this->addResource($class, $method, $module, $annotation->getArguments());
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    private function addResource($class, $method, $module, $options)
+    {
+        $def = new Definition($options);
+        $def->namespace = $this->getClassNamespace($class);
+        $def->class = $this->getClassName($class);
+        $def->method = $method;
+        $def->module = $module;
+        if (!isset($def->name)) {
+            if ($method) {
+                if ($this->actionSuffix && !Text::endsWith($method, $this->actionSuffix)) {
+                    throw new Exception("Task handler '$class::$method' not match suffix '{$this->actionSuffix}'");
+                }
+                $def->name = Text::uncamelize(substr($method, 0, -strlen($this->actionSuffix)));
+            } elseif ($class) {
+                $parts = explode('\\', $class);
+                $classname = $parts[count($parts)-1];
+                if ($this->taskSuffix && !Text::endsWith($classname, $this->taskSuffix)) {
+                    throw new Exception("Task handler '$handler' not match suffix '{$this->taskSuffix}'");
+                }
+                $def->name = Text::uncamelize(substr($classname, 0, -strlen($this->taskSuffix)));
+            }
+        }
+        $def->name = str_replace('_', '-', $def->name);
+        $this->tasks[] = $def;
+    }
+
+    private function processTasks()
+    {
+        if ($this->processed) {
+            return;
+        }
+        if (!$this->tasks) {
+            return;
+        }
+        $groups = [];
+        $groupNamespaces = [];
+        if ($this->groups) {
+            foreach ($this->groups as $group) {
+                $name = $group->getName();
+                if (isset($groups[$name])) {
+                    throw new Exception(sprintf(
+                        "Group '{$name}' defined in '%s' conflict with '%s'",
+                        json_encode($group),
+                        json_encode($groups[$name])
+                    ));
+                }
+                $groups[$name] = $group;
+                if ($group->namespace) {
+                    if ($group->class == self::TASK_GROUP) {
+                        $groupNamespaces[$group->namespace] = $group;
+                    } else {
+                        $groupNamespaces[$group->namespace . '\\' . $group->class] = $group;
+                    }
+                }
+            }
+            foreach ($this->groups as $group) {
+                if (!isset($groups[$group->name])) {
+                    $groups[$group->name] = $group;
+                }
+            }
+        }
+        // 将同名字空间下 task 设置为同一个 taskGroup
+        foreach ($this->tasks as $task) {
+            if (empty($task->group)) {
+                if ($task->namespace && isset($groupNamespaces[$task->namespace])) {
+                    $task->group = $groupNamespaces[$task->namespace]->name;
+                } else {
+                    $class = $task->namespace ? $task->namespace . '\\' . $task->class
+                        : $task->class;
+                    if (isset($groupNamespaces[$class])) {
+                        $task->group = $groupNamespaces[$class]->name;
+                    }
+                }
+            }
+        }
+        $tasks = [];
+        foreach ($this->tasks as $task) {
+            $name = $task->getName();
+            if (isset($tasks[$name])) {
+                throw new Exception(sprintf(
+                    "Task '{$name}' defined in '%s' conflict with '%s'",
+                    json_encode($task),
+                    json_encode($tasks[$name])
+                ));
+            }
+            if (isset($groups[$name])) {
+                throw new Exception(sprintf(
+                    "Task '{$name}' defined in '%s' conflict with group '%s'",
+                    json_encode($task),
+                    json_encode($groups[$name])
+                ));
+            }
+            $tasks[$name] = $task;
+            if ($task->group) {
+                $groups[$task->getGroupName()]->addTask($task);
+            }
+        }
+        // 如果可能，创建无 module 前缀的任务
+        foreach ($this->tasks as $task) {
+            if ($task->module) {
+                $name = $task->getSimpleName();
+                if (!isset($tasks[$name])) {
+                    $tasks[$name] = $task;
+                }
+            }
+        }
+        $this->tasksMap = $tasks;
+        $this->groupsMap = $groups;
+        $this->processed = true;
+    }
+    
     private function hasGroup($group)
     {
-        if (!isset($this->tasks['groups'])) {
-            return false;
-        }
-        if (isset($this->tasks['groups'][$group])) {
-            return true;
-        }
-        $matched = $this->suffixMatch(array_keys($this->tasks['groups']), $group);
-        if ($matched) {
-            $this->tasks['groups'][$group] = $this->tasks['groups'][$matched];
-            return true;
-        }
-        return false;
+        return isset($this->groupsMap[$group]);
     }
-
-    private function hasCommand($command, $group = null)
+    
+    private function hasTask($task)
     {
-        if (isset($group)) {
-            return isset($this->tasks['groups'][$group][$command]);
-        } elseif (!isset($this->tasks['commands'])) {
-            return false;
-        } elseif (isset($this->tasks['commands'][$command])) {
-            return true;
-        } else {
-            $matched = $this->suffixMatch(array_keys($this->tasks['commands']), $command);
-            if ($matched) {
-                $this->tasks['commands'][$command] = $this->tasks['commands'][$matched];
-                return true;
-            }
-            return false;
-        }
-    }
-
-    private function suffixMatch($values, $name)
-    {
-        $matched = null;
-        $times = 0;
-        $suffix = self::SEPARATOR . $name;
-        foreach ($values as $name) {
-            if (Text::endsWith($name, $suffix)) {
-                $matched = $name;
-                $times++;
-            }
-        }
-        if ($times == 1) {
-            return $matched;
-        }
+        return isset($this->tasksMap[$task]);
     }
 
     private function getOptionValues($options)
@@ -261,61 +441,70 @@ class Router
         return $params;
     }
 
-    private function parseTaskName($handler)
+    private function getClassNamespace($class)
     {
-        $parts = explode('\\', $handler);
-        $classname = $parts[count($parts)-1];
-        if ($this->taskSuffix && !Text::endsWith($classname, $this->taskSuffix)) {
-            throw new Exception("Task handler '$handler' not match suffix '{$this->taskSuffix}'");
+        $pos = strrpos($class, '\\');
+        if ($pos !== false) {
+            return substr($class, 0, $pos);
         }
-        $task = Text::uncamelize(substr($classname, 0, -strlen($this->taskSuffix)));
-        return str_replace('_', '-', $task);
     }
 
-    private function parseTaskDefinition($handler)
+    private function getClassName($class)
     {
-        if (!is_string($handler)) {
-            return $handler;
+        $pos = strrpos($class, '\\');
+        if ($pos === false) {
+            return $class;
+        } else {
+            return substr($class, $pos+1);
         }
-        $def = new TaskDefinition;
-        $def->task = $this->parseTaskName($handler);
-        $def->class = $handler;
-        $pos = strrpos($handler, '\\');
-        if ($pos !== false) {
-            $def->namespace = substr($handler, 0, $pos);
-            $def->class = substr($handler, $pos+1);
+    }
+    
+    private function parseOptions($task)
+    {
+        if ($task->options) {
+            return;
         }
-        $anno = $this->annotations->get($handler);
-        $class_anno = $anno->getClassAnnotations();
-        if ($class_anno) {
-            foreach ($class_anno as $annotation) {
-                if ($annotation->getName() == self::COMMAND) {
-                    $def->help = $annotation->getNamedArgument('help');
+        $class = $task->namespace ? $task->namespace . '\\' . $task->class : $task->class;
+        if ($task->method) {
+            $methodAnnotations = $this->annotations->getMethod($class, $task->method);
+            if ($methodAnnotations) {
+                foreach ($methodAnnotations as $annotation) {
+                    $this->processAnnotation($task, $annotation);
                 }
             }
-        }
-        $prop_anno = $anno->getPropertiesAnnotations();
-        if ($prop_anno) {
-            foreach ($prop_anno as $prop => $annotations) {
-                foreach ($annotations as $annotation) {
-                    switch ($annotation->getName()) {
-                        case self::OPTION:
-                            $def->options[] = $this->createOption($prop, $annotation->getArguments());
-                            break;
-                        case self::ARGUMENT:
-                            $def->arguments[] = $this->createArgument($prop, $annotation->getArguments());
-                            break;
+        } else {
+            $propAnnotations = $this->annotations->getProperties($class);
+            if ($propAnnotations) {
+                foreach ($propAnnotations as $prop => $annotations) {
+                    foreach ($annotations as $annotation) {
+                        $this->processAnnotation($task, $annotation, $prop);
                     }
                 }
             }
         }
-        return $def;
     }
 
-    private function createOption($prop, $args)
+    private function processAnnotation($task, $annotation, $name = null)
+    {
+        switch ($annotation->getName()) {
+            case Router::OPTION:
+                $task->options[] = $this->createOption($annotation->getArguments(), $name);
+                break;
+            case Router::ARGUMENT:
+                $task->arguments[] = $this->createArgument($annotation->getArguments(), $name);
+                break;
+        }
+    }
+
+    private function createOption($args, $name)
     {
         if (!isset($args['name'])) {
-            $args['name'] = $prop;
+            $args['name'] = $name;
+        }
+        if (empty($args['name'])) {
+            throw new Exception("Option name is not defined for "
+                                . $this->getName()
+                                ." args=" . json_encode($args));
         }
         if (isset($args['type']) && $args['type'] == 'boolean') {
             $args['optional'] = true;
@@ -333,68 +522,22 @@ class Router
         return $option;
     }
 
-    private function createArgument($prop, $args)
+    private function createArgument($args, $name)
     {
+        if (isset($args[0])) {
+            $args['name'] = $args[0];
+        }
         if (!isset($args['name'])) {
-            $args['name'] = $prop;
+            $args['name'] = $name;
+        }
+        if (empty($args['name'])) {
+            throw new Exception("Argument name is not defined for "
+                                . $this->getName()
+                                ." args=" . json_encode($args));
+        }
+        if (isset($args['default'])) {
+            $args['value'] = $args['default'];
         }
         return new Argument($args);
-    }
-
-    public function getScriptName()
-    {
-        return $this->scriptName;
-    }
-
-    public function getTaskDefinition($task, $group = null)
-    {
-        if (isset($group)) {
-            if ($this->hasCommand($task, $group)) {
-                $def = $this->tasks['groups'][$group][$task];
-                return $this->parseTaskDefinition($def);
-            }
-        } elseif ($this->hasGroup($task)) {
-            $group = $this->tasks['groups'][$task];
-            if ($this->hasCommand($task)) {
-                $def = $this->tasks['commands'][$task];
-            } else {
-                $def = new TaskGroupDefinition(['name' => $task]);
-            }
-            foreach ($group as $name => $taskDef) {
-                $def->tasks[$name] = $this->parseTaskDefinition($taskDef);
-            }
-            return $def;
-        } elseif ($this->hasCommand($task)) {
-            $def = $this->tasks['commands'][$task];
-            return $this->parseTaskDefinition($def);
-        }
-    }
-    
-    public function getTaskDefinitions()
-    {
-        $tasks = [];
-        if (isset($this->tasks['commands'])) {
-            foreach ($this->tasks['commands'] as $name => $task) {
-                if (is_string($task)) {
-                    $task = $this->parseTaskDefinition($task);
-                }
-                $tasks[$name] = $task;
-            }
-        }
-        if (isset($this->tasks['groups'])) {
-            foreach ($this->tasks['groups'] as $group => $commands) {
-                if (!isset($tasks[$group])) {
-                    $tasks[$group] = new TaskGroupDefinition([
-                        'name' => $group,
-                    ]);
-                }
-            }
-        }
-        return $tasks;
-    }
-
-    public function getGlobalOptions()
-    {
-        return $this->globalOptions;
     }
 }

@@ -3,63 +3,65 @@ namespace PhalconX\Cli\Tasks;
 
 use PhalconX\Cli\Task;
 use PhalconX\Cli\Router;
-use PhalconX\Cli\TaskDefinition;
+use PhalconX\Cli\Task\Definition;
 
 /**
- * @Command
+ * @Task
  */
 class HelpTask extends Task
 {
     /**
      * @Argument(type=array)
      */
-    public $command;
+    public $task;
     
     public function execute()
     {
-        if ($this->command) {
-            $this->showCommandHelp($this->command);
+        if ($this->task) {
+            if (count($this->task) > 1) {
+                $task = $this->task[0] . ' ' . $this->task[1];
+            } else {
+                $task = $this->task[0];
+            }
+            $this->showTaskHelp($task);
         } else {
             $this->showHelp();
         }
     }
 
-    private function showCommandHelp($command)
+    private function showTaskHelp($task)
     {
         $router = $this->router;
-        if (count($command) > 1) {
-            $def = $router->getTaskDefinition($command[1], $command[0]);
-            $command = $command[1] . ' ' . $command[0];
-        } else {
-            $def = $router->getTaskDefinition($command[0]);
-            $command = $command[0];
-        }
+        $def = $router->getDefinition($task);
         if (!$def) {
-            echo "Command '$command' does not exist!\n";
+            echo "Task '$task' does not exist!\n";
         }
-        if ($def instanceof TaskDefinition) {
+        if ($def instanceof Definition) {
             echo sprintf(
                 "usage: %s %s %s%s\n\n",
                 $router->getScriptName(),
-                $command,
+                $task,
                 $this->formatOptions($def->options),
                 $this->formatArguments($def->arguments)
             );
             echo $this->formatOptionDetail($def->options), "\n";
         } else {
+            if (!$def->tasks) {
+                throw new Exception("No tasks in group " . json_encode($def));
+            }
             echo sprintf(
-                "usage: %s %s <command> [<args>]\n\n",
+                "usage: %s %s <task> [<args>]\n\n",
                 $router->getScriptName(),
-                $command
+                $task
             );
             echo "可用命令有：\n";
-            $commands = $def->tasks;
+            $tasks = $def->tasks;
             $len = 0;
-            foreach ($commands as $name => $task) {
-                $len = max(strlen($name), $len);
+            foreach ($tasks as $task) {
+                $len = max(strlen($task->name), $len);
             }
-            foreach ($commands as $name => $task) {
-                printf('  %-' . $len . "s  %s\n", $name, $task->help);
+            foreach ($tasks as $task) {
+                printf('  %-' . $len . "s  %s\n", $task->name, $task->help);
             }
         }
     }
@@ -69,7 +71,7 @@ class HelpTask extends Task
         $router = $this->router;
         $options = $router->getGlobalOptions();
         echo sprintf(
-            "usage: %s %s<command> [<args>]\n\n",
+            "usage: %s %s<task> [<args>]\n\n",
             $router->getScriptName(),
             $this->formatOptions($options)
         );
@@ -77,13 +79,13 @@ class HelpTask extends Task
             echo $this->formatOptionDetail($options), "\n";
         }
         echo "可用命令有：\n";
-        $tasks = $router->getTaskDefinitions();
-        $commands = $this->removePrefix($tasks);
+        $tasks = $router->getDefinitions();
+        $tasks = $this->getTasksAndGroups($tasks);
         $len = 0;
-        foreach ($commands as $name => $task) {
+        foreach ($tasks as $name => $task) {
             $len = max(strlen($name), $len);
         }
-        foreach ($commands as $name => $task) {
+        foreach ($tasks as $name => $task) {
             if ($name == 'help') {
                 continue;
             }
@@ -91,27 +93,26 @@ class HelpTask extends Task
         }
     }
 
-    private function removePrefix($commands)
+    private function getTasksAndGroups($tasks)
     {
+        $router = $this->router;
         $all = [];
-        $noprefix = [];
-        foreach ($commands as $name => $task) {
-            if (strpos($name, Router::SEPARATOR) === false) {
-                $noprefix[$task->getId()] = 1;
+        foreach ($tasks as $name => $task) {
+            $pos = strpos($name, ' ');
+            if ($pos === false) {
                 $all[$name] = $task;
+            } else {
+                $group = substr($name, 0, $pos);
+                $all[$group] = $router->getDefinition($group);
             }
         }
-        foreach ($commands as $name => $task) {
+        // 删除重复的
+        foreach ($all as $name => $task) {
             $pos = strpos($name, Router::SEPARATOR);
             if ($pos !== false) {
-                if (isset($noprefix[$task->getId()])) {
-                    continue;
-                }
-                $short = substr($name, $pos+1);
-                if (isset($all[$short])) {
-                    $all[$name] = $task;
-                } else {
-                    $all[$short] = $task;
+                $shortcut = substr($name, $pos+1);
+                if (isset($all[$shortcut]) && $all[$shortcut]->getId() == $task->getId()) {
+                    unset($all[$name]);
                 }
             }
         }

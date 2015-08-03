@@ -71,7 +71,10 @@ class Application
             if (method_exists($task, 'initialize')) {
                 $task->initialize();
             }
-            $returnedValue = $task->execute();
+            $returnedValue = call_user_func(
+                array($task, $router->getActionName()),
+                (object) $router->getParams()
+            );
             if ($em) {
                 $em->fire('dispatch:afterExecuteRoute', $this);
             }

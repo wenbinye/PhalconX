@@ -1,5 +1,5 @@
 <?php
-namespace PhalconX\Cli;
+namespace PhalconX\Cli\Task;
 
 use PhalconX\Util;
 
@@ -8,12 +8,18 @@ class Getopt
     private $options;
     private $operands;
     private $values;
-    
+
+    /**
+     * @param Option[] $options
+     */
     public function __construct($options)
     {
         $this->options = $options;
     }
 
+    /**
+     * @param string[] $arguments
+     */
     public function parse($arguments = null)
     {
         $this->values = [];
@@ -46,7 +52,11 @@ class Getopt
     {
         return $this->options;
     }
-    
+
+    /**
+     * @param string $option short or long name of option
+     * @return Option
+     */
     private function getOption($option, $isLong)
     {
         foreach ($this->options as $opt) {
@@ -57,6 +67,10 @@ class Getopt
         }
     }
 
+    /**
+     * @param ArrayIterator $it
+     * @param string $arg
+     */
     private function matchOption($it, $arg)
     {
         if (mb_substr($arg, 0, 2) == '--') {
@@ -67,6 +81,10 @@ class Getopt
         $it->next();
     }
 
+    /**
+     * @param ArrayIterator $it
+     * @param string $arg
+     */
     private function matchLongOption($it, $arg)
     {
         // long option
@@ -79,6 +97,10 @@ class Getopt
         }
     }
     
+    /**
+     * @param ArrayIterator $it
+     * @param string $arg
+     */
     private function matchShortOption($it, $arg)
     {
         // short option
@@ -107,7 +129,7 @@ class Getopt
      *
      * @param string $option the option's name
      * @param string $value the option's value (or null)
-     * @param boolean $is_long whether the option name is long or short
+     * @param boolean $isLong whether the option name is long or short
      *
      * @throws \UnexpectedValueException
      * @return void
