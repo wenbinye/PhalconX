@@ -1,12 +1,15 @@
 <?php
 namespace PhalconX\Queue;
 
+use PhalconX\Di\Injectable;
 use Phalcon\Queue\Beanstalk\Job as BeanstalkJob;
 use PhalconX\Util;
 use PhalconX\Mvc\SimpleModel;
 
 abstract class Job extends SimpleModel implements JobInterface
 {
+    use Injectable;
+    
     const DEFAULT_DELAY = 0;       // no delay
     const DEFAULT_PRIORITY = 1024; // most urgent: 0, least urgent: 4294967295
     const DEFAULT_TTR = 60;        // 1 minute
