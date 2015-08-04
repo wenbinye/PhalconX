@@ -62,7 +62,7 @@ class Controller extends \Phalcon\Mvc\Controller
     public function forward($action)
     {
         if (is_string($action)) {
-            $parts = explode('/', $action);
+            $parts = explode('/', ltrim($action, '/'));
             if (count($parts) == 1) {
                 array_unshift($parts, $this->dispatcher->getControllerName());
             }

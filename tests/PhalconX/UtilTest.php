@@ -3,6 +3,7 @@ namespace PhalconX;
 
 use Phalcon\Mvc\RouterInterface;
 use PhalconX\Test\TestCase;
+use Phalcon\Logger\Adapter\File;
 
 /**
  * TestCase for Util
@@ -22,12 +23,26 @@ class UtilTest extends TestCase
         $this->assertEquals($router, $options['router']);
     }
 
-    function testTemplate()
+    public function testTemplate()
     {
         $ret = Util::template("hello, {name}", ['name' => 'world']);
         $this->assertEquals($ret, 'hello, world');
 
         $ret = Util::template("Hello, {name}!\nByebye, {name}!", ['name' => 'world']);
         $this->assertEquals($ret, "Hello, world!\nByebye, world!");
+    }
+
+    public function testRenewLogger()
+    {
+        // $di = \Phalcon\Di::getDefault();
+        // $di['logger'] = function() {
+        //     return new File('/tmp/test.log');
+        // };
+        // $logger = Util::service('logger');
+        // $newlogger = Util::renewLogger();
+        // $newlogger->info("test");
+        // $logger->info("test");
+        // print_r($logger);
+        // print_r($newlogger);
     }
 }

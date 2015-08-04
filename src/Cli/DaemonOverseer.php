@@ -3,6 +3,8 @@ namespace PhalconX\Cli;
 
 use PhalconX\Util;
 use PhalconX\Exception;
+use Phalcon\Logger\Multiple;
+use Phalcon\Logger\Adapter\File as FileLogger;
 
 class DaemonOverseer
 {
@@ -33,7 +35,7 @@ class DaemonOverseer
             $this->starter = $options['starter'];
             $this->start = time();
         }
-        $this->logger = Util::service('logger', $options);
+        $this->logger = Util::service('logger');
     }
 
     private function readPidfile()
@@ -218,6 +220,24 @@ class DaemonOverseer
     private function updateAutoscale()
     {
     }
+
+    private function renewLogger()
+    {
+        $service = Di::getDefault()->getService('logger');
+        $logger = $service->resolve();
+        if ($logger instanceof Multiple) {
+            foreach ($logger->getLoggers() as $appender) {
+                if ($appender instanceof FileLogger) {
+                    $appender->close();
+                }
+            }
+        } elseif ($logger instanceof FileLogger) {
+            $logger->close();
+        }
+        
+        $service->setSharedInstance(null);
+        return $service->resolve();
+    }
     
     public function didReceiveNotifySignal($signo)
     {
@@ -228,6 +248,7 @@ class DaemonOverseer
 
     public function didReceiveReloadSignal($signo)
     {
+        $this->logger = Util::renewLogger();
         foreach ($this->getHandles() as $handle) {
             $handle->didReceiveReloadSignal($signo);
         }

@@ -3,6 +3,7 @@ namespace PhalconX\Cli;
 
 use PhalconX\Exception;
 use PhalconX\Di\Injectable;
+use PhalconX\Cli\Tasks\HelpTask;
 
 class Application
 {
@@ -89,7 +90,7 @@ class Application
                 }
             }
             if (!is_callable($this->notFoundHandler)) {
-                throw new Exception("Not-Found handler is not callable");
+                $this->defaultNotFound();
             }
             $returnedValue = call_user_func($this->notFoundHandler, $this);
         }
@@ -100,6 +101,16 @@ class Application
         return $returnedValue;
     }
 
+    private function defaultNotFound()
+    {
+        global $argv;
+        $arguments = $argv;
+        echo "Task not found\n\n";
+        array_splice($arguments, 1, 0, ['cli:help']);
+        $this->handle($arguments);
+        exit(-1);
+    }
+    
     private function callHandlers($handlers, $type)
     {
         if (!is_array($handlers)) {

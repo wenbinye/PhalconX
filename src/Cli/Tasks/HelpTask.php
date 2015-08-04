@@ -35,6 +35,8 @@ class HelpTask extends Task
         $def = $router->getDefinition($task);
         if (!$def) {
             echo "Task '$task' does not exist!\n";
+            $this->showHelp();
+            exit(-1);
         }
         if ($def instanceof Definition) {
             echo sprintf(

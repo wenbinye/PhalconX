@@ -34,7 +34,7 @@ class DaemonHandle
         $this->restartAt = time();
         $this->shouldRestart = true;
         $this->id = Util::uuid();
-        $this->logger = Util::service('logger', $options);
+        $this->logger = Util::service('logger');
     }
 
     public function getId()
@@ -265,6 +265,7 @@ class DaemonHandle
 
     public function didReceiveReloadSignal($signo)
     {
+        $this->logger = Util::service('logger');
         $signame = CliUtil::sigName($signo);
         if ($signame) {
             $sigmsg = sprintf('Reloading in response to signal %d (%s).', $signo, $signame);
