@@ -89,7 +89,9 @@ class Router
     {
         $self = $this;
         Util::walkdir($dir, function ($file) use ($self, $module) {
-            $self->addFileResource($file, $module);
+            if (Text::endsWith($file, ".php")) {
+                $self->addFileResource($file, $module);
+            }
         });
     }
 

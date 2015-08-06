@@ -45,7 +45,9 @@ class Annotations extends Router
             $this->handlers = [];
             $self = $this;
             Util::walkdir($dir, function ($file) use ($self, $module) {
-                $self->addFileResource($file, $module);
+                if (Text::endsWith($file, ".php")) {
+                    $self->addFileResource($file, $module);
+                }
             });
             if ($this->logger) {
                 $this->logger->info("scan routing resources from $dir");

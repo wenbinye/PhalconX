@@ -74,12 +74,15 @@ class Util
         return $arr->getIterator();
     }
 
-    public static function walkdir($dir, $callback)
+    public static function walkdir($dir, $callback, $ignoreHide = true)
     {
         $it = new \RecursiveDirectoryIterator($dir);
         foreach (new \RecursiveIteratorIterator($it) as $file => $fileInfo) {
             $name = $fileInfo->getFilename();
             if ($name == '.' || $name == '..') {
+                continue;
+            }
+            if ($ignoreHide && $name[0] == '.') {
                 continue;
             }
             call_user_func($callback, $file, $fileInfo);
