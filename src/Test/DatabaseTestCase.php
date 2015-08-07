@@ -33,7 +33,7 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase im
         }
     }
     
-    final public function getConnection()
+    public function getConnection()
     {
         if ($this->conn === null) {
             if (self::$pdo == null) {

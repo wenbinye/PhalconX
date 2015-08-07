@@ -1,23 +1,50 @@
 <?php
 namespace PhalconX\Enums;
 
+use PhalconX\Exception;
 use PhalconX\Test\TestCase;
 
 class BooleanTest extends TestCase
 {
-    function testValueOf()
+    /**
+     * @dataProvider booleans
+     */
+    public function testValueOf($value, $expect)
     {
-        $this->assertEquals(Boolean::valueOf(1), Boolean::TRUE);
-        $this->assertEquals(Boolean::valueOf("1"), Boolean::TRUE);
-        $this->assertEquals(Boolean::valueOf('true'), Boolean::TRUE);
-        $this->assertEquals(Boolean::valueOf(true), Boolean::TRUE);
+        $this->assertEquals(Boolean::valueOf($value), $expect);
+    }
 
-        $this->assertEquals(Boolean::valueOf(0), Boolean::FALSE);
-        $this->assertEquals(Boolean::valueOf("0"), Boolean::FALSE);
-        $this->assertEquals(Boolean::valueOf('false'), Boolean::FALSE);
-        $this->assertEquals(Boolean::valueOf(false), Boolean::FALSE);
+    public function booleans()
+    {
+        return [
+            [1, Boolean::TRUE()],
+            ["1", Boolean::TRUE()],
+            ['true', Boolean::TRUE()],
+            [true, Boolean::TRUE()],
+            [0, Boolean::FALSE()],
+            ["0", Boolean::FALSE()],
+            ['false', Boolean::FALSE()],
+            [false, Boolean::FALSE()],
+        ];
+    }
 
-        $this->assertNull(Boolean::valueOf(2));
-        $this->assertNull(Boolean::valueOf('t'));
+    /**
+     * @dataProvider invalid
+     */
+    public function testNonValid($value)
+    {
+        try {
+            Boolean::valueOf($value);
+            $this->fail();
+        } catch (Exception $e) {
+        }
+    }
+
+    public function invalid()
+    {
+        return [
+            ['t'],
+            [2]
+        ];
     }
 }

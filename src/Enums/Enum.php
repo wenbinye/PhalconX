@@ -1,10 +1,13 @@
 <?php
 namespace PhalconX\Enums;
 
+use PhalconX\Exception;
+use PhalconX\Util;
+
 /**
  * enum class
  */
-class Enum
+abstract class Enum
 {
     /**
      * key = className
@@ -17,48 +20,106 @@ class Enum
      */
     private static $names = array();
 
+    protected $name;
+    protected $value;
+
+    protected function __construct($name, $value)
+    {
+        $this->name = $name;
+        $this->value = $value;
+    }
+
+    public function name()
+    {
+        return $this->name;
+    }
+
+    public function value()
+    {
+        return $this->value;
+    }
+
+    public function __toString()
+    {
+        return $this->name;
+    }
+    
     /**
      * Gets all enum values
      * @return array
      */
     public static function values()
     {
-        return array_keys(self::getValues(get_called_class()));
+        return array_keys(static::getValues());
     }
 
     /**
-     * Checks whether the enum value
+     * Gets all enum names
+     * @return array
+     */
+    public static function names()
+    {
+        return array_keys(static::getNames());
+    }
+    
+    /**
+     * Checks whether the enum value exists
      * @return boolean
      */
-    public static function exists($value)
+    public static function hasValue($value)
     {
-        $values = self::getValues(get_called_class());
-        return isset($values[$value]);
+        return array_key_exists($value, static::getValues());
     }
 
     /**
      * Gets the name for the enum value
      * @return string
      */
-    public static function name($value)
+    public static function nameOf($value)
     {
-        $values = self::getValues(get_called_class());
-        return isset($values[$value]) ? $values[$value] : null;
+        return Util::fetch(static::getValues(), $value);
+    }
+
+    /**
+     * Checks whether the name of enum value exists
+     * @return boolean
+     */
+    public static function hasName($name)
+    {
+        return array_key_exists($name, static::getNames());
     }
 
     /**
      * Gets the enum value for the name
-     * @return mixed
+     * @return Enum
      */
     public static function valueOf($name)
     {
-        $names = self::getNames(get_called_class());
-        return isset($names[$name]) ? $names[$name] : null;
+        $names = static::getNames();
+        if (array_key_exists($name, $names)) {
+            return new static($name, $names[$name]);
+        }
+        throw new Exception("No enum constant '$name' in class " . get_called_class());
     }
-    
-    protected static function getValues($class)
+
+    /**
+     * Returns a value when called statically like so: MyEnum::SOME_VALUE() given SOME_VALUE is a class constant
+     *
+     * @param string $name
+     * @param array  $arguments
+     *
+     * @return static
+     * @throws Exception
+     */
+    public static function __callStatic($name, $arguments)
     {
-        if (!isset(self::$values[$class])) {
+        return static::valueOf($name);
+    }
+
+    protected static function getValues()
+    {
+        $class = get_called_class();
+        if (!array_key_exists($class, self::$values)) {
             $reflect = new \ReflectionClass($class);
             $constants = $reflect->getConstants();
             self::$names[$class] = $constants;
@@ -67,8 +128,9 @@ class Enum
         return self::$values[$class];
     }
 
-    protected static function getNames($class)
+    protected static function getNames()
     {
+        $class = get_called_class();
         if (!isset(self::$names[$class])) {
             self::getValues($class);
         }

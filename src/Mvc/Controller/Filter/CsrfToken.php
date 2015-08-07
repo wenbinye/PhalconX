@@ -25,6 +25,7 @@ class CsrfToken extends Injectable implements FilterInterface
             );
         }
         $destroy = !$this->repeatOk;
+        $this->logger->info("destroy security token $destroy");
         if (!$this->security->checkToken(null, null, $destroy)) {
             $this->response->setStatusCode(400);
             throw new Exception(

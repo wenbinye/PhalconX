@@ -82,10 +82,12 @@ class ValidatorSpec extends SimpleModel
                         'max' => $this->maxLength,
                         'min' => $this->minLength
                     ]);
-                } elseif ($this->enum && is_array($this->enum)) {
-                    $validators[] = new InclusionIn([
-                        'domain' => $this->enum
-                    ]);
+                } elseif ($this->enum) {
+                    if (is_array($this->enum)) {
+                        $validators[] = new InclusionIn([
+                            'domain' => $this->enum
+                        ]);
+                    }
                 }
             }
         }

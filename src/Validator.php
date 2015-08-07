@@ -207,32 +207,7 @@ class Validator extends Injectable
             $validators = $this->modelsMetadata->read($clz.'.validators');
         }
         if (!isset($validators)) {
-            $properties = $this->annotations->getProperties($clz);
-            $validators = [];
-        
-            foreach ($properties as $name => $annotations) {
-                $propValidators = [];
-                foreach ($annotations as $annotation) {
-                    $annoName = $annotation->getName();
-                    if ($annoName == $this->isaAnnotationName) {
-                        $validator = ['validator' => $this->resolveIsA($annotation, $clz)];
-                        $propValidators[] = $validator;
-                    } elseif ($annoName == $this->validAnnotationName) {
-                        $validator = $annotation->getArguments();
-                        if (isset($validator['validator'])) {
-                            $validator['validator'] = $this->resolveAnnotation($validator['validator'], $clz);
-                        }
-                        if (isset($validator['type']) && $validator['type'] === 'array'
-                            && isset($validator['element'])) {
-                            $validator['element'] = $this->resolveAnnotation($validator['element'], $clz);
-                        }
-                        $propValidators[] = $validator;
-                    }
-                }
-                if ($propValidators) {
-                    $validators[$name] = $propValidators;
-                }
-            }
+            $validators = $this->readProperties($clz);
             if ($this->logger) {
                 $this->logger->info("Parse validators from class " . $clz);
             }
@@ -263,6 +238,44 @@ class Validator extends Injectable
         return $validators;
     }
 
+    private function readProperties($clz)
+    {
+        $refl = new \ReflectionClass($clz);
+        $properties = $this->annotations->getProperties($clz);
+        $validators = [];
+        
+        foreach ($properties as $name => $annotations) {
+            $propValidators = [];
+            $declaringClz = $refl->getProperty($name)->getDeclaringClass()->getName();
+            foreach ($annotations as $annotation) {
+                $annoName = $annotation->getName();
+                if ($annoName == $this->isaAnnotationName) {
+                    $validator = ['validator' => $this->resolveIsA($annotation, $declaringClz)];
+                    $propValidators[] = $validator;
+                } elseif ($annoName == $this->validAnnotationName) {
+                    $validator = $annotation->getArguments();
+                    if (isset($validator['validator'])) {
+                        $validator['validator'] = $this->resolveAnnotation($validator['validator'], $declaringClz);
+                    }
+                    if (isset($validator['type'])) {
+                        if ($validator['type'] === 'array' && isset($validator['element'])) {
+                            $validator['element'] = $this->resolveAnnotation($validator['element'], $declaringClz);
+                        } elseif ($validator['type'] === 'string' && isset($validator['enum'])
+                                  && is_string($validator['enum'])) {
+                            $enumClass = $this->reflection->resolveImport($validator['enum'], $declaringClz);
+                            $validator['enum'] = array_map('strtolower', $enumClass::names());
+                        }
+                    }
+                    $propValidators[] = $validator;
+                }
+            }
+            if ($propValidators) {
+                $validators[$name] = $propValidators;
+            }
+        }
+        return $validators;
+    }
+    
     /**
      * 创建 validator
      */
