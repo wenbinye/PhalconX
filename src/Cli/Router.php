@@ -2,6 +2,7 @@
 namespace PhalconX\Cli;
 
 use Phalcon\Text;
+use Phalcon\Validation\Message;
 use PhalconX\Exception;
 use PhalconX\Util;
 use PhalconX\Cli\Task\Definition;
@@ -9,6 +10,7 @@ use PhalconX\Cli\Task\GroupDefinition;
 use PhalconX\Cli\Task\Getopt;
 use PhalconX\Cli\Task\Option;
 use PhalconX\Cli\Task\Argument;
+use PhalconX\Exception\ValidationException;
 
 class Router
 {
@@ -218,6 +220,9 @@ class Router
         $arguments = $getopt->getOperands();
         if ($this->task->arguments) {
             foreach ($this->task->arguments as $argument) {
+                if (empty($arguments)) {
+                    break;
+                }
                 if ($argument->type == 'array') {
                     $argument->value = $arguments;
                     break;
@@ -225,6 +230,21 @@ class Router
                     $argument->value = array_shift($arguments);
                 }
             }
+        }
+
+        $group = new Message\Group;
+        foreach ($this->task->options as $opt) {
+            if ($opt->required && !isset($opt->value)) {
+                $group->appendMessage(new Message("缺少选项 {$opt->name}"));
+            }
+        }
+        foreach ($this->task->arguments as $arg) {
+            if ($arg->required && !isset($arg->value)) {
+                $group->appendMessage(new Message("缺少参数 {$arg->name}"));
+            }
+        }
+        if (count($group)) {
+            throw new ValidationException($group);
         }
     }
 
