@@ -46,7 +46,7 @@ class HelpTask extends Task
                 $this->formatOptions($def->options),
                 $this->formatArguments($def->arguments)
             );
-            echo $this->formatOptionDetail($def->options), "\n";
+            echo $this->formatTaskDetail($def), "\n";
         } else {
             if (!$def->tasks) {
                 throw new Exception("No tasks in group " . json_encode($def));
@@ -58,10 +58,9 @@ class HelpTask extends Task
             );
             echo "可用命令有：\n";
             $tasks = $def->tasks;
-            $len = 0;
-            foreach ($tasks as $task) {
-                $len = max(strlen($task->name), $len);
-            }
+            $len = max(array_map(function($task) {
+                        return strlen($task->name);
+                    }, $tasks));
             foreach ($tasks as $task) {
                 printf('  %-' . $len . "s  %s\n", $task->name, $task->help);
             }
@@ -83,10 +82,7 @@ class HelpTask extends Task
         echo "可用命令有：\n";
         $tasks = $router->getDefinitions();
         $tasks = $this->getTasksAndGroups($tasks);
-        $len = 0;
-        foreach ($tasks as $name => $task) {
-            $len = max(strlen($name), $len);
-        }
+        $len = max(array_map('strlen', array_keys($tasks)));
         foreach ($tasks as $name => $task) {
             if ($name == 'help') {
                 continue;
@@ -151,20 +147,27 @@ class HelpTask extends Task
         return $str;
     }
     
-    private function formatOptionDetail($options)
+    private function formatTaskDetail($task)
     {
-        if (!$options) {
-            return;
-        }
         $list = [];
         $len = 0;
-        foreach ($options as $opt) {
-            $sig = $this->getOptionSignal($opt);
-            $len = max($len, $sig);
-            $list[] = [$sig, $opt->help];
+        if ($task->options) {
+            foreach ($task->options as $opt) {
+                $sig = $this->getOptionSignal($opt);
+                $len = max($len, strlen($sig));
+                $list[] = [$sig, $opt->help];
+            }
+        }
+        if ($task->arguments) {
+            foreach ($task->arguments as $arg) {
+                if ($arg->help) {
+                    $len = max($len, strlen($arg->name));
+                    $list[] = [$arg->name, $arg->help];
+                }
+            }
         }
         foreach ($list as $i => $item) {
-            $list[$i] = sprintf('  %-' . $len . "s  %s\n", $item[0], $item[1]);
+            $list[$i] = sprintf('  %-' . $len . "s  %s", $item[0], $item[1]);
         }
         return implode("\n", $list);
     }

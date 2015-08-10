@@ -68,7 +68,13 @@ class Application
                 return $status;
             }
             $taskClass = $router->getNamespaceName() . '\\' . $router->getTaskName();
-            $task = $this->getDi()->get($taskClass, [$router->getParams()]);
+            $refl = new \ReflectionClass($taskClass);
+            if ($refl->getConstructor()) {
+                $task = $this->getDi()->get($taskClass, [$router->getParams()]);
+            }
+            else {
+                $task = $this->getDi()->get($taskClass);
+            }
             if (method_exists($task, 'initialize')) {
                 $task->initialize();
             }
