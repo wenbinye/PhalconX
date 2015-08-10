@@ -26,7 +26,7 @@ class Getopt
         $it = Util::iterator($arguments);
         while ($it->valid()) {
             $arg = $it->current();
-            if ($arg == '--' || mb_substr($arg, 0, 1) != '-') {
+            if ($arg == '--' || $arg == '-' || mb_substr($arg, 0, 1) != '-') {
                 if ($arg == '--') {
                     $it->next();
                 }

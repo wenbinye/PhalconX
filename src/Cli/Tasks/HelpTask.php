@@ -58,9 +58,9 @@ class HelpTask extends Task
             );
             echo "可用命令有：\n";
             $tasks = $def->tasks;
-            $len = max(array_map(function($task) {
+            $len = max(array_map(function ($task) {
                         return strlen($task->name);
-                    }, $tasks));
+            }, $tasks));
             foreach ($tasks as $task) {
                 printf('  %-' . $len . "s  %s\n", $task->name, $task->help);
             }
@@ -182,7 +182,7 @@ class HelpTask extends Task
             if ($arg->type == 'array') {
                 $all[] = $arg->name . '...';
             } else {
-                $all[] = $arg->name;
+                $all[] = $arg->required ? $arg->name : "[{$arg->name}]";
             }
         }
         return implode(' ', $all);
