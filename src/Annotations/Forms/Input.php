@@ -13,8 +13,11 @@ class Input extends Annotation
 
     protected $attributes;
 
-    public function __construct($args)
+    public function __construct($args = null)
     {
+        if (!$args) {
+            return;
+        }
         foreach ($args as $name => $val) {
             if (property_exists($this, $name)) {
                 $this->$name = $val;
@@ -30,7 +33,7 @@ class Input extends Annotation
         if ($this->label) {
             $elem->setLabel($this->label);
         } else {
-            $elem->setLabel(ucfirst($this->name));
+            $elem->setLabel(str_replace('_', ' ', ucfirst($this->name)));
         }
         return $elem;
     }

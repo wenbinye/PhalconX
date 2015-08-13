@@ -424,7 +424,7 @@ class Router
         foreach ($this->tasks as $task) {
             if (empty($task->group)) {
                 if (isset($groupNamespaces[$task->getClass()])) {
-                    $task->group = $groupNamespaces[$class]->name;
+                    $task->group = $groupNamespaces[$task->getClass()]->name;
                 } elseif ($task->namespace && isset($groupNamespaces[$task->namespace])) {
                     $task->group = $groupNamespaces[$task->namespace]->name;
                 }

@@ -115,4 +115,14 @@ class Util
             return [null, $class];
         }
     }
+
+    public static function catfile($dir, $file)
+    {
+        $file = ltrim($file, '/');
+        if ($dir) {
+            return rtrim($dir, '/') . '/' . $file;
+        } else {
+            return $file;
+        }
+    }
 }
