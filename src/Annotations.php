@@ -10,6 +10,7 @@ use PhalconX\Util;
 use PhalconX\Annotations\Context;
 use PhalconX\Annotations\ContextType;
 use PhalconX\Annotations\Annotation;
+use PhalconX\Annotations\Collection;
 
 use PhalconX\Annotations\Validator\Valid;
 use PhalconX\Annotations\Validator\IsA;
@@ -117,10 +118,13 @@ class Annotations
         $this->logger = Util::service('logger', $options, false);
     }
 
-    public function getAnnotations($clz, $annotationClass = null, $contextType = null)
+    /**
+     * @return Collection
+     */
+    public function get($clz, $annotationClass = null, $contextType = null)
     {
         $contextType = $this->filterContextType($contextType);
-        $annotations = $this->get($clz, $contextType);
+        $annotations = $this->parse($clz, $contextType);
         if ($annotationClass) {
             $ret = [];
             foreach ($annotations as $annotation) {
@@ -128,28 +132,30 @@ class Annotations
                     $ret[] = $annotation;
                 }
             }
-            return $ret;
+            return new Collection($ret);
         } else {
-            return $annotations;
+            return new Collection($annotations);
         }
+    }
+
+    /**
+     * @return Collection
+     */
+    public function getAnnotations($clz, $annotationClass = null, $contextType = null)
+    {
+        return $this->get($clz, $annotationClass, $contextType);
     }
     
     public function getClassAnnotations($clz)
     {
-        return $this->get($clz, [ContextType::T_CLASS]);
+        return $this->get($clz, null, [ContextType::T_CLASS]);
     }
 
     public function getMethodAnnotations($clz, $method = null)
     {
-        $annotations = $this->get($clz, [ContextType::T_METHOD]);
+        $annotations = $this->get($clz, null, [ContextType::T_METHOD]);
         if (isset($method)) {
-            $ret = [];
-            foreach ($annotations as $annotation) {
-                if ($annotation->getMethod() == $method) {
-                    $ret[] = $annotation;
-                }
-            }
-            return $ret;
+            return $annotations->method($method);
         } else {
             return $annotations;
         }
@@ -157,15 +163,9 @@ class Annotations
 
     public function getPropertiesAnnotations($clz, $property = null)
     {
-        $annotations = $this->get($clz, [ContextType::T_PROPERTY]);
+        $annotations = $this->parse($clz, [ContextType::T_PROPERTY]);
         if (isset($property)) {
-            $ret = [];
-            foreach ($annotations as $annotation) {
-                if ($annotation->getProperty() == $property) {
-                    $ret[] = $annotation;
-                }
-            }
-            return $ret;
+            return $annotations->property($property);
         } else {
             return $annotations;
         }
@@ -176,21 +176,27 @@ class Annotations
         $self = $this;
         $annotations = [];
         Util::walkdir($dir, function ($file) use ($self, $annotationClass, $contextType, &$annotations) {
-            $annotations = array_merge($annotations, $self->scanFile($file, $annotationClass, $contextType));
+            $annotations = array_merge(
+                $annotations,
+                $self->parseFile($file, $contextType)
+            );
         });
-        return $annotations;
+        $collection = new Collection($annotations);
+        if ($annotationClass) {
+            return $collection->isa($annotationClass);
+        } else {
+            return $collection;
+        }
     }
     
     public function scanFile($file, $annotationClass = null, $contextType = null)
     {
-        if (!Text::endsWith($file, $this->extension)) {
-            return;
+        $collection = new Collection($this->parseFile($file, $contextType));
+        if ($annotationClass) {
+            return $collection->isa($annotationClass);
+        } else {
+            $collection;
         }
-        $annotations = [];
-        foreach ($this->reflection->getClasses($file) as $clz) {
-            $annotations = array_merge($annotations, $this->getAnnotations($clz, $annotationClass, $contextType));
-        }
-        return $annotations;
     }
 
     public function resolveImport($name, $declaringClass)
@@ -218,14 +224,30 @@ class Annotations
             return $obj;
         }
     }
+
+    private function parseFile($file, $contextType)
+    {
+        if (!Text::endsWith($file, $this->extension)) {
+            return;
+        }
+        $contextType = $this->filterContextType($contextType);
+        $annotations = [];
+        foreach ($this->reflection->getClasses($file) as $clz) {
+            $annotations = array_merge(
+                $annotations,
+                $this->parse($clz, $contextType)
+            );
+        }
+        return $annotations;
+    }
     
-    private function get($clz, $contextType)
+    private function parse($clz, $contextType)
     {
         if ($this->modelsMetadata) {
             $annotations = $this->modelsMetadata->read($clz.'.annotations');
         }
         if (!isset($annotations)) {
-            $annotations = $this->parse($clz);
+            $annotations = $this->read($clz);
             $this->modelsMetadata->write($clz.'.annotations', $annotations);
         }
         $ret = [];
@@ -237,7 +259,7 @@ class Annotations
         return $ret;
     }
 
-    private function parse($clz)
+    private function read($clz)
     {
         $annotations = [];
         $parsed = $this->getReader()->parse($clz);

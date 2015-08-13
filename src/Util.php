@@ -70,8 +70,7 @@ class Util
 
     public static function iterator($array)
     {
-        $arr = new \ArrayObject($array);
-        return $arr->getIterator();
+        return (new \ArrayObject($array))->getIterator();
     }
 
     public static function walkdir($dir, $callback, $ignoreHide = true)
@@ -113,6 +112,16 @@ class Util
             return [substr($class, 0, $pos), substr($class, $pos+1)];
         } else {
             return [null, $class];
+        }
+    }
+
+    public static function catfile($dir, $file)
+    {
+        $file = ltrim($file, '/');
+        if ($dir) {
+            return rtrim($dir, '/') . '/' . $file;
+        } else {
+            return $file;
         }
     }
 }

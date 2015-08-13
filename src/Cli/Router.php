@@ -424,7 +424,7 @@ class Router
         foreach ($this->tasks as $task) {
             if (empty($task->group)) {
                 if (isset($groupNamespaces[$task->getClass()])) {
-                    $task->group = $groupNamespaces[$class]->name;
+                    $task->group = $groupNamespaces[$task->getClass()]->name;
                 } elseif ($task->namespace && isset($groupNamespaces[$task->namespace])) {
                     $task->group = $groupNamespaces[$task->namespace]->name;
                 }
@@ -440,14 +440,23 @@ class Router
         }
         $clz = $task->getClass();
         $defaults = [];
-        $annotations = $this->annotations->getAnnotations($clz, Argument::CLASS, ContextType::T_PROPERTY);
-        if ($annotations) {
+        $annotations = $this->annotations->get($clz);
+        $propertiesAnnotations = $annotations->filter([
+            'propertiesOnly' => true,
+            'isa' => Argument::CLASS
+        ]);
+        if ($propertiesAnnotations) {
             $refl = new \ReflectionClass($clz);
             $defaults = $refl->getDefaultProperties();
         }
         if ($task->isMethod()) {
-            $methodAnnotations = $this->annotations->getAnnotations($clz, Argument::CLASS, ContextType::T_METHOD);
-            $annotations = array_merge($annotations, $methodAnnotations);
+            $methodAnnotations = $annotations->filter([
+                'isa' => Argument::CLASS,
+                'method' => $task->getMethod()
+            ]);
+            $annotations = $methodAnnotations->merge($propertiesAnnotations);
+        } else {
+            $annotations = $propertiesAnnotations;
         }
         foreach ($annotations as $annotation) {
             if (!$annotation->name) {

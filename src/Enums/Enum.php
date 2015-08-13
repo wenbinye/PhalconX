@@ -20,6 +20,8 @@ abstract class Enum
      */
     private static $names = array();
 
+    protected static $PROPERTIES = [];
+
     protected $name;
     protected $value;
 
@@ -42,6 +44,15 @@ abstract class Enum
     public function __toString()
     {
         return $this->name;
+    }
+
+    public function __get($name)
+    {
+        if (isset(static::$PROPERTIES[$name][$this->value])) {
+            return static::$PROPERTIES[$name][$this->value];
+        } elseif (property_exists($this, $name)) {
+            return $this->$name;
+        }
     }
     
     /**
