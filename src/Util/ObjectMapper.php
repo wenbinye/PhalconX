@@ -2,6 +2,8 @@
 namespace PhalconX\Util;
 
 use PhalconX\Util;
+use PhalconX\Annotations\Validator\IsA;
+use PhalconX\Annotations\ContextType;
 
 /**
  * convert array, object, json data to an instance of certain class
@@ -66,16 +68,14 @@ class ObjectMapper
             $propertyTypes = $this->modelsMetadata->read($clz . '.types');
         }
         if (!isset($propertyTypes)) {
-            $properties = $this->annotations->getProperties($clz);
+            $annotations = $this->annotations->getAnnotations($clz, IsA::CLASS, ContextType::T_PROPERTY);
             $propertyTypes = [];
-            foreach ($properties as $name => $annotations) {
-                foreach ($annotations as $annotation) {
-                    if ($annotation->getName() === $this->annotationName) {
-                        $args = $annotation->getArguments();
-                        $alias = isset($args['class']) ? $args['class'] : $args[0];
-                        $propertyTypes[$name] = $this->resolveType($alias, $clz);
-                    }
-                }
+            foreach ($annotations as $annotation) {
+                $annotation->setAnnotations($this->annotations);
+                $propertyTypes[$annotation->getProperty()] = (object) [
+                    'isArray' => $annotation->isArray(),
+                    'className' => $annotation->getType()
+                ];
             }
             if ($this->logger) {
                 $this->logger->info("Parse types from class " . $clz);
@@ -85,17 +85,6 @@ class ObjectMapper
             }
         }
         return $propertyTypes;
-    }
-    
-    private function resolveType($name, $clz)
-    {
-        $isArray = false;
-        if (strpos($name, '[]') !== false) {
-            $isArray = true;
-            $name = substr($name, 0, -2);
-        }
-        $type = $this->reflection->resolveImport($name, $clz);
-        return (object) array('className' =>$type, 'isArray' => $isArray);
     }
     
     public function arrayMap($data, $clz, $format = null)

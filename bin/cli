@@ -6,7 +6,7 @@ use Phalcon\Logger\Formatter\Line as LineFormatter;
 use Phalcon\Di\FactoryDefault;
 use PhalconX\Cli\Application;
 use PhalconX\Cli\Router;
-use PhalconX\Cli\Task\Option;
+use PhalconX\Annotations\Cli\Option;
 
 $loader = require(__DIR__.'/../vendor/autoload.php');
 $loader->add('PhalconX', __DIR__.'/../tests');
@@ -35,6 +35,7 @@ $di['router'] = function() {
     return $router;
 };
 $di['reflection'] = 'PhalconX\Util\Reflection';
+$di['annotations'] = 'PhalconX\Annotations';
 
 $app = new Application($di);
 $app->notFound(function() use ($app) {

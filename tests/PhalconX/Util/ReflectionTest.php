@@ -14,8 +14,7 @@ class ReflectionTest extends TestCase
     
     public function testResolveImport()
     {
-        foreach ([['IsArray', 'PhalconX\Validators\IsArray'],
-                  ['Validation\Message', 'Phalcon\Validation\Message'],
+        foreach ([['Validation\Message', 'Phalcon\Validation\Message'],
                   ['ValidationException', 'PhalconX\Exception\ValidationException'],
                   ['Model', 'PhalconX\Model']
         ] as $case) {

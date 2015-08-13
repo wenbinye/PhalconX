@@ -1,5 +1,5 @@
 <?php
-namespace PhalconX\Cli\Task;
+namespace PhalconX\Cli;
 
 use PhalconX\Util;
 

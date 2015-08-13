@@ -1,27 +1,40 @@
 <?php
-namespace PhalconX\Cli\Task;
+namespace PhalconX\Annotations\Cli;
 
-use PhalconX\Mvc\SimpleModel;
+use PhalconX\Annotations\Annotation;
 use PhalconX\Cli\Router;
 use Phalcon\Text;
 
-class Definition extends SimpleModel
+class Task extends Annotation
 {
-    public $namespace;
+    protected static $DEFAULT_PROPERTY = 'name';
+    
     public $name;
+    
+    public $namespace;
+    
     public $class;
+    
     public $method;
+    
     public $group;
+    
     public $module;
+    
     public $help;
+    
     public $options = [];
+    
     public $arguments = [];
-
+    
     public function getId()
     {
         return $this->namespace . '\\' . $this->class;
     }
 
+    /**
+     * 返回
+     */
     public function getName()
     {
         if ($this->module) {

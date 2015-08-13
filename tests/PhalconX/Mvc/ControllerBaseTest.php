@@ -29,7 +29,8 @@ abstract class ControllerBaseTest extends ControllerTestCase
 
         $em = new EventsManager;
         $em->attach('dispatch:beforeException', function ($event, $dispatcher, $exception) use ($di) {
-                // print_r($exception);
+                print_r($exception);
         });
+        $dispatcher->setEventsManager($em);
     }
 }

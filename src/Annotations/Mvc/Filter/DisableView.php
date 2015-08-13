@@ -1,25 +1,22 @@
 <?php
-namespace PhalconX\Mvc\Controller\Filter;
+namespace PhalconX\Annotations\Mvc\Filter;
 
-use Phalcon\Di\Injectable;
 use Phalcon\Mvc\View;
 
-class DisableView extends Injectable implements FilterInterface
+class DisableView extends AbstractFilter
 {
-    private $levels;
+    public $value;
     
-    public function __construct($levels = null)
+    public function filter()
     {
-        $this->levels = $levels;
-    }
-    
-    public function filter($dispatcher)
-    {
-        if (empty($this->levels)) {
+        if (empty($this->value)) {
             $this->view->setRenderLevel(View::LEVEL_NO_RENDER);
         } else {
+            if (!is_array($this->value)) {
+                $this->value = [$this->value];
+            }
             $disabled = [];
-            foreach ($this->levels as $level) {
+            foreach ($this->value as $level) {
                 $const = View::CLASS.'::LEVEL_' . strtoupper($level);
                 if (defined($const)) {
                     $disabled[constant($const)] = true;

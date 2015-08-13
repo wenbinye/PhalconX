@@ -36,6 +36,7 @@ function bootstrap_test()
     $di['reflection'] = 'PhalconX\Util\Reflection';
     $di['objectMapper'] = 'PhalconX\Util\ObjectMapper';
     $di['validator'] = 'PhalconX\Validator';
+    $di['annotations'] = 'PhalconX\Annotations';
 
     // Changing the logger format
     $formatter = new LineFormatter("%date% [%type%] %message%\n");

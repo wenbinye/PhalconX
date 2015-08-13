@@ -4,12 +4,12 @@ namespace PhalconX\Mvc\Router;
 use Phalcon\Text;
 use Phalcon\Mvc\Router;
 use PhalconX\Util;
+use PhalconX\Annotations\Mvc\Router\RoutePrefix;
+use PhalconX\Annotations\Mvc\Router\Route;
+use PhalconX\Annotations\ContextType;
 
 class Annotations extends Router
 {
-    const ROUTE_PREFIX = 'RoutePrefix';
-    const ROUTE = 'ROUTE';
-
     protected $_defaultParams = [];
 
     private $defaultAction;
@@ -21,8 +21,6 @@ class Annotations extends Router
     private $reflection;
     private $annotations;
     private $logger;
-
-    private static $METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
 
     public function __construct($options = null)
     {
@@ -41,57 +39,33 @@ class Annotations extends Router
             $handlers = $this->modelsMetadata->read('routes:' . $dir);
         }
         if (!isset($handlers)) {
-            $backup = $this->handlers;
-            $this->handlers = [];
-            $self = $this;
-            Util::walkdir($dir, function ($file) use ($self, $module) {
-                if (Text::endsWith($file, ".php")) {
-                    $self->addFileResource($file, $module);
-                }
-            });
-            if ($this->logger) {
-                $this->logger->info("scan routing resources from $dir");
+            $handlers = [];
+            foreach ($this->annotations->scan($dir, RoutePrefix::CLASS, ContextType::T_CLASS) as $annotation) {
+                $handlers[] = [$annotation->value, $annotation->getClass(), $module];
             }
-            $handlers = $this->handlers;
-            $this->handlers = $backup;
             $this->modelsMetadata->write('routes:' . $dir, $handlers);
         }
         $this->handlers = array_merge($this->handlers, $handlers);
+        $this->processed = false;
     }
 
     public function addFileResource($file, $module = null)
     {
-        $classes = $this->reflection->getClasses($file);
-        foreach ($classes as $class) {
-            if ($this->controllerSuffix && !Text::endsWith($class, $this->controllerSuffix)) {
-                continue;
-            }
-            $handlerAnnotations = $this->annotations->get($class);
-            if (!$handlerAnnotations) {
-                continue;
-            }
-            $annotations = $handlerAnnotations->getClassAnnotations();
-            if (!$annotations) {
-                continue;
-            }
-            foreach ($annotations as $annotation) {
-                if ($annotation->getName() == self::ROUTE_PREFIX) {
-                    $handler = substr($class, 0, -strlen($this->controllerSuffix));
-                    $this->addModuleResource($module, $handler, $annotation->getArgument(0));
-                }
-            }
+        foreach ($this->annotations->scanFile($file, RoutePrefix::CLASS, ContextType::T_CLASS) as $annotation) {
+            $this->handlers[] = [$annotation->value, $annotation->getClass(), $module];
         }
+        $this->processed = false;
     }
     
     public function addResource($handler, $prefix = null)
     {
-        $this->handlers[] = [$prefix, $handler, null];
+        $this->handlers[] = [$prefix, $handler . $this->controllerSuffix, null];
         $this->processed = false;
     }
 
     public function addModuleResource($module, $handler, $prefix = null)
     {
-        $this->handlers[] = [$prefix, $handler, $module];
+        $this->handlers[] = [$prefix, $handler . $this->controllerSuffix, $module];
         $this->processed = false;
     }
 
@@ -102,11 +76,17 @@ class Annotations extends Router
         }
         if (!$this->processed) {
             foreach ($this->handlers as $scope) {
-                $prefix = $scope[0];
+                list($prefix, $handler, $module) = $scope;
                 if (!empty($prefix) && !Text::startsWith($uri, $prefix)) {
                     continue;
                 }
-                $this->processHandler($scope[1], $prefix, $scope[2]);
+                if ($this->controllerSuffix && !Text::endsWith($handler, $this->controllerSuffix)) {
+                    if ($this->logger) {
+                        $this->logger->error("Controller handler {$handler} not match suffix {$this->controllerSuffix}");
+                    }
+                    continue;
+                }
+                $this->processHandler($handler, $prefix, $module);
             }
             $this->processed = true;
         }
@@ -115,85 +95,79 @@ class Annotations extends Router
 
     public function processHandler($handler, $prefix, $module)
     {
-        $handlerClass = $handler . $this->controllerSuffix;
         if ($this->modelsMetadata) {
-            $routes = $this->modelsMetadata->read($handlerClass . ':routes');
+            $routes = $this->modelsMetadata->read($handler . ':routes');
         }
-        if (!isset($routes)) {
-            $backup = $this->_routes;
-            $this->_routes = [];
-            $handlerAnnotations = $this->annotations->get($handlerClass);
-            if ($handlerAnnotations) {
-                list($namespace, $class) = $this->splitClassName($handlerClass);
-                $context = [
-                    'module' => $module,
-                    'prefix' => $prefix,
-                    'namespace' => $namespace,
-                    'controller' => Text::uncamelize(substr($class, 0, -strlen($this->controllerSuffix))),
-                    'action' => null
-                ];
-                $annotations = $handlerAnnotations->getClassAnnotations();
-                if ($annotations) {
-                    foreach ($annotations as $annotation) {
-                        $this->processAnnotation($annotation, $context);
+        if (isset($routes)) {
+            $this->_routes = array_merge($this->_routes, $routes);
+        } else {
+            $routes = [];
+            list($namespace, $class) = Util::splitClassName($handler);
+            $context = [
+                'module' => $module,
+                'prefix' => $prefix,
+                'namespace' => $namespace,
+                'controller' => Text::uncamelize(substr($class, 0, -strlen($this->controllerSuffix))),
+                'action' => null
+            ];
+            $annotations = $this->annotations->getAnnotations(
+                $handler,
+                Route::CLASS,
+                [ContextType::T_CLASS, ContextType::T_METHOD]
+            );
+            $methodRoutes = [];
+            foreach ($annotations as $annotation) {
+                if ($annotation->isClass()) {
+                    $context['action'] = null;
+                } else {
+                    $method = $annotation->getMethod();
+                    if ($this->actionSuffix && !Text::endsWith($method, $this->actionSuffix)) {
+                        if ($this->logger) {
+                            $this->logger->error(sprintf(
+                                "Action %s::%s not match suffix %s",
+                                $handler,
+                                $method,
+                                $this->actionSuffix
+                            ));
+                        }
+                        continue;
                     }
-                }
-                $methodAnnotations = $handlerAnnotations->getMethodsAnnotations();
-                $methodRoutes = [];
-                if ($methodAnnotations) {
-                    foreach ($methodAnnotations as $method => $collection) {
-                        if ($this->actionSuffix && !Text::endsWith($method, $this->actionSuffix)) {
-                            continue;
-                        }
-                        if ($this->actionSuffix) {
-                            $context['action'] = substr($method, 0, -strlen($this->actionSuffix));
-                        } else {
-                            $context['action'] = $method;
-                        }
-                        if ($collection) {
-                            foreach ($collection as $annotation) {
-                                $methodRoutes[strtolower($method)] =  $this->processAnnotation($annotation, $context);
-                            }
-                        }
+                    if ($this->actionSuffix) {
+                        $context['action'] = substr($method, 0, -strlen($this->actionSuffix));
+                    } else {
+                        $context['action'] = $annotation->getMethod();
                     }
+                    $methodRoutes[$method] = true;
                 }
-                $defaultAction = strtolower($this->defaultAction.$this->actionSuffix);
-                if (method_exists($handlerClass, $defaultAction)
-                    && !isset($methodRoutes[$defaultAction])) {
-                    $this->add($context["prefix"].'[/]?', [
-                        'module' => $context['module'],
-                        'namespace' => $context['namespace'],
-                        'controller' => $context['controller'],
-                        'action' => $this->defaultAction
-                    ]);
-                }
+                $routes[] = $this->processAnnotation($annotation, $context);
             }
-            $routes = $this->_routes;
-            $this->_routes = $backup;
+            // 添加 defaultAction route
+            $defaultAction = strtolower($this->defaultAction.$this->actionSuffix);
+            if (method_exists($handler, $defaultAction)
+                && !isset($methodRoutes[$defaultAction])) {
+                $routes[] = $this->add($context["prefix"].'[/]?', [
+                    'module' => $context['module'],
+                    'namespace' => $context['namespace'],
+                    'controller' => $context['controller'],
+                    'action' => $this->defaultAction
+                ]);
+            }
             if ($this->logger) {
-                $this->logger->info("parse routing annotation from $handlerClass");
+                $this->logger->info("parse routing annotation from $handler");
             }
-            $this->modelsMetadata->write($handlerClass.':routes', $routes);
+            $this->modelsMetadata->write($handler.':routes', $routes);
         }
-        $this->_routes = array_merge($this->_routes, $routes);
     }
 
     private function processAnnotation($annotation, $context)
     {
-        $name = strtoupper($annotation->getName());
-        if ($name != self::ROUTE && !in_array($name, self::$METHODS)) {
-            return;
-        }
-        $paths = $annotation->getNamedArgument('paths');
-        if (!is_array($paths)) {
-            $paths = [];
-        }
+        $paths = $annotation->paths;
         foreach (['module', 'namespace', 'controller', 'action'] as $key) {
             if (isset($context[$key])) {
                 $paths[$key] = $context[$key];
             }
         }
-        $value = $annotation->getArgument(0);
+        $value = $annotation->value;
         if (isset($value)) {
             $value = ltrim($value, '/');
         } else {
@@ -210,38 +184,18 @@ class Annotations extends Router
             $uri .= '/' . $value;
         }
         $route = $this->add($uri, $paths);
-        if ($name != self::ROUTE) {
-            $route->via($name);
-        } else {
-            $methods = $annotation->getNamedArgument('methods');
-            if ($methods) {
-                $route->via($methods);
-            }
-        }
-        $converts = $annotation->getNamedArgument('converts');
-        if (is_array($converts)) {
-            foreach ($converts as $param => $convert) {
+        $route->via($annotation->methods);
+        if (is_array($annotation->converts)) {
+            foreach ($annotation->converts as $param => $convert) {
                 $route->convert($param, $convert);
             }
         }
-        $beforeMatch = $annotation->getNamedArgument('beforeMatch');
-        if ($beforeMatch) {
-            $route->beforeMatch($beforeMatch);
+        if ($annotation->beforeMatch) {
+            $route->beforeMatch($annotation->beforeMatch);
         }
-        $routeName = $annotation->getNamedArgument('name');
-        if ($routeName) {
-            $route->setName($routeName);
+        if ($annotation->name) {
+            $route->setName($annotation->name);
         }
         return $route;
-    }
-    
-    private function splitClassName($class)
-    {
-        $pos = strrpos($class, '\\');
-        if ($pos !== false) {
-            return [substr($class, 0, $pos), substr($class, $pos+1)];
-        } else {
-            return [null, $class];
-        }
     }
 }

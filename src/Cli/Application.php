@@ -1,14 +1,13 @@
 <?php
 namespace PhalconX\Cli;
 
+use Phalcon\DiInterface;
+use Phalcon\Di\Injectable;
 use PhalconX\Exception;
-use PhalconX\Di\Injectable;
 use PhalconX\Cli\Tasks\HelpTask;
 
-class Application
+class Application extends Injectable
 {
-    use Injectable;
-
     private $errorHandler;
     private $notFoundHandler;
     private $beforeHandlers;
@@ -16,9 +15,9 @@ class Application
     private $finishHandlers;
     private $stopped;
     
-    public function __construct(\Phalcon\DiInterface $di = null)
+    public function __construct(DiInterface $di = null)
     {
-        if ($di != null) {
+        if ($di) {
             $this->setDi($di);
         }
     }
@@ -67,21 +66,7 @@ class Application
             if ($status === false || $this->stopped) {
                 return $status;
             }
-            $taskClass = $router->getNamespaceName() . '\\' . $router->getTaskName();
-            $refl = new \ReflectionClass($taskClass);
-            if ($refl->getConstructor()) {
-                $task = $this->getDi()->get($taskClass, [$router->getParams()]);
-            }
-            else {
-                $task = $this->getDi()->get($taskClass);
-            }
-            if (method_exists($task, 'initialize')) {
-                $task->initialize();
-            }
-            $returnedValue = call_user_func(
-                array($task, $router->getActionName()),
-                (object) $router->getParams()
-            );
+            $returnedValue = $this->dispatch();
             if ($em) {
                 $em->fire('dispatch:afterExecuteRoute', $this);
             }
@@ -107,6 +92,25 @@ class Application
         return $returnedValue;
     }
 
+    private function dispatch()
+    {
+        $router = $this->router;
+        $taskClass = $router->getNamespaceName() . '\\' . $router->getTaskName();
+        $refl = new \ReflectionClass($taskClass);
+        if ($refl->getConstructor()) {
+            $task = $this->getDi()->get($taskClass, [$router->getParams()]);
+        } else {
+            $task = $this->getDi()->get($taskClass);
+        }
+        if (method_exists($task, 'initialize')) {
+            $task->initialize();
+        }
+        $returnedValue = call_user_func(
+            array($task, $router->getActionName()),
+            (object) $router->getParams()
+        );
+    }
+    
     private function defaultNotFound()
     {
         global $argv;

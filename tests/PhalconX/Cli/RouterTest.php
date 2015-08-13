@@ -14,9 +14,13 @@ class RouterTest extends TestCase
         $router->scan(__DIR__.'/../Test/Tasks');
         // print_r($router);
         $router->handle(["./cli", "remote", "add", "-t", "master", "origin", "url"]);
-        // print_r($router);
-        $this->assertEquals($router->getNamespaceName(), 'PhalconX\Test\Tasks\Remote');
-        $this->assertEquals($router->getTaskName(), 'AddTask');
-        $this->assertEquals($router->getActionName(), 'execute');
+        if ($router->wasMatched()) {
+            // print_r($router);
+            $this->assertEquals($router->getNamespaceName(), 'PhalconX\Test\Tasks\Remote');
+            $this->assertEquals($router->getTaskName(), 'AddTask');
+            $this->assertEquals($router->getActionName(), 'execute');
+        } else {
+            $this->fail();
+        }
     }
 }

@@ -1,19 +1,15 @@
 <?php
-namespace PhalconX\Mvc\Controller\Filter;
+namespace PhalconX\Annotations\Mvc\Filter;
 
-use Phalcon\Di\Injectable;
 use PhalconX\Exception;
 
-class RequestMethod extends Injectable implements FilterInterface
+class RequestMethod extends AbstractFilter
 {
-    private $methods = [];
-    
-    public function __construct($methods)
-    {
-        $this->methods = $methods;
-    }
+    protected static $DEFAULT_PROPERTY = 'methods';
 
-    public function filter($dispatcher)
+    public $methods;
+
+    public function filter()
     {
         if (!in_array($this->request->getMethod(), $this->methods)) {
             $this->response->setStatusCode(405);

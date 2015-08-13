@@ -105,4 +105,14 @@ class Util
         }
         return $argv;
     }
+
+    public static function splitClassName($class)
+    {
+        $pos = strrpos($class, '\\');
+        if ($pos !== false) {
+            return [substr($class, 0, $pos), substr($class, $pos+1)];
+        } else {
+            return [null, $class];
+        }
+    }
 }

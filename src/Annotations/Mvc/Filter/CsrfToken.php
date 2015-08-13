@@ -1,21 +1,15 @@
 <?php
-namespace PhalconX\Mvc\Controller\Filter;
+namespace PhalconX\Annotations\Mvc\Filter;
 
-use Phalcon\Di\Injectable;
-use PhalconX\Util;
 use PhalconX\Exception;
 
-class CsrfToken extends Injectable implements FilterInterface
+class CsrfToken extends AbstractFilter
 {
     private static $ALLOWED_METHODS = ['PUT', 'POST'];
-    private $repeatOk;
 
-    public function __construct($options = null)
-    {
-        $this->repeatOk = Util::fetch($options, 'repeatOk', false);
-    }
+    public $repeatOk = false;
     
-    public function filter($dispatcher)
+    public function filter()
     {
         if (!in_array($this->request->getMethod(), self::$ALLOWED_METHODS)) {
             $this->response->setStatusCode(405);
@@ -25,7 +19,6 @@ class CsrfToken extends Injectable implements FilterInterface
             );
         }
         $destroy = !$this->repeatOk;
-        $this->logger->info("destroy security token $destroy");
         if (!$this->security->checkToken(null, null, $destroy)) {
             $this->response->setStatusCode(400);
             throw new Exception(

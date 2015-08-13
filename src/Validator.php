@@ -4,123 +4,54 @@ namespace PhalconX;
 use Phalcon\DI\Injectable;
 use Phalcon\Validation;
 use PhalconX\Exception\ValidationException;
-use Phalcon\Validation\ValidatorInterface;
 use PhalconX\Forms\Form;
-
-use Phalcon\Validation\Validator\Numericality;
-use Phalcon\Validation\Validator\PresenceOf;
-use PhalconX\Validators\Generic;
-use PhalconX\Validators\Integer;
-use PhalconX\Validators\IsArray;
-use PhalconX\Validators\IsA;
-use PhalconX\Validators\Boolean;
-
-use Phalcon\Forms\Element\Check;
-use Phalcon\Forms\Element\Date;
-use Phalcon\Forms\Element\Email;
-use Phalcon\Forms\Element\File;
-use Phalcon\Forms\Element\Hidden;
-use Phalcon\Forms\Element\Numeric;
-use Phalcon\Forms\Element\Password;
-use Phalcon\Forms\Element\Radio;
-use Phalcon\Forms\Element\Select;
-use Phalcon\Forms\Element\Submit;
-use Phalcon\Forms\Element\Text;
-use Phalcon\Forms\Element\TextArea;
+use PhalconX\Annotations\Validator\Validator as ValidatorAnnotation;
+use PhalconX\Annotations\ContextType;
+use PhalconX\Annotations\Forms\Input;
+use PhalconX\Mvc\SimpleModel;
 
 class Validator extends Injectable
 {
-    private $validAnnotationName = 'Valid';
-    private $isaAnnotationName = 'IsA';
-    private $types;
-    private $elements = [
-        'Check' => Check::CLASS,
-        'Date' => Date::CLASS,
-        'Email' => Email::CLASS,
-        'File' => File::CLASS,
-        'Hidden' => Hidden::CLASS,
-        'Numeric' => Numeric::CLASS,
-        'Password' => Password::CLASS,
-        'Radio' => Radio::CLASS,
-        'Select' => Select::CLASS,
-        'Submit' => Submit::CLASS,
-        'Text' => Text::CLASS,
-        'TextArea' => TextArea::CLASS,
-    ];
-
-    private $annotations;
-    private $reflection;
-    private $modelsMetadata;
-    private $logger;
-
-    /**
-     * Construct the validator
-     *
-     * Available options:
-     *  - annotation
-     *  - types
-     *  - validators
-     *  - annotations
-     *  - reflection
-     */
-    public function __construct($options = null)
-    {
-        $this->types = [
-            'boolean' => Boolean::CLASS,
-            'integer' => Integer::CLASS,
-            'number' => Numericality::CLASS,
-            'array' => IsArray::CLASS,
-            'string' => new Generic([
-                'validate' => function ($value, $validator) {
-                    return is_string($value);
-                }
-            ])
-        ];
-        if (is_array($options)) {
-            if (isset($options['validAnnotation'])) {
-                $this->validAnnotationName = $options['validAnnotation'];
-            }
-            if (isset($options['isaAnnotation'])) {
-                $this->isaAnnotationName = $options['isaAnnotation'];
-            }
-            if (isset($options['types'])) {
-                $this->types = array_merge($this->types, $options['types']);
-            }
-            if (isset($options['formElements'])) {
-                $this->elements = array_merge($this->elements, $options['formElements']);
-            }
-        }
-        $this->annotations = Util::service('annotations', $options);
-        $this->reflection = Util::service('reflection', $options);
-        $this->modelsMetadata = Util::service('modelsMetadata', $options, false);
-        $this->logger = Util::service('logger', $options, false);
-    }
-
     /**
      * Validates the form
      *
-     * @param object|array $form
+     * @param object|array $model
+     * @param Validators[] $validators
      * @throws ValidationException
      */
-    public function validate($form)
+    public function validate(&$model, $validators = null)
     {
-        if (!is_array($form)) {
-            return $this->validate($this->getAnnotations($form));
+        if (!isset($validators) && is_object($model)) {
+            $validators = [];
+            $propValidators = $this->getPropertyValidators(get_class($model));
+            foreach ($propValidators as $name => $val) {
+                $validators = array_merge($validators, $val);
+            }
+        }
+        $names = [];
+        foreach ($validators as $validator) {
+            $names[$validator->name] = 1;
+        }
+        if (is_array($model)) {
+            $data = &$model;
+        } else {
+            $data = [];
+            foreach ($names as $name => $i) {
+                if (isset($model->$name)) {
+                    $data[$name] = &$model->$name;
+                }
+            }
         }
         $validation = new Validation;
-        $data = [];
-        unset($elem);
-        foreach ($form as &$elem) {
-            $spec = new ValidatorSpec($elem, $this);
-            // 根据默认值修改传入参数
-            if (!$spec->hasValue() && isset($spec->default)) {
-                $elem['value'] = $spec->default;
+        foreach ($validators as $validator) {
+            $name = $validator->name;
+            if (!$this->hasValue($data, $name) && isset($validator->default)) {
+                $data[$name] = $validator->default;
             }
-            $data[$spec->name] = $spec->value;
             // 当字段为必须提供或者值存在
-            if ($spec->required || $spec->hasValue()) {
-                foreach ($spec->toValidators() as $validator) {
-                    $validation->add($spec->name, $validator);
+            if ($validator->required || $this->hasValue($data, $name)) {
+                foreach ($validator->process() as $v) {
+                    $validation->add($name, $v);
                 }
             }
         }
@@ -129,269 +60,83 @@ class Validator extends Injectable
             throw new ValidationException($errors);
         }
     }
+
+    private function hasValue($data, $name)
+    {
+        return isset($data[$name]) && $data[$name] !== '';
+    }
     
     /**
      * 创建表单对象
-     * @param string|object $model
-     * @param array $data
+     * @param string|SimpleModel $model
+     * @param array $bind
      * @return \Phalcon\Forms\Form
      */
-    public function createForm($model, $data = null)
+    public function createForm($model, $bind = null)
     {
         if (is_string($model)) {
             $clz = $model;
             $model = new $clz;
         } else {
             $clz = get_class($model);
-            $data = (array) $model;
+            $bind = (array) $model;
         }
         $form = new Form;
         $validators = $this->getPropertyValidators($clz);
         foreach ($this->getElements($clz) as $name => $elem) {
             if (isset($validators[$name])) {
                 foreach ($validators[$name] as $validator) {
-                    $validator['name'] = $name;
-                    $spec = new ValidatorSpec($validator, $this);
-                    $spec->value = Util::fetch($data, $name);
-                    if ($spec->hasValue()) {
-                        $elem->setDefault($spec->value);
-                    } elseif ($spec->default) {
-                        $elem->setDefault($spec->default);
-                    }
-                    if ($spec->required || $spec->hasValue()) {
-                        $elem->addValidators($spec->toValidators());
+                    $elem->setDefault($validator->default);
+                    if ($validator->required || $this->hasValue($model, $name)) {
+                        $elem->addValidators($validator->process());
                     }
                 }
             }
             $form->add($elem);
         }
-        if ($data) {
-            $form->bind($data, $model);
+        if ($bind) {
+            $form->bind($bind, $model);
             $form->setEntity($model);
         }
         return $form;
     }
 
     /**
-     * 创建验证条件
-     */
-    private function getAnnotations($form)
-    {
-        $clz = get_class($form);
-        $properties = $this->getPropertyValidators($clz);
-        $validators = [];
-        foreach ($properties as $name => $propValidators) {
-            unset($value);
-            $value = &$form->$name;
-            foreach ($propValidators as $validator) {
-                if (isset($validator['default'])) {
-                    $validator['value'] = &$value;
-                } else {
-                    $validator['value'] = $value;
-                }
-                $validator['name'] = $name;
-                $validators[] = $validator;
-            }
-        }
-        return $validators;
-    }
-
-    /**
      * 提取类属性验证器
      * @param string $clz
-     * @return [ propertyName => [] ]
+     * @return [ propertyName => Validator[] ]
      */
     private function getPropertyValidators($clz)
     {
-        if ($this->modelsMetadata) {
-            $validators = $this->modelsMetadata->read($clz.'.validators');
-        }
-        if (!isset($validators)) {
-            $validators = $this->readProperties($clz);
-            if ($this->logger) {
-                $this->logger->info("Parse validators from class " . $clz);
-            }
-            if ($this->modelsMetadata) {
-                $this->modelsMetadata->write($clz.'.validators', $validators);
-            }
-        }
-        unset($propValidators);
-        $result = [];
-        foreach ($validators as $name => &$propValidators) {
-            unset($validator);
-            foreach ($propValidators as &$validator) {
-                if (isset($validator['validator'])) {
-                    $validator['validator'] =
-                        $this->createValidator(
-                            $validator['validator'][0],
-                            $validator['validator'][1]
-                        );
-                } elseif (isset($validator['type']) && $validator['type'] === 'array'
-                          && isset($validator['element'])) {
-                    $validator['element'] = $this->createValidator(
-                        $validator['element'][0],
-                        $validator['element'][1]
-                    );
-                }
-            }
-        }
-        return $validators;
-    }
-
-    private function readProperties($clz)
-    {
         $refl = new \ReflectionClass($clz);
-        $properties = $this->annotations->getProperties($clz);
-        $validators = [];
-        
-        foreach ($properties as $name => $annotations) {
-            $propValidators = [];
-            $declaringClz = $refl->getProperty($name)->getDeclaringClass()->getName();
-            foreach ($annotations as $annotation) {
-                $annoName = $annotation->getName();
-                if ($annoName == $this->isaAnnotationName) {
-                    $validator = ['validator' => $this->resolveIsA($annotation, $declaringClz)];
-                    $propValidators[] = $validator;
-                } elseif ($annoName == $this->validAnnotationName) {
-                    $validator = $annotation->getArguments();
-                    if (isset($validator['validator'])) {
-                        $validator['validator'] = $this->resolveAnnotation($validator['validator'], $declaringClz);
-                    }
-                    if (isset($validator['type'])) {
-                        if ($validator['type'] === 'array' && isset($validator['element'])) {
-                            $validator['element'] = $this->resolveAnnotation($validator['element'], $declaringClz);
-                        } elseif ($validator['type'] === 'string' && isset($validator['enum'])
-                                  && is_string($validator['enum'])) {
-                            $enumClass = $this->reflection->resolveImport($validator['enum'], $declaringClz);
-                            $validator['enum'] = array_map('strtolower', $enumClass::names());
-                        }
-                    }
-                    $propValidators[] = $validator;
-                }
+        $defaults = $refl->getDefaultProperties();
+        $properties = [];
+        $annotations = $this->annotations->getAnnotations($clz, ValidatorAnnotation::CLASS, ContextType::T_PROPERTY);
+        foreach ($annotations as $annotation) {
+            $property = $annotation->getProperty();
+            $annotation->name = $property;
+            if (!isset($annotation->default) && isset($defaults[$property])) {
+                $annotation->default = $defaults[$property];
             }
-            if ($propValidators) {
-                $validators[$name] = $propValidators;
+            if (!isset($properties[$property])) {
+                $properties[$property] = [];
             }
+            $annotation->setAnnotations($this->annotations);
+            $properties[$property][] = $annotation;
         }
-        return $validators;
-    }
-    
-    /**
-     * 创建 validator
-     */
-    public function createValidator($validator, $args = null)
-    {
-        if (is_array($validator) && isset($validator['type'])) {
-            return $this->createTypeValidator($validator);
-        }
-        if ($validator instanceof ValidatorInterface) {
-            return $validator;
-        }
-        if ($validator == IsArray::CLASS && isset($args['element'])) {
-            return $this->createTypeValidator([
-                'type' => 'array',
-                'element' => $args['element']
-            ]);
-        }
-        return $this->getDi()->get($validator, [$args]);
-    }
-
-    private function createTypeValidator($args)
-    {
-        if (!isset($args['type']) || !isset($this->types[$args['type']])) {
-            if ($this->logger) {
-                $this->logger->error("Cannot handle type {$args['type']}");
-                return null;
-            }
-        }
-        if ($args['type'] === 'array' && isset($args['element'])) {
-            if (is_string($args['element'])) {
-                $args['element'] = $this->createTypeValidator(['type' => $args['element']]);
-            } elseif (is_array($args) && isset($args['class'])) {
-                $args['element'] = new IsA($args);
-            }
-            return new IsArray($args);
-        } else {
-            return $this->createValidator($this->types[$args['type']], $args);
-        }
-    }
-
-    /**
-     * validator=@IsA()
-     * validator=@Range()
-     * @return array
-     */
-    private function resolveAnnotation($annotation, $clz)
-    {
-        $name = $annotation->getName();
-        $class = $this->reflection->resolveImport($name, $clz);
-        if ($class === IsA::CLASS) {
-            return $this->resolveIsA($annotation, $clz);
-        } else {
-            return [$class, $annotation->getArguments()];
-        }
-    }
-
-    /**
-     * @return array
-     */
-    private function resolveIsA($annotation, $clz)
-    {
-        $args = $annotation->getArguments();
-        $type = isset($args['class']) ? $args['class'] : $args[0];
-        $isArray = false;
-        if (strpos($type, '[]') !== false) {
-            $type = substr($type, 0, -2);
-            $isArray = true;
-        }
-        $typeClass = $this->reflection->resolveImport($type, $clz);
-        if ($isArray) {
-            return [IsArray::CLASS, ['element' => ['class' => $typeClass]]];
-        } else {
-            return [IsA::CLASS, ['class' => $typeClass]];
-        }
+        return $properties;
     }
     
     private function getElements($clz)
     {
-        if ($this->modelsMetadata) {
-            $elements = $this->modelsMetadata->read($clz.'.formElements');
-        }
-        if (!isset($elements)) {
-            $elements = [];
-            foreach ($this->annotations->getProperties($clz) as $name => $annotations) {
-                foreach ($annotations as $annotation) {
-                    if (isset($this->elements[$annotation->getName()])) {
-                        $elements[$name] = [$annotation->getName(), $annotation->getArguments()];
-                    }
-                }
+        $elements = [];
+        $annotations = $this->annotations->getAnnotations($clz, Input::CLASS, ContextType::T_PROPERTY);
+        foreach ($annotations as $annotation) {
+            if (!isset($annotation->name)) {
+                $annotation->name = $annotation->getProperty();
             }
-            if ($this->logger) {
-                $this->logger->info("Parse form elements from class " . $clz);
-            }
-            if ($this->modelsMetadata) {
-                $this->modelsMetadata->write($clz.'.formElements', $elements);
-            }
-        }
-        foreach ($elements as $name => $element) {
-            $elements[$name] = $this->createElement($name, $element[0], $element[1]);
+            $elements[$annotation->getProperty()] = $annotation->process();
         }
         return $elements;
-    }
-    
-    private function createElement($name, $elementType, $args)
-    {
-        $clz = $this->elements[$elementType];
-        if (isset($args[0])) {
-            array_unshift($args, $name);
-            $refl = new \ReflectionClass($clz);
-            $el = $refl->newInstanceArgs($args);
-        } else {
-            $el = new $clz($name, $args);
-        }
-        if (isset($args['label'])) {
-            $el->setLabel($args['label']);
-        }
-        return $el;
     }
 }

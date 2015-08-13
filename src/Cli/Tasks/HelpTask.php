@@ -3,7 +3,9 @@ namespace PhalconX\Cli\Tasks;
 
 use PhalconX\Cli\Task;
 use PhalconX\Cli\Router;
-use PhalconX\Cli\Task\Definition;
+use PhalconX\Annotations\Cli\Task as TaskAnnotation;
+use PhalconX\Annotations\Cli\Option;
+use PhalconX\Exception;
 
 /**
  * @Task
@@ -38,7 +40,7 @@ class HelpTask extends Task
             $this->showHelp();
             exit(-1);
         }
-        if ($def instanceof Definition) {
+        if ($def instanceof TaskAnnotation) {
             echo sprintf(
                 "usage: %s %s %s%s\n\n",
                 $router->getScriptName(),
@@ -46,10 +48,10 @@ class HelpTask extends Task
                 $this->formatOptions($def->options),
                 $this->formatArguments($def->arguments)
             );
-            echo $this->formatTaskDetail($def), "\n";
+            echo $this->formatDetail($def->options + $def->arguments), "\n";
         } else {
             if (!$def->tasks) {
-                throw new Exception("No tasks in group " . json_encode($def));
+                throw new Exception("No tasks in group " . $def);
             }
             echo sprintf(
                 "usage: %s %s <task> [<args>]\n\n",
@@ -77,7 +79,8 @@ class HelpTask extends Task
             $this->formatOptions($options)
         );
         if ($options) {
-            echo $this->formatOptionDetail($options), "\n";
+            echo "全局选项：\n";
+            echo $this->formatDetail($options), "\n\n";
         }
         echo "可用命令有：\n";
         $tasks = $router->getDefinitions();
@@ -135,6 +138,7 @@ class HelpTask extends Task
 
     private function getOptionSignal($opt)
     {
+        $str = '';
         if ($opt->short) {
             $str = '-'.$opt->short;
         }
@@ -147,27 +151,28 @@ class HelpTask extends Task
         return $str;
     }
     
-    private function formatTaskDetail($task)
+    private function formatDetail($args)
     {
         $list = [];
         $len = 0;
-        if ($task->options) {
-            foreach ($task->options as $opt) {
-                $sig = $this->getOptionSignal($opt);
+        foreach ($args as $arg) {
+            if ($arg instanceof Option) {
+                $sig = $this->getOptionSignal($arg);
                 $len = max($len, strlen($sig));
-                $list[] = [$sig, $opt->help];
-            }
-        }
-        if ($task->arguments) {
-            foreach ($task->arguments as $arg) {
+                $list[] = [$sig, $arg];
+            } else {
                 if ($arg->help) {
                     $len = max($len, strlen($arg->name));
-                    $list[] = [$arg->name, $arg->help];
+                    $list[] = [$arg->name, $arg];
                 }
             }
         }
         foreach ($list as $i => $item) {
-            $list[$i] = sprintf('  %-' . $len . "s  %s", $item[0], $item[1]);
+            $help = $item[1]->help;
+            if (isset($item[1]->default)) {
+                $help .= " (default " . $item[1]->default . ')';
+            }
+            $list[$i] = sprintf('  %-' . $len . "s  %s", $item[0], $help);
         }
         return implode("\n", $list);
     }

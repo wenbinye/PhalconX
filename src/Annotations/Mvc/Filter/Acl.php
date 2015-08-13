@@ -1,24 +1,13 @@
 <?php
-namespace PhalconX\Mvc\Controller\Filter;
+namespace PhalconX\Annotations\Mvc\Filter;
 
-use Phalcon\Di\Injectable;
-use PhalconX\Util;
 use PhalconX\Exception;
 
-class Acl extends Injectable implements FilterInterface
+class Acl extends AbstractFilter
 {
-    private $roles;
-    private $roleManager;
-    private $auth;
-
-    public function __construct($roles)
-    {
-        $this->roles = $roles;
-        $this->auth = Util::service('auth');
-        $this->roleManager = Util::service('roleManager');
-    }
+    public $value;
     
-    public function filter($dispatcher)
+    public function filter()
     {
         if ($this->auth->isGuest()) {
             $this->response->setStatusCode(401);
@@ -27,7 +16,7 @@ class Acl extends Injectable implements FilterInterface
                 Exception::ERROR_LOGIN_REQUIRED
             );
         }
-        foreach ($this->roles as $role) {
+        foreach ($this->value as $role) {
             if (!$this->roleManager->checkAccess($this->auth->user_id, $role)) {
                 $this->response->setStatusCode(403);
                 throw new Exception(
