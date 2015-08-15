@@ -497,9 +497,7 @@ class Router
     {
         $params = [];
         foreach ($options as $option) {
-            if (isset($option->value)) {
-                $params[$option->name] = $option->value;
-            }
+            $params[$option->name] = $option->value;
         }
         return $params;
     }

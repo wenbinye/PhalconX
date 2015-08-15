@@ -35,11 +35,11 @@ class Collection extends \ArrayIterator
                     || ($annotation->isClass() || $annotation->isProperty()))
                 && (!isset($conditions['isa']) || is_a($annotation, $conditions['isa']))
                 && (!isset($conditions['method'])
-                    || (!$annotation->isMethod()
-                        || $annotation->getMethod() == $conditions['method']))
+                    || ($annotation->isMethod()
+                        && $annotation->getMethod() == $conditions['method']))
                 && (!isset($conditions['property'])
-                    || (!$annotation->isProperty()
-                        || $annotation->getProperty() == $conditions['property']))) {
+                    || ($annotation->isProperty()
+                        && $annotation->getProperty() == $conditions['property']))) {
                 $filtered[] = $annotation;
             }
         }
