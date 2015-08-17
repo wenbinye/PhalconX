@@ -8,7 +8,7 @@ use Phalcon\Forms\ElementInterface;
 use PhalconX\Util;
 use PhalconX\Exception;
 
-class Text extends Element implements ElementInterface
+class Input extends Element implements ElementInterface
 {
     public function render($attributes = null)
     {

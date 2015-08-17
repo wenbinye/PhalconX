@@ -228,7 +228,7 @@ class Annotations
     private function parseFile($file, $contextType)
     {
         if (!Text::endsWith($file, $this->extension)) {
-            return;
+            return [];
         }
         $contextType = $this->filterContextType($contextType);
         $annotations = [];
