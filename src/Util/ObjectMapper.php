@@ -30,13 +30,13 @@ class ObjectMapper
         $this->modelsMetadata = Util::service('modelsMetadata', $options, false);
         $this->logger = Util::service('logger', $options, false);
     }
-    
+
     public function map($data, $clz, $format = null)
     {
         if ($format === self::JSON) {
-            return $this->convertObject(json_decode($data, true), $clz, null);
+            return $this->convertObject($this->parseJson($data), $clz, null);
         } elseif ($format === self::OBJECT) {
-            return $this->convertObject((array) $data, $clz, $format);
+            return $this->convertObject(get_object_vars($data), $clz, $format);
         } else {
             return $this->convertObject($data, $clz, null);
         }
@@ -86,11 +86,11 @@ class ObjectMapper
         }
         return $propertyTypes;
     }
-    
+
     public function arrayMap($data, $clz, $format = null)
     {
         if ($format === self::JSON) {
-            return $this->arrayMap(json_decode($data, true), $clz);
+            return $this->arrayMap($this->parseJson($data), $clz);
         } elseif (is_array($data)) {
             $result = [];
             foreach ($data as $elem) {
@@ -100,5 +100,14 @@ class ObjectMapper
         } else {
             throw new \InvalidArgumentException("The object data should be an array");
         }
+    }
+
+    private function parseJson($json)
+    {
+        $data = json_decode($json, true);
+        if (!is_array($data)) {
+            throw new \InvalidArgumentException("Malformed json");
+        }
+        return $data;
     }
 }
