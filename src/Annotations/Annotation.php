@@ -9,6 +9,8 @@ abstract class Annotation extends SimpleModel
     
     private $context;
 
+    private $annotations;
+
     public function __construct($arguments)
     {
         if (isset($arguments[0]) && !isset($arguments[static::$DEFAULT_PROPERTY])) {
@@ -32,6 +34,27 @@ abstract class Annotation extends SimpleModel
         return $this;
     }
 
+    public function getAnnotations()
+    {
+        return $this->annotations;
+    }
+
+    public function setAnnotations($annotations)
+    {
+        $this->annotations = $annotations;
+        return $this;
+    }
+
+    protected function resolve($annotation)
+    {
+        return $this->annotations->resolveAnnotation($annotation, $this->getContext());
+    }
+
+    protected function resolveImport($name)
+    {
+        return $this->annotations->resolveImport($name, $this->getDeclaringClass());
+    }
+    
     public function getClass()
     {
         return $this->getContext()->class;
@@ -75,8 +98,6 @@ abstract class Annotation extends SimpleModel
     public function __toString()
     {
         if ($this->context) {
-            return "Annotation Object";
-        } else {
             return sprintf(
                 "Annotation at %s %s%s%s",
                 $this->context->type,
@@ -84,6 +105,8 @@ abstract class Annotation extends SimpleModel
                 $this->isMethod() ? "::" . $this->getMethod() : "",
                 $this->isProperty() ? "->" . $this->getProperty() : ""
             );
+        } else {
+            return "Annotation Object";
         }
     }
 }

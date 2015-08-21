@@ -1,6 +1,7 @@
 <?php
 namespace PhalconX\Di;
 
+use Phalcon\DiInterface;
 use Phalcon\Di;
 
 trait Injectable
@@ -15,7 +16,7 @@ trait Injectable
         return $this->di;
     }
 
-    public function setDi(\Phalcon\DiInterface $di)
+    public function setDi(DiInterface $di)
     {
         $this->di = $di;
     }

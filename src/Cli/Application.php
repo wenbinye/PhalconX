@@ -4,6 +4,7 @@ namespace PhalconX\Cli;
 use Phalcon\DiInterface;
 use Phalcon\Di\Injectable;
 use PhalconX\Exception;
+use PhalconX\Util;
 use PhalconX\Cli\Tasks\HelpTask;
 
 class Application extends Injectable
@@ -96,12 +97,7 @@ class Application extends Injectable
     {
         $router = $this->router;
         $taskClass = $router->getNamespaceName() . '\\' . $router->getTaskName();
-        $refl = new \ReflectionClass($taskClass);
-        if ($refl->getConstructor()) {
-            $task = $this->getDi()->get($taskClass, [$router->getParams()]);
-        } else {
-            $task = $this->getDi()->get($taskClass);
-        }
+        $task = Util::newInstance($taskClass, $router->getParams());
         if (method_exists($task, 'initialize')) {
             $task->initialize();
         }

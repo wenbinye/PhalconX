@@ -1,12 +1,13 @@
 <?php
 namespace PhalconX\Mvc;
 
+use Phalcon\DiInterface;
 use Phalcon\Mvc\Micro\Exception;
 use Phalcon\Mvc\Micro\MiddlewareInterface;
 
 class Micro extends \Phalcon\Mvc\Micro
 {
-    public function __construct(\Phalcon\DiInterface $di = null)
+    public function __construct(DiInterface $di = null)
     {
         if ($di != null) {
             $this->setDI($di);

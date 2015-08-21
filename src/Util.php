@@ -3,6 +3,7 @@ namespace PhalconX;
 
 use Phalcon\Di;
 use Phalcon\Text;
+use Phalcon\Mvc\ModuleDefinitionInterface;
 
 class Util
 {
@@ -122,6 +123,34 @@ class Util
             return rtrim($dir, '/') . '/' . $file;
         } else {
             return $file;
+        }
+    }
+
+    public static function newInstance($class, $args = null)
+    {
+        $refl = new \ReflectionClass($class);
+        if ($refl->getConstructor()) {
+            return Di::getDefault()->get($class, [$args]);
+        } else {
+            return Di::getDefault()->get($class);
+        }
+    }
+    
+    public static function import($bundle, $options = null)
+    {
+        $di = Di::getDefault();
+        if (isset($di['config']->bundles[$bundle])) {
+            $bundle = self::newInstance($di['config']->bundles[$bundle], $options);
+            if ($bundle instanceof ModuleDefinitionInterface) {
+                $bundle->registerAutoloaders($di);
+                $bundle->registerServices($di);
+                return $bundle;
+            } else {
+                throw new Exception("Service " . $di['config']->bundles[$bundle]
+                                    . " is not ModuleDefinitionInterface");
+            }
+        } else {
+            throw new Exception("Bundle '$bundle' is not defined in configuration");
         }
     }
 }

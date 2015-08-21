@@ -17,6 +17,7 @@ use PhalconX\Validators\IsArray;
 use PhalconX\Validators\Multiple;
 use PhalconX\Exception;
 use PhalconX\Enums\Enum;
+use Phalcon\Mvc\Model;
 
 class Valid extends Validator
 {
@@ -35,6 +36,10 @@ class Valid extends Validator
     public $minLength;
 
     public $enum;
+
+    public $criteria;
+    
+    public $using;
 
     private static $TYPES = [
         'boolean' => Boolean::CLASS,
@@ -85,26 +90,41 @@ class Valid extends Validator
             ]);
         }
         if ($this->enum) {
-            if (is_array($this->enum)) {
-                $domain = $this->enum;
-            } else {
-                $clz = $this->getDeclaringClass();
-                if ($clz) {
-                    $enumClass = $this->getAnnotations()->resolveImport($this->enum, $clz);
-                } else {
-                    $enumClass = $this->enum;
-                }
-                if (is_subclass_of($enumClass, Enum::CLASS)) {
-                    $domain = array_map('strtolower', $enumClass::names());
-                } else {
-                    throw new Exception("Cannot infer enum domain from '{$this->enum}'");
-                }
-            }
-            $validators[] = new InclusionIn(['domain' => $domain]);
+            $validators[] = new InclusionIn(['domain' => $this->getEnumDomain()]);
         }
         if ($this->pattern) {
             $validators[] = new Regex(['pattern' => $this->pattern]);
         }
         return $validators;
+    }
+
+    private function getEnumDomain()
+    {
+        if (is_array($this->enum)) {
+            return $this->enum;
+        } else {
+            $clz = $this->getDeclaringClass();
+            if ($clz) {
+                $enumClass = $this->getAnnotations()->resolveImport($this->enum, $clz);
+            } else {
+                $enumClass = $this->enum;
+            }
+            if (is_subclass_of($enumClass, Enum::CLASS)) {
+                return array_map('strtolower', $enumClass::names());
+            } elseif (is_subclass_of($enumClass, Model::CLASS)) {
+                if (empty($this->using)) {
+                    throw new Exception("The 'using' parameter is required for " . $this);
+                }
+                $col = $this->using;
+                $domain = [];
+                $this->criteria['columns'] = [$col];
+                foreach ($enumClass::find($this->criteria) as $row) {
+                    $domain[] = $row[$col];
+                }
+                return $domain;
+            } else {
+                throw new Exception("Cannot infer enum domain from '{$this->enum}'");
+            }
+        }
     }
 }

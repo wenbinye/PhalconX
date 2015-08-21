@@ -30,11 +30,13 @@ class Input extends Annotation
     public function process()
     {
         $elem = new static::$elementClass($this->name, $this->attributes);
-        if ($this->label) {
-            $elem->setLabel($this->label);
-        } else {
-            $elem->setLabel(str_replace('_', ' ', ucfirst($this->name)));
-        }
+        $elem->setLabel($this->getLabel());
         return $elem;
+    }
+
+    public function getLabel()
+    {
+        return $this->label ? $this->label
+            : str_replace('_', ' ', ucfirst($this->name));
     }
 }

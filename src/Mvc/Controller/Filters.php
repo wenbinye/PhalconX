@@ -5,7 +5,6 @@ use Phalcon\Di\Injectable;
 use PhalconX\Util;
 use PhalconX\Annotations\Mvc\Filter\AbstractFilter as Filter;
 use PhalconX\Annotations\ContextType;
-use PhalconX\Exception;
 
 class Filters extends Injectable
 {
@@ -42,7 +41,7 @@ class Filters extends Injectable
                     return false;
                 }
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             if ($this->eventsManager) {
                 if ($this->eventsManager->fire('dispatch:beforeException', $dispatcher, $e) === false) {
                     return false;

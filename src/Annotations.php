@@ -253,6 +253,7 @@ class Annotations
         $ret = [];
         foreach ($annotations as $annotation) {
             if (in_array($annotation->getContextType(), $contextType)) {
+                $annotation->setAnnotations($this);
                 $ret[] = $annotation;
             }
         }

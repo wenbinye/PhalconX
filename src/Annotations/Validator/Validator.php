@@ -12,8 +12,6 @@ abstract class Validator extends Annotation
 
     public $required;
 
-    private $annotations;
-
     public function process()
     {
         $validators = [];
@@ -24,25 +22,4 @@ abstract class Validator extends Annotation
     }
 
     abstract protected function getValidators();
-
-    public function getAnnotations()
-    {
-        return $this->annotations;
-    }
-
-    public function setAnnotations($annotations)
-    {
-        $this->annotations = $annotations;
-        return $this;
-    }
-
-    protected function resolve($annotation)
-    {
-        return $this->annotations->resolveAnnotation($annotation, $this->getContext());
-    }
-
-    protected function resolveImport($name)
-    {
-        return $this->annotations->resolveImport($name, $this->getDeclaringClass());
-    }
 }

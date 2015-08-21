@@ -8,6 +8,13 @@ class Boolean extends Enum
     const TRUE = 1;
     const FALSE = 0;
 
+    protected static $PROPERTIES = [
+        'description' => [
+            0 => 'No',
+            1 => 'Yes'
+        ],
+    ];
+
     /**
      * @param string|int value
      * @return "true", "1", 1, true = TRUE

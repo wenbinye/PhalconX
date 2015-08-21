@@ -226,11 +226,15 @@ class Router
     {
         foreach ($annotations as $annotation) {
             $context = $annotation->getContext();
-            if (!$annotation->name) {
-                throw new Exception("Group name is required which defined in '{$context->class}'");
-            }
             list($annotation->namespace, $annotation->class)
                 = Util::splitClassName($context->class);
+            if (!$annotation->name) {
+                if ($this->taskSuffix && Text::endsWith($annotation->class, $this->taskSuffix)) {
+                    $annotation->name = lcfirst(substr($annotation->class, 0, -strlen($this->taskSuffix)));
+                } else {
+                    throw new Exception("Group name is required which defined in '{$context->class}'");
+                }
+            }
             $annotation->module = $module;
             $this->groups[] = $annotation;
         }

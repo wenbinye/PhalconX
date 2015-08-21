@@ -5,6 +5,8 @@ use Phalcon\Cache;
 use Phalcon\Logger\Adapter\Stream as ConsoleLogger;
 use Phalcon\Logger\Formatter\Line as LineFormatter;
 use PhalconX\Mvc\Metadata\Memory as MetadataAdapter;
+use Phalcon\Mvc\Model;
+use Phalcon\Db\Adapter\Pdo\Sqlite;
 
 function bootstrap_test()
 {
@@ -24,15 +26,22 @@ function bootstrap_test()
         'fixturesDir' => __DIR__ . '/fixtures',
         'testBaseDir' => __DIR__
     ));
-    $di->setShared('config', $config);
-    $di->setShared('cache', function () {
-            $frontend = new Cache\Frontend\None;
-            $backend = new Cache\Backend\Memory($frontend);
-            return $backend;
-    });
-    $di->setShared('modelsMetadata', function () {
-            return new MetadataAdapter();
-    });
+    $di['config'] = $config;
+    $di['cache'] = function () {
+        $frontend = new Cache\Frontend\None;
+        $backend = new Cache\Backend\Memory($frontend);
+        return $backend;
+    };
+    $di['db'] = function () use ($config) {
+        Model::setup(['notNullValidations' => false]);
+        $db = new Sqlite(['dbname' => ':memory:']);
+        if (!$db->tableExists('scopes')) {
+            $db->execute(file_get_contents($config->fixturesDir . '/schema.sql'));
+        }
+        return $db;
+    };
+    
+    $di['modelsMetadata'] = MetadataAdapter::CLASS;
     $di['reflection'] = 'PhalconX\Util\Reflection';
     $di['objectMapper'] = 'PhalconX\Util\ObjectMapper';
     $di['validator'] = 'PhalconX\Validator';
@@ -42,7 +51,7 @@ function bootstrap_test()
     $formatter = new LineFormatter("%date% [%type%] %message%\n");
     $logger = new ConsoleLogger('php://stderr');
     $logger->setFormatter($formatter);
-    $di->setShared('logger', $logger);
+    $di['logger'] = $logger;
     return $di;
 }
 return bootstrap_test();

@@ -114,6 +114,32 @@ abstract class Enum
     }
 
     /**
+     * Gets the enum value for the value
+     * @return Enum
+     */
+    public static function fromValue($value)
+    {
+        $values = static::getValues();
+        if (array_key_exists($value, $values)) {
+            return new static($values[$value], $value);
+        }
+        throw new Exception("No enum constant value '$value' class " . get_called_class());
+    }
+    
+    /**
+     * Gets all enums
+     * @return Enum[]
+     */
+    public static function all()
+    {
+        $all = [];
+        foreach (static::getNames() as $name => $val) {
+            $all[] = new static($name, $val);
+        }
+        return $all;
+    }
+    
+    /**
      * Returns a value when called statically like so: MyEnum::SOME_VALUE() given SOME_VALUE is a class constant
      *
      * @param string $name
