@@ -10,8 +10,6 @@ use PhalconX\Annotations\ContextType;
 
 class Annotations extends Router
 {
-    protected $_defaultParams = [];
-
     private $defaultAction;
     private $processed;
     private $handlers = [];
@@ -82,7 +80,8 @@ class Annotations extends Router
                 }
                 if ($this->controllerSuffix && !Text::endsWith($handler, $this->controllerSuffix)) {
                     if ($this->logger) {
-                        $this->logger->error("Controller handler {$handler} not match suffix {$this->controllerSuffix}");
+                        $this->logger->error("Controller handler {$handler} not match suffix "
+                                             . $this->controllerSuffix);
                     }
                     continue;
                 }

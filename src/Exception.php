@@ -1,7 +1,9 @@
 <?php
 namespace PhalconX;
 
-class Exception extends \Exception
+use Phalcon\Exception as BaseException;
+
+class Exception extends BaseException
 {
     //  系统级错误
     const ERROR_HTTP_METHOD_INVALID       = 1;

@@ -8,13 +8,18 @@ abstract class SimpleModel implements \ArrayAccess
         if ($data === null) {
             return;
         }
-        foreach ($data as $key => $val) {
+        $this->assign($data);
+    }
+
+    public function assign($attrs)
+    {
+        foreach ($attrs as $key => $val) {
             if (property_exists($this, $key)) {
                 $this->$key = $val;
             }
         }
     }
-  
+    
     public function offsetExists($offset)
     {
          return isset($this->$offset);
@@ -33,5 +38,10 @@ abstract class SimpleModel implements \ArrayAccess
     public function offsetUnset($offset)
     {
          unset($this->$offset);
+    }
+
+    public function toArray()
+    {
+        return get_object_vars($this);
     }
 }

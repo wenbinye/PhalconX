@@ -1,0 +1,87 @@
+{
+   "name" : "user",
+   "columns" : [
+      {
+         "autoIncrement" : true,
+         "first" : true,
+         "primary" : true,
+         "type" : "integer",
+         "name" : "id",
+         "size" : 11,
+         "bindType" : "int",
+         "isNumeric" : true,
+         "notNull" : true
+      },
+      {
+         "notNull" : true,
+         "type" : "varchar",
+         "name" : "name",
+         "size" : 200,
+         "isNumeric" : false,
+         "default" : "2",
+         "comment" : "foo name",
+         "after" : "id"
+      },
+      {
+         "type" : "integer",
+         "size" : 11,
+         "name" : "age",
+         "isNumeric" : true,
+         "bindType" : "int",
+         "after" : "name"
+      },
+      {
+         "name" : "status",
+         "size" : 4,
+         "type" : "integer",
+         "bindType" : "int",
+         "after" : "age",
+         "isNumeric" : true
+      },
+      {
+         "bindType" : "int",
+         "isNumeric" : true,
+         "after" : "status",
+         "name" : "address_id",
+         "size" : 11,
+         "type" : "integer"
+      }
+   ],
+   "indexes" : {
+      "name" : {
+         "type" : "UNIQUE",
+         "name" : "name",
+         "columns" : [
+            "name"
+         ]
+      },
+      "status" : {
+         "type" : "UNIQUE",
+         "name" : "status",
+         "columns" : [
+            "status",
+            "address_id"
+         ]
+      },
+      "age" : {
+         "columns" : [
+            "age",
+            "status"
+         ],
+         "name" : "age",
+         "type" : ""
+      },
+      "PRIMARY" : {
+         "name" : "PRIMARY",
+         "columns" : [
+            "id"
+         ]
+      }
+   },
+   "options" : {
+      "engine" : "InnoDB",
+      "auto_increment" : "1",
+      "table_type" : "BASE TABLE",
+      "table_collation" : "utf8_general_ci"
+   }
+}
