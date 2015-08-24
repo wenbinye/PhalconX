@@ -133,15 +133,7 @@ class TableDefinition extends BaseTable
 
     public static function create($name, $definition)
     {
-        $def = [];
-        $parts = explode('.', $name);
-        if (count($parts) > 1) {
-            $def['name'] = $parts[1];
-            $def['schema'] = $parts[0];
-        } else {
-            $def['name'] = $parts[0];
-        }
-        
+        $def = self::parseName($name);
         if (empty($definition['columns'])) {
             throw new Exception("The table must contain at least one column");
         }
@@ -150,8 +142,8 @@ class TableDefinition extends BaseTable
                   'references' => ReferenceDefinition::CLASS] as $field => $clz) {
             if (isset($definition[$field])) {
                 $data = [];
-                foreach ($definition[$field] as $name => $def) {
-                    $data[] = $clz::create($name, $def);
+                foreach ($definition[$field] as $name => $item) {
+                    $data[] = $clz::create($name, $item);
                 }
                 $def[$field] = $data;
             }

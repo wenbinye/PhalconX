@@ -6,6 +6,7 @@ use PhalconX\Util;
 use PhalconX\Mvc\SimpleModel;
 use PhalconX\Db\Column;
 use Phalcon\Validation\Message;
+use PhalconX\Exception;
 use PhalconX\Exception\ValidationException;
 
 class ColumnDefinition extends SimpleModel
@@ -151,10 +152,14 @@ class ColumnDefinition extends SimpleModel
         $def = [];
         if (isset($data['size'])) {
             $scale = (isset($data['scale']) ? ','.$data['scale'] : '');
-            $def[] = sprintf('%s(%s%s)', $data['type'], $data['size'], $scale);
+            $type = sprintf('%s(%s%s)', $data['type'], $data['size'], $scale);
         } else {
-            $def[] = $data['type'];
+            $type = $data['type'];
         }
+        if (!empty($data['bindType'])) {
+            $type .= '=' . $data['bindType'];
+        }
+        $def[] = $type;
         foreach (['isNumeric', 'unsigned', 'notNull', 'primary', 'autoIncrement', 'first'] as $name) {
             if (!empty($data[$name])) {
                 $def[] = $name;
@@ -162,9 +167,6 @@ class ColumnDefinition extends SimpleModel
         }
         if (!empty($data['after'])) {
             $def[] = 'after=' . $data['after'];
-        }
-        if (!empty($data['bindType'])) {
-            $def[] = 'bindType=' . $data['bindType'];
         }
         $other = [];
         if (isset($this->default)) {
@@ -181,6 +183,9 @@ class ColumnDefinition extends SimpleModel
 
     public static function create($name, $definition)
     {
+        if (!is_string($definition)) {
+            throw new Exception("Invalid column definition for column '$name'");
+        }
         $def = [];
         $pos = strpos($definition, ' {');
         if ($pos !== false) {
@@ -189,6 +194,11 @@ class ColumnDefinition extends SimpleModel
         }
         $data = explode(' ', $definition);
         $type = array_shift($data);
+        $pos = strpos($type, '=');
+        if ($pos !== false) {
+            $def['bindType'] = substr($type, $pos+1);
+            $type = substr($type, 0, $pos);
+        }
         $parts = preg_split('/[\(\),]/', $type);
         $def['type'] = $parts[0];
         if (count($parts) > 1) {

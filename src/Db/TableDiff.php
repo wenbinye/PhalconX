@@ -45,7 +45,7 @@ class TableDiff extends BaseTable
      */
     public $newReferences;
 
-    public function toSQL(AdapterInterface $db)
+    public function toSQL(AdapterInterface $db, $options = null)
     {
         $sql = [];
         $dialect = $db->getDialect();
@@ -102,12 +102,63 @@ class TableDiff extends BaseTable
         }
         return implode(";\n", $sql);
     }
-
+    
     public function isChanged()
     {
         $vars = $this->toArray();
         unset($vars['name']);
         unset($vars['schema']);
         return !empty(array_filter($vars));
+    }
+
+    public function getDefinition()
+    {
+        $def = [];
+        if ($this->renamedColumns) {
+            $data = [];
+            foreach ($this->renamedColumns as $name => $col) {
+                $data[$name] = $col->name . ' ' . $col->getDefinition();
+            }
+            $def['renamedColumns'] = $data;
+        }
+        foreach (['dropedColumns', 'newColumns', 'modifiedColumns', 'dropedIndexes', 'newIndexes', 'dropedReferences', 'newReferences'] as $field) {
+            if ($this->$field) {
+                $data = [];
+                foreach ($this->$field as $item) {
+                    $data[$item->name] = $item->getDefinition();
+                }
+                $def[$field] = $data;
+            }
+        }
+        return $def;
+    }
+
+    public static function create($name, $definition)
+    {
+        $def = self::parseName($name);
+        if (isset($definition['renamedColumns'])) {
+            $data = [];
+            foreach ($definition['renamedColumns'] as $name => $col) {
+                list($col_name, $col_def) = explode(' ', $col, 2);
+                $data[$name] = ColumnDefinition::create($col_name, $col_def);
+            }
+            $def['renamedColumns'] = $data;
+        }
+        foreach (['dropedColumns' => ColumnDefinition::CLASS,
+                  'newColumns' => ColumnDefinition::CLASS,
+                  'modifiedColumns' => ColumnDefinition::CLASS,
+                  'dropedIndexes' => IndexDefinition::CLASS,
+                  'newIndexes' => IndexDefinition::CLASS,
+                  'dropedReferences' => ReferenceDefinition::CLASS,
+                  'newReferences' => ReferenceDefinition::CLASS] as $field => $clz) {
+            if (isset($definition[$field])) {
+                $data = [];
+                foreach ($definition[$field] as $name => $item) {
+                    $data[] = $clz::create($name, $item);
+                }
+                $def[$field] = $data;
+            }
+        }
+        return new self($def);
     }
 }

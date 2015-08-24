@@ -42,7 +42,7 @@ class ColumnDefinitionTest extends TestCase
                     'first' => true,
                     'bindType' => 'int',
                 ),
-                'integer(11) isNumeric notNull primary autoIncrement first bindType=int',
+                'integer(11)=int isNumeric notNull primary autoIncrement first',
             ],
             [
                 array (
