@@ -37,6 +37,15 @@ class ObjectMapperTest extends TestCase
         $this->validate($result);
     }
 
+    public function testMalformedJson()
+    {
+        try {
+            $result = $this->objectMapper->map('', Pet::CLASS, 'json');
+            $this->fail();
+        } catch (\InvalidArgumentException $e) {
+        }
+    }
+    
     public function testMapObject()
     {
         $data = json_decode('{"id":1,"category":{"id":1,"name":"dog"},"tags":[{"id":1,"name":"puppy"}]}');
