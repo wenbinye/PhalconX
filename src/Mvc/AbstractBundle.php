@@ -12,6 +12,8 @@ class AbstractBundle implements ModuleDefinitionInterface
 
     private $options;
 
+    protected $services;
+
     public function __construct($options = null)
     {
         $this->options = $options;
@@ -20,6 +22,11 @@ class AbstractBundle implements ModuleDefinitionInterface
     public function getOption($name)
     {
         return Util::fetch($this->options, $name);
+    }
+
+    protected function getServices()
+    {
+        return [];
     }
     
     public function registerAutoloaders(DiInterface $di = null)
@@ -43,6 +50,9 @@ class AbstractBundle implements ModuleDefinitionInterface
                     return $self->$method($di);
                 };
             }
+        }
+        foreach ($this->getServices() as $service => $def) {
+            $di[$service] = $def;
         }
     }
 }
