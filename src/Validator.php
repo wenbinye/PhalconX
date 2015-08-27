@@ -8,7 +8,7 @@ use PhalconX\Forms\Form;
 use PhalconX\Annotations\Validator\Validator as ValidatorAnnotation;
 use PhalconX\Annotations\ContextType;
 use PhalconX\Annotations\Forms\Input;
-use PhalconX\Mvc\SimpleModel;
+use Phalcon\Mvc\Model;
 
 class Validator extends Injectable
 {
@@ -34,6 +34,8 @@ class Validator extends Injectable
         }
         if (is_array($model)) {
             $data = &$model;
+        } elseif ($model instanceof Model) {
+            $data = $model->toArray();
         } else {
             $data = [];
             foreach ($names as $name => $i) {
@@ -68,7 +70,7 @@ class Validator extends Injectable
     
     /**
      * 创建表单对象
-     * @param string|SimpleModel $model
+     * @param string|object $model
      * @param array $bind
      * @return \Phalcon\Forms\Form
      */

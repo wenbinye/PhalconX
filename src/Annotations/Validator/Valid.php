@@ -1,6 +1,7 @@
 <?php
 namespace PhalconX\Annotations\Validator;
 
+use Phalcon\Text;
 use Phalcon\Annotations\Annotation as PhalconAnnotation;
 use Phalcon\Validation\Validator\InclusionIn;
 use Phalcon\Validation\Validator\Numericality;
@@ -15,6 +16,7 @@ use PhalconX\Validators\Boolean;
 use PhalconX\Validators\Integer;
 use PhalconX\Validators\IsArray;
 use PhalconX\Validators\Multiple;
+use PhalconX\Validators\Datetime;
 use PhalconX\Exception;
 use PhalconX\Enums\Enum;
 use Phalcon\Mvc\Model;
@@ -44,18 +46,22 @@ class Valid extends Validator
     private static $TYPES = [
         'boolean' => Boolean::CLASS,
         'integer' => Integer::CLASS,
-        'number' => Numericality::CLASS,
-        'email' => Email::CLASS,
-        'alpha' => Alpha::CLASS,
-        'alnum' => Alnum::CLASS,
-        'digit' => Digit::CLASS,
+        'number'  => Numericality::CLASS,
+        'email'   => Email::CLASS,
+        'alpha'   => Alpha::CLASS,
+        'alnum'   => Alnum::CLASS,
+        'digit'   => Digit::CLASS,
     ];
     
     public function getValidators()
     {
         $validators = [];
         if ($this->type) {
-            if (isset(self::$TYPES[$this->type])) {
+            if ($this->type instanceof PhalconAnnotation) {
+                $validators[] = $this->createValidator();
+            } elseif ($this->type == 'datetime') {
+                $validators[] = new Datetime(['pattern' => $this->pattern]);
+            } elseif (isset(self::$TYPES[$this->type])) {
                 $clz = self::$TYPES[$this->type];
                 $validators[] = new $clz;
             } elseif ($this->type == 'array') {
@@ -75,6 +81,8 @@ class Valid extends Validator
                     $args['element'] = new Multiple(['validators' => $element->process()]);
                 }
                 $validators[] = new IsArray($args);
+            } elseif (ctype_upper($this->type[0])) {
+                $validators[] = $this->createValidator();
             }
         }
         if (isset($this->maximum) || isset($this->minimum)) {
@@ -92,7 +100,7 @@ class Valid extends Validator
         if ($this->enum) {
             $validators[] = new InclusionIn(['domain' => $this->getEnumDomain()]);
         }
-        if ($this->pattern) {
+        if ($this->pattern && $this->type != 'datetime') {
             $validators[] = new Regex(['pattern' => $this->pattern]);
         }
         return $validators;
@@ -103,14 +111,21 @@ class Valid extends Validator
         if (is_array($this->enum)) {
             return $this->enum;
         } else {
+            $enumClass = $this->enum;
+            if (Text::endsWith($enumClass, '.values')) {
+                $enumClass = substr($enumClass, 0, -7);
+                $useEnumValue = true;
+            }
             $clz = $this->getDeclaringClass();
             if ($clz) {
-                $enumClass = $this->getAnnotations()->resolveImport($this->enum, $clz);
-            } else {
-                $enumClass = $this->enum;
+                $enumClass = $this->resolveImport($enumClass, $clz);
             }
             if (is_subclass_of($enumClass, Enum::CLASS)) {
-                return array_map('strtolower', $enumClass::names());
+                if (isset($useEnumValue)) {
+                    return $enumClass::values();
+                } else {
+                    return array_map('strtolower', $enumClass::names());
+                }
             } elseif (is_subclass_of($enumClass, Model::CLASS)) {
                 if (empty($this->using)) {
                     throw new Exception("The 'using' parameter is required for " . $this);
@@ -125,6 +140,25 @@ class Valid extends Validator
             } else {
                 throw new Exception("Cannot infer enum domain from '{$this->enum}'");
             }
+        }
+    }
+
+    private function createValidator()
+    {
+        if ($this->type instanceof PhalconAnnotation) {
+            $validator = $this->type->getName();
+            $args = $this->type->getArguments();
+        } else {
+            $validator = $this->type;
+        }
+        $clz = $this->getDeclaringClass();
+        if ($clz) {
+            $validator = $this->resolveImport($this->type, $clz);
+        }
+        if (isset($args)) {
+            return new $validator($args);
+        } else {
+            return new $validator();
         }
     }
 }

@@ -2,6 +2,7 @@
 namespace PhalconX\Mvc;
 
 use Phalcon\Mvc\Model as BaseModel;
+use Phalcon\Mvc\Model\Criteria;
 
 abstract class Model extends BaseModel
 {
@@ -18,6 +19,8 @@ abstract class Model extends BaseModel
                 'conditions' => $conditions,
                 'bind' => $pk
             );
+        } elseif ($pk instanceof Criteria) {
+            $pk = $pk->getParams();
         }
         return static::findFirst($pk);
     }

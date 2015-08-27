@@ -110,11 +110,9 @@ class Annotations extends Router
                 'controller' => Text::uncamelize(substr($class, 0, -strlen($this->controllerSuffix))),
                 'action' => null
             ];
-            $annotations = $this->annotations->getAnnotations(
-                $handler,
-                Route::CLASS,
-                [ContextType::T_CLASS, ContextType::T_METHOD]
-            );
+            $collection = $this->annotations->get($handler, Route::CLASS);
+            // make sure priority of class route less then method
+            $annotations = $collection->classOnly()->merge($collection->methodsOnly());
             $methodRoutes = [];
             foreach ($annotations as $annotation) {
                 if ($annotation->isClass()) {
