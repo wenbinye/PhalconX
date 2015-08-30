@@ -8,47 +8,61 @@ class TableDiff extends BaseTable
     /**
      * @var ColumnDefinition[]
      */
-    public $dropedColumns;
+    public $dropedColumns = [];
 
     /**
      * @var ColumnDefinition[]
      */
-    public $newColumns;
+    public $newColumns = [];
 
     /**
      * @var Map<String, ColumnDefinition>
      */
-    public $renamedColumns;
+    public $renamedColumns = [];
 
     /**
      * @var ColumnDefinition[]
      */
-    public $modifiedColumns;
+    public $modifiedColumns = [];
 
     /**
      * @var IndexDefinition[]
      */
-    public $dropedIndexes;
+    public $dropedIndexes = [];
 
     /**
      * @var IndexDefinition[]
      */
-    public $newIndexes;
+    public $newIndexes = [];
 
     /**
      * @var ReferenceDefinition[]
      */
-    public $dropedReferences;
+    public $dropedReferences = [];
 
     /**
      * @var ReferenceDefinition[]
      */
-    public $newReferences;
+    public $newReferences = [];
 
     public function toSQL(AdapterInterface $db, $options = null)
     {
         $sql = [];
         $dialect = $db->getDialect();
+        if ($this->dropedIndexes) {
+            foreach ($this->dropedIndexes as $index) {
+                if ($index->isPrimaryKey()) {
+                    $sql[] = $dialect->dropPrimaryKey($this->name, $this->schema);
+                } else {
+                    $sql[] = $dialect->dropIndex($this->name, $this->schema, $index->name);
+                }
+            }
+        }
+        if ($this->dropedReferences) {
+            foreach ($this->dropedReferences as $reference) {
+                $sql[] = $dialect->dropForeignKey($this->table, $this->schema, $reference->name);
+            }
+        }
         if ($this->dropedColumns) {
             foreach ($this->dropedColumns as $col) {
                 $sql[] = $dialect->dropColumn($this->name, $this->schema, $col->name);
@@ -72,15 +86,6 @@ class TableDiff extends BaseTable
                 $sql[] = $dialect->addColumn($this->name, $this->schema, $col->toColumn());
             }
         }
-        if ($this->dropedIndexes) {
-            foreach ($this->dropedIndexes as $index) {
-                if ($index->isPrimaryKey()) {
-                    $sql[] = $dialect->dropPrimaryKey($this->name, $this->schema);
-                } else {
-                    $sql[] = $dialect->dropIndex($this->name, $this->schema, $index->name);
-                }
-            }
-        }
         if ($this->newIndexes) {
             foreach ($this->newIndexes as $index) {
                 if ($index->isPrimaryKey()) {
@@ -88,11 +93,6 @@ class TableDiff extends BaseTable
                 } else {
                     $sql[] = $dialect->addIndex($this->name, $this->schema, $index->toIndex());
                 }
-            }
-        }
-        if ($this->dropedReferences) {
-            foreach ($this->dropedReferences as $reference) {
-                $sql[] = $dialect->dropForeignKey($this->table, $this->schema, $reference->name);
             }
         }
         if ($this->newReferences) {

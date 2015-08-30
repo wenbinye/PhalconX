@@ -35,15 +35,14 @@ class ColumnDefinitionTest extends TestCase
                 array(
                     'name' => 'id',
                     'type' => 'integer',
-                    'size' => 11,
+                    'size' => '11',
                     'isNumeric' => true,
                     'notNull' => true,
-                    'primary' => true,
                     'autoIncrement' => true,
                     'first' => true,
                     'bindType' => 'int',
                 ),
-                'integer(11)=int isNumeric notNull primary autoIncrement first',
+                'integer(11)=int isNumeric notNull autoIncrement first',
             ],
             [
                 array (

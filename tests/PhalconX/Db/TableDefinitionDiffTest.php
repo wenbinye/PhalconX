@@ -35,8 +35,8 @@ class TableDefinitionDiffTest extends TableDefinitionBaseTest
         $diff = $this->def->compare($other);
         // print_r($diff);
         $sql = $diff->toSQL(self::$db);
-        $this->assertEquals($sql, 'ALTER TABLE `user` DROP COLUMN `name`;
-ALTER TABLE `user` DROP INDEX `name`;');
+        $this->assertEquals($sql, 'ALTER TABLE `user` DROP INDEX `name`;
+ALTER TABLE `user` DROP COLUMN `name`');
     }
 
     public function testRename()

@@ -43,6 +43,21 @@ class Mysql extends BaseMysql
         }
         return $sql;
     }
+
+    public function addColumn($table, $schema, ColumnInterface $column)
+    {
+        $sql = 'ALTER TABLE `' . ($schema ? $schema . '`.`' : '') . $table . '` ADD `'
+            . $column->getName() . '` '
+            . $this->getColumnDefinition($column);
+        $def = $column->getDefault();
+        if (isset($def)) {
+            $sql .= ' DEFAULT "' . addcslashes($def, '"') . '"';
+        }
+        if ($column->isNotNull()) {
+            $sql .= " NOT NULL";
+        }
+        return $sql;
+    }
     
     protected function _getTableOptions($def)
     {

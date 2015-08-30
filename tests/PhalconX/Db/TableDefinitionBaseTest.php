@@ -9,7 +9,7 @@ use Phalcon\Db\Adapter\Pdo\Mysql;
 /**
  * TestCase for TableDefinition
  */
-class TableDefinitionBaseTest extends TestCase
+abstract class TableDefinitionBaseTest extends TestCase
 {
     protected static $db;
     

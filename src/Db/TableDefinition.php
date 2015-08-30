@@ -335,13 +335,70 @@ class TableDefinition extends BaseTable
 
     protected function applyColumnChanges(TableDiff $diff)
     {
+        $columns = [];
+        foreach ($this->columns as $col) {
+            $columns[$col->name] = $col;
+        }
+        if ($diff->dropedColumns) {
+            foreach ($diff->dropedColumns as $col) {
+                if (!isset($columns[$col->name])) {
+                    throw new Exception("The column '{$col->name}' was not precent in table " . $this->getName());
+                }
+                unset($columns[$col->name]);
+            }
+        }
+        if ($diff->renamedColumns) {
+            foreach ($diff->renamedColumns as $name => $col) {
+                if (!isset($columns[$name])) {
+                    throw new Exception("The column '{$name}' was not precent in table " . $this->getName());
+                }
+            }
+            unset($columns[$name]);
+            $columns[$col->name] = $col;
+        }
+        if ($diff->newColumns) {
+            foreach ($diff->newColumns as $col) {
+                $columns[$col->name] = $col;
+            }
+        }
+        $this->columns = array_values($columns);
     }
     
     protected function applyIndexChanges(TableDiff $diff)
     {
+        $indexes = [];
+        foreach ($this->indexes as $index) {
+            $indexes[$index->name] = $index;
+        }
+        if ($diff->dropedIndexes) {
+            foreach ($diff->dropedIndexes as $index) {
+                unset($indexes[$index->name]);
+            }
+        }
+        if ($diff->newIndexes) {
+            foreach ($diff->newIndexes as $index) {
+                $indexes[$index->name] = $index;
+            }
+        }
+        $this->indexes = $indexes;
     }
 
     protected function applyReferenceChanges(TableDiff $diff)
     {
+        $references = [];
+        foreach ($this->references as $index) {
+            $references[$index->name] = $index;
+        }
+        if ($diff->dropedReferences) {
+            foreach ($diff->dropedReferences as $index) {
+                unset($references[$index->name]);
+            }
+        }
+        if ($diff->newReferences) {
+            foreach ($diff->newReferences as $index) {
+                $references[$index->name] = $index;
+            }
+        }
+        $this->references = $references;
     }
 }
