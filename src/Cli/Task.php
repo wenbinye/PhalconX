@@ -7,4 +7,5 @@ use PhalconX\Mvc\SimpleModel;
 abstract class Task extends SimpleModel implements TaskInterface
 {
     use Injectable;
+    use Console;
 }

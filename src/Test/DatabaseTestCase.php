@@ -16,6 +16,7 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase im
     // only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
     private $conn = null;
     private $cache = array();
+    protected $connectionService = 'db';
 
     protected function setUp()
     {
@@ -32,12 +33,17 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase im
             parent::tearDown();
         }
     }
+
+    protected function setConnectionService($service)
+    {
+        $this->connectionService = $service;
+    }
     
     public function getConnection()
     {
         if ($this->conn === null) {
             if (self::$pdo == null) {
-                self::$pdo = $this->getDI()->getDb()->getInternalHandler();
+                self::$pdo = $this->getDI()->get($this->connectionService)->getInternalHandler();
             }
             $this->conn = $this->createDefaultDBConnection(self::$pdo, $this->getDI()->getConfig()->database->dbname);
         }

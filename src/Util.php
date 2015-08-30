@@ -153,4 +153,61 @@ class Util
             throw new Exception("Bundle '$bundle' is not defined in configuration");
         }
     }
+
+    public static function mixin($obj, $mixin)
+    {
+        $orig = get_class($obj);
+        $clz = str_replace('\\', '_', $orig) . uniqid('Mixin');
+        $code = "class $clz extends $orig {\n"
+            ."  use PhalconX\\Util\\Mixin;\n";
+        $refl = new \ReflectionClass($orig);
+        foreach ($refl->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->isStatic()) {
+                continue;
+            }
+            $name = $method->getName();
+            if ($name[0] == '_') {
+                continue;
+            }
+            $args = self::methodArgs($method);
+            $code .= "public function $name($args) { return \$this->_callMixin('$name', func_get_args()); }\n";
+        }
+        $code .= "}";
+        eval($code);
+        $refl = new \ReflectionClass($clz);
+        return $refl->newInstanceWithoutConstructor()
+            ->_setOriginObject($obj)->_setMixin($mixin);
+    }
+
+    private static function methodArgs($method)
+    {
+        $args = [];
+        foreach ($method->getParameters() as $param) {
+            $arg = '';
+            if (($type = $param->getClass())) {
+                $arg = $type->getName() . " ";
+            } elseif ($param->isArray()) {
+                $arg = "array ";
+            }
+            if ($param->isPassedByReference()) {
+                $arg .= "&";
+            }
+            $name = $param->getName();
+            if ($name == "...") {
+                $arg .= '$_ = "..."';
+            } else {
+                $arg .= "$" . $name;
+            }
+
+            if ($param->isOptional()) {
+                if ($param->isDefaultValueAvailable()) {
+                    $arg .= " = " . str_replace("\n", "", var_export($param->getDefaultValue()));
+                } else {
+                    $arg .= " = NULL";
+                }
+            }
+            $args[] = $arg;
+        }
+        return implode(',', $args);
+    }
 }
