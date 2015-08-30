@@ -25,8 +25,6 @@ class ColumnDefinition extends SimpleModel
 
     public $notNull = false;
 
-    public $primary = false;
-
     public $autoIncrement = false;
 
     public $first = false;
@@ -160,7 +158,7 @@ class ColumnDefinition extends SimpleModel
             $type .= '=' . $data['bindType'];
         }
         $def[] = $type;
-        foreach (['isNumeric', 'unsigned', 'notNull', 'primary', 'autoIncrement', 'first'] as $name) {
+        foreach (['isNumeric', 'unsigned', 'notNull', 'autoIncrement', 'first'] as $name) {
             if (!empty($data[$name])) {
                 $def[] = $name;
             }

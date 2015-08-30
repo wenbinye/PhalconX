@@ -7,4 +7,5 @@ use PhalconX\Di\Injectable;
 abstract class TaskGroup extends SimpleModel
 {
     use Injectable;
+    use Console;
 }

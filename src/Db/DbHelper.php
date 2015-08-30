@@ -4,6 +4,8 @@ namespace PhalconX\Db;
 use Phalcon\Db;
 use Phalcon\Exception;
 use Phalcon\Db\Index;
+use Phalcon\Text;
+use PhalconX\Util;
 
 class DbHelper
 {
@@ -82,5 +84,38 @@ class DbHelper
         } else {
             return $conn->getDialect();
         }
+    }
+
+    public static function parseDsn($dsn)
+    {
+        if (Text::startsWith($dsn, 'sqlite:')) {
+            return [
+                'adapter' => 'sqlite',
+                'dbname' => substr($dsn, strlen('sqlite:'))
+            ];
+        } elseif (Text::startsWith($dsn, 'mysql:')) {
+            $options = ['adapter' => 'mysql'];
+            foreach (explode(';', substr($dsn, strlen('mysql:'))) as $pair) {
+                list($key, $val) = explode('=', $pair, 2);
+                $options[$key] = $val;
+            }
+            return $options;
+        } else {
+            throw new Exception("Not implement dsn format: '$dsn'");
+        }
+    }
+
+    public static function getConnection($dsn)
+    {
+        if (!is_array($dsn)) {
+            $dsn = self::parseDsn($dsn);
+        }
+        if (!isset($dsn['adapter'])) {
+            throw new Exception("database adapter is missing for " . json_encode($dsn));
+        }
+        $class = 'Phalcon\Db\Adapter\Pdo\\' . ucfirst($dsn['adapter']);
+        unset($dsn['adapter']);
+        $conn = new $class($dsn);
+        return Util::mixin($conn, new self);
     }
 }

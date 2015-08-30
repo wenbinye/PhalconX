@@ -16,14 +16,14 @@ class TableDefinition extends BaseTable
     /**
      * @IsA('IndexDefinition[]')
      */
-    public $indexes;
+    public $indexes = [];
 
-    public $options;
+    public $options = [];
 
     /**
      * @IsA('ReferenceDefinition[]')
      */
-    public $references;
+    public $references = [];
 
     private static $DEFAULT_SQL_OPTIONS = [
         'auto_increment' => false,

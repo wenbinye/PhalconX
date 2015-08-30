@@ -44,9 +44,6 @@ class IndexDefinition extends SimpleModel
     public function check()
     {
         $errors = new Message\Group;
-        if (!$this->name) {
-            $errors->appendMessage(new Message("Index name is required", 'name'));
-        }
         if (empty($this->columns)) {
             $errors->appendMessage(new Message("Index columns is required", 'columns'));
         }

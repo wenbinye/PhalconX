@@ -34,8 +34,9 @@ class Mysql extends BaseMysql
             $sql .= sprintf('MODIFY `%s` ', $column->getName());
         }
         $sql .= $this->getColumnDefinition($column);
-        if (!empty($column->getDefault())) {
-            $sql .= ' DEFAULT "' . addcslashes($column->getDefault(), '"') . '"';
+        $def = $column->getDefault();
+        if (isset($def)) {
+            $sql .= ' DEFAULT "' . addcslashes($def, '"') . '"';
         }
         if ($column->isNotNull()) {
             $sql .= " NOT NULL";

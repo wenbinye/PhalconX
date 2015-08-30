@@ -2,6 +2,7 @@
 namespace PhalconX\Db;
 
 use PhalconX\Test\TestCase;
+use PhalconX\Db\Dialect\Mysql;
 
 /**
  * TestCase for ColumnDefinition
@@ -54,5 +55,22 @@ class ColumnDefinitionTest extends TestCase
                 'datetime notNull after=id'
             ],
         ];
+    }
+
+    public function testToColumn()
+    {
+        $col = new ColumnDefinition([
+            'name' => 'releases',
+            'type' => 'integer',
+            'size' => 11,
+            'isNumeric' => true,
+            'notNull' => true,
+            'bindType' => 'int',
+            'default' => '0'
+        ]);
+        $obj = $col->toColumn();
+        $dialect = new Mysql();
+        $sql = $dialect->modifyColumn('app', null, $obj, null);
+        $this->assertEquals($sql, 'ALTER TABLE `app` MODIFY `releases` INT(11) DEFAULT "0" NOT NULL');
     }
 }
