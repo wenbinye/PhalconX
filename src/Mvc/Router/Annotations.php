@@ -29,6 +29,7 @@ class Annotations extends Router
         $this->reflection = Util::service('reflection', $options);
         $this->annotations = Util::service('annotations', $options);
         $this->logger = Util::service('logger', $options, false);
+        parent::__construct(Util::fetch($options, 'defaultRoutes', true));
     }
     
     public function scan($dir, $module = null)
