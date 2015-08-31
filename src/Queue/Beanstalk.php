@@ -95,7 +95,7 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
     private function createJob($beanstalkJob)
     {
         $arguments = $beanstalkJob->getBody();
-        if (isset($arguments['_handler'])) {
+        if (isset($arguments['_handler']) && class_exists($arguments['_handler'])) {
             $job = Di::getDefault()->get($arguments['_handler']);
             if (isset($arguments['_id'])) {
                 $jobId = $job->getId();
