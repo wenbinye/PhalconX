@@ -19,6 +19,10 @@ class TimestampBehavior extends Behavior implements BehaviorInterface
             if ($type == 'beforeCreate' && $model->readAttribute($options['field'])) {
                 return;
             }
+            if ($type == 'beforeSave' && method_exists($model, 'isChanged')
+                && !$model->isChanged()) {
+                return;
+            }
             $format = Util::fetch($options, 'format', 'Y-m-d H:i:s');
             $timestamp = is_string($format)
                 ? date($format)
