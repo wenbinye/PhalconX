@@ -20,8 +20,10 @@ class DbListener extends Injectable
 
     public function beforeQuery($event, $connection, $binds)
     {
-        if (time() - $this->activeTime > $this->timeout) {
+        if (time() - $this->activeTime > $this->timeout
+            && !$connection->isUnderTransaction()) {
             Logger::log("connection timeout, reconnecting", "info");
+            $this->activeTime = time();
             $connection->connect();
         }
         if ($this->logging) {
