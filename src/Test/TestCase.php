@@ -1,12 +1,14 @@
 <?php
 namespace PhalconX\Test;
 
-use Phalcon\Di\InjectionAwareInterface;
-use PhalconX\Di\Injectable;
-
-abstract class TestCase extends \PHPUnit_Framework_TestCase implements InjectionAwareInterface
+abstract class TestCase extends \PHPUnit_Framework_TestCase
 {
-    use Injectable;
+    use DiService;
     use Dataset;
     use Accessible;
+
+    public function tearDown()
+    {
+        $this->restoreServices();
+    }
 }

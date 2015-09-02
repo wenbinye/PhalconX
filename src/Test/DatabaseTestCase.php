@@ -1,12 +1,9 @@
 <?php
 namespace PhalconX\Test;
 
-use Phalcon\Di\InjectionAwareInterface;
-use PhalconX\Di\Injectable;
-
-abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase implements InjectionAwareInterface
+abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
 {
-    use Injectable;
+    use DiService;
     use Dataset;
     use Accessible;
     
@@ -32,6 +29,7 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase im
         if ($dataset!=null) {
             parent::tearDown();
         }
+        $this->restoreServices();
     }
 
     protected function setConnectionService($service)
