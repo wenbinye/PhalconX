@@ -7,6 +7,8 @@ use PhalconX\Annotations\Annotation;
 abstract class AbstractFilter extends Annotation
 {
     use Injectable;
+
+    public $priority = 1024;
     
     abstract public function filter();
 }

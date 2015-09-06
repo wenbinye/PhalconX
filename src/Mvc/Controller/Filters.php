@@ -21,7 +21,8 @@ class Filters extends Injectable
         $method = strtolower($dispatcher->getActiveMethod());
         $methodFilters = [];
         // every type of filter , only one can apply
-        foreach ($filters as $filter) {
+        foreach ($filters as $i => $filter) {
+            $filter->index = $i;
             $type = get_class($filter);
             if ($filter->isClass()) {
                 if (!isset($methodFilters[$type])) {
@@ -34,6 +35,13 @@ class Filters extends Injectable
         if (empty($methodFilters)) {
             return;
         }
+        usort($methodFilters, function ($a, $b) {
+                $diff = $a->priority - $b->priority;
+            if ($diff == 0) {
+                return $a->index - $b->index;
+            }
+                return $diff < 0 ? -1 : 1;
+        });
         try {
             foreach ($methodFilters as $type => $filter) {
                 $this->logger->info("Apply filter $type");

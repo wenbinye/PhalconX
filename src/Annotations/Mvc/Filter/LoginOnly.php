@@ -5,6 +5,8 @@ use PhalconX\Exception;
 
 class LoginOnly extends AbstractFilter
 {
+    public $priority = 101;
+    
     public function filter()
     {
         if ($this->auth->isGuest()) {
