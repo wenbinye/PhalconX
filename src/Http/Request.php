@@ -5,6 +5,27 @@ class Request extends \Phalcon\Http\Request
 {
     private $body;
     private $files;
+
+    public function hasFiles($onlySuccessful = true)
+    {
+        if (!is_array($_FILES)) {
+            return 0;
+        }
+        $files = 0;
+        foreach ($_FILES as $file) {
+            if (isset($file['error'])) {
+                $error = $file['error'];
+                if (is_array($error)) {
+                    $files += $this->hasFileHelper($error, $onlySuccessful);
+                } elseif ($error == UPLOAD_ERR_NO_FILE) {
+                } elseif ($error == UPLOAD_ERR_OK
+                          || !$onlySuccessful) {
+                    $files++;
+                }
+            }
+        }
+        return $files;
+    }
     
     public function getFile($name)
     {

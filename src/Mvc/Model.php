@@ -10,6 +10,9 @@ abstract class Model extends BaseModel
 {
     public static function findPk($pk)
     {
+        if (empty($pk)) {
+            return false;
+        }
         if (is_array($pk)) {
             $conditions = '';
             $sep = '';

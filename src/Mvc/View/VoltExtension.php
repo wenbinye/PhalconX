@@ -8,16 +8,25 @@ class VoltExtension
 {
     private $viewHelper;
     
-    public function __construct()
-    {
-        $this->viewHelper = Util::service('viewHelper');
-    }
-    
     public function compileFunction($name, $arguments)
     {
         $cname = Text::camelize($name);
-        if (method_exists($this->viewHelper, $cname)) {
+        if (method_exists($this->getViewHelper(), $cname)) {
             return '$this->viewHelper->'.$cname . '(' . $arguments . ')';
         }
+    }
+
+    public function getViewHelper()
+    {
+        if (!$this->viewHelper) {
+            $this->viewHelper = Util::service('viewHelper');
+        }
+        return $this->viewHelper;
+    }
+
+    public function setViewHelper($viewHelper)
+    {
+        $this->viewHelper = $viewHelper;
+        return $this;
     }
 }
