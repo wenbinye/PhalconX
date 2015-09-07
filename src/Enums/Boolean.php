@@ -34,6 +34,6 @@ class Boolean extends Enum
         if (isset($ret)) {
             return new Boolean($ret, $value);
         }
-        throw new Exception("unknown boolean value '$value'");
+        return Boolean::FALSE();
     }
 }
