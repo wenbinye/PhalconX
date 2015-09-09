@@ -16,17 +16,10 @@ abstract class Job extends SimpleModel implements JobInterface
 
     private $beanstalkJob;
 
-    protected $logger;
     protected $id;
     protected $delay = self::DEFAULT_DELAY;
     protected $priority = self::DEFAULT_PRIORITY;
     protected $ttr = self::DEFAULT_TTR;
-
-    public function __construct($options = null)
-    {
-        parent::__construct($options);
-        $this->logger = Util::service('logger', $options, false);
-    }
     
     public function getDelay()
     {
@@ -87,5 +80,10 @@ abstract class Job extends SimpleModel implements JobInterface
     {
         $this->beanstalkJob = $beanstalkJob;
         return $this;
+    }
+
+    public function __sleep()
+    {
+        return array_diff(array_keys(get_object_vars($this)), ['beanstalkJob', 'di']);
     }
 }

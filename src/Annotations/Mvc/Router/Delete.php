@@ -3,5 +3,5 @@ namespace PhalconX\Annotations\Mvc\Router;
 
 class Delete extends Route
 {
-    public $methods = ['Delete'];
+    public $methods = ['DELETE'];
 }
