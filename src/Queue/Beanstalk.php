@@ -16,6 +16,31 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
         $this->logger = Util::service('logger', $options, false);
     }
 
+    public function watching()
+    {
+        $this->write('list-tubes-watched');
+        $response = $this->readYaml();
+        if ($response[0] != "OK") {
+            return false;
+        }
+        return $response[2];
+    }
+
+    public function ignore($tube)
+    {
+        $this->write('ignore ' . $tube);
+        $response = $this->readStatus();
+        if ($response[0] != "WATCHING") {
+            return false;
+        }
+        return $response[1];
+    }
+
+    public function ignoreDefault()
+    {
+        return $this->ignore('default');
+    }
+    
     /**
      * 添加任务到队列
      *
