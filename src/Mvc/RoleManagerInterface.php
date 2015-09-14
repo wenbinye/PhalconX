@@ -27,18 +27,4 @@ interface RoleManagerInterface
      * @return array 如果是root用户，返回 null，其它用户返回权限数组
      */
     public function getRoles($user_id);
-
-    /**
-     * 给用户添加权限
-     * @param string $user_id
-     * @param array 权限名
-     */
-    public function addRoles($user_id, $roles);
-
-    /**
-     * 删除用户权限
-     * @param string $user_id
-     * @param array 权限名
-     */
-    public function removeRoles($user_id, $roles);
 }

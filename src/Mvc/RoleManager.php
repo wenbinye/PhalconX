@@ -9,7 +9,7 @@ class RoleManager implements RoleManagerInterface
     const DELIMITER = ' ';
     
     private $cache;
-    private $cachePrefix = 'txf:admin_users:';
+    private $cachePrefix = 'user_roles:';
 
     private $model;
 
@@ -56,7 +56,7 @@ class RoleManager implements RoleManagerInterface
             if ($user == null) {
                 $roles = array();
             } else {
-                $roles = array_flip(explode(' ', $user->getRoles()));
+                $roles = array_flip($user->getRoles());
             }
             
             $this->cache->save($cacheKey, $roles);
@@ -124,6 +124,12 @@ class RoleManager implements RoleManagerInterface
         return false;
     }
 
+    public function clearCache($user_id)
+    {
+        $this->cache->delete($this->cachePrefix . $user_id);
+        unset($this->localCache[$user_id]);
+    }
+    
     public function setRoles($user_id, $roles)
     {
         return $this->saveRoles($user_id, array_flip($roles));

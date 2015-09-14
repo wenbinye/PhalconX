@@ -108,7 +108,7 @@ class Annotations
     public function __construct($options = null)
     {
         if (isset($options['aliases'])) {
-            $this->setAliases($options['aliases']);
+            $this->addAliases($options['aliases']);
         }
         if (isset($options['extension'])) {
             $this->extension = $options['extension'];
@@ -357,9 +357,11 @@ class Annotations
         return $this->aliases;
     }
 
-    public function setAliases($aliases)
+    public function addAliases($aliases)
     {
-        $this->aliases = $aliases;
+        foreach ($aliases as $name => $annotationClass) {
+            $this->setAlias($name, $annotationClass);
+        }
         return $this;
     }
     

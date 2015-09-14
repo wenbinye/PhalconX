@@ -16,7 +16,7 @@ class Acl extends AbstractFilter
                 Exception::ERROR_LOGIN_REQUIRED
             );
         }
-        foreach ($this->value as $role) {
+        foreach ($this->getRoles() as $role) {
             if (!$this->roleManager->checkAccess($this->auth->user_id, $role)) {
                 $this->response->setStatusCode(403);
                 throw new Exception(
@@ -25,5 +25,14 @@ class Acl extends AbstractFilter
                 );
             }
         }
+    }
+
+    public function getRoles()
+    {
+        $roles = $this->value;
+        if (!is_array($roles)) {
+            $roles = [$roles];
+        }
+        return $roles;
     }
 }

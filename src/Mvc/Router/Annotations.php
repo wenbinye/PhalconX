@@ -196,4 +196,37 @@ class Annotations extends Router
         }
         return $route;
     }
+
+    public function getDefaultAction()
+    {
+        return $this->defaultAction;
+    }
+
+    public function setDefaultAction($defaultAction)
+    {
+        $this->defaultAction = $defaultAction;
+        return $this;
+    }
+
+    public function getControllerSuffix()
+    {
+        return $this->controllerSuffix;
+    }
+
+    public function setControllerSuffix($controllerSuffix)
+    {
+        $this->controllerSuffix = $controllerSuffix;
+        return $this;
+    }
+
+    public function getActionSuffix()
+    {
+        return $this->actionSuffix;
+    }
+
+    public function setActionSuffix($actionSuffix)
+    {
+        $this->actionSuffix = $actionSuffix;
+        return $this;
+    }
 }
