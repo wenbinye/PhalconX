@@ -55,7 +55,9 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
             return $this->cache[$path];
         }
         if (preg_match('/\.ya?ml$/', $file)) {
-            $dataset = new \PHPUnit_Extensions_Database_DataSet_YamlDataSet($path);
+            $dataset = parent::createArrayDataSet(yaml_parse_file($path));
+        } elseif (preg_match('/\.json$/', $file)) {
+            $dataset = parent::createArrayDataSet(json_decode(file_get_contents($path), true));
         } else {
             $dataset = parent::createFlatXmlDataSet($path);
         }

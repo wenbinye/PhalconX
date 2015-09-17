@@ -12,8 +12,6 @@ class AbstractBundle implements ModuleDefinitionInterface
 
     private $options;
 
-    protected $services;
-
     public function __construct($options = null)
     {
         $this->options = $options;

@@ -18,4 +18,11 @@ class Form extends BaseForm
         }
         $this->_messages[$message->getField()]->appendMessage($message);
     }
+
+    public function appendMessages($group)
+    {
+        foreach ($group as $message) {
+            $this->appendMessage($message);
+        }
+    }
 }

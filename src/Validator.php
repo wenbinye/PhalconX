@@ -6,12 +6,24 @@ use Phalcon\Validation;
 use PhalconX\Exception\ValidationException;
 use PhalconX\Forms\Form;
 use PhalconX\Annotations\Validator\Validator as ValidatorAnnotation;
+use PhalconX\Annotations\Validator\Valid;
 use PhalconX\Annotations\ContextType;
 use PhalconX\Annotations\Forms\Input;
 use Phalcon\Mvc\Model;
 
 class Validator extends Injectable
 {
+    public function check($value, $validator, $name = 'attribute')
+    {
+        $ret = $this->validate(
+            [$name => $value],
+            [new Valid(array_merge([
+                'name' => $name
+            ], $validator))]
+        );
+        return $ret[$name];
+    }
+
     /**
      * Validates the form
      *
@@ -19,7 +31,7 @@ class Validator extends Injectable
      * @param Validators[] $validators
      * @throws ValidationException
      */
-    public function validate(&$model, $validators = null)
+    public function validate($model, $validators = null)
     {
         if (!isset($validators) && is_object($model)) {
             $validators = [];
@@ -61,6 +73,7 @@ class Validator extends Injectable
         if (count($errors)) {
             throw new ValidationException($errors);
         }
+        return $model;
     }
 
     private function hasValue($data, $name)

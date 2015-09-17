@@ -6,23 +6,30 @@ use Phalcon\Di;
 
 trait Injectable
 {
-    private $di;
+    private $dependencyInjector;
 
     public function getDi()
     {
-        if (!$this->di) {
-            $this->di = Di::getDefault();
+        if (!$this->dependencyInjector) {
+            $this->dependencyInjector = Di::getDefault();
         }
-        return $this->di;
+        return $this->dependencyInjector;
     }
 
     public function setDi(DiInterface $di)
     {
-        $this->di = $di;
+        $this->dependencyInjector = $di;
     }
 
     public function __get($property)
     {
-        return $this->getDi()->get($property);
+        $di = $this->getDi();
+        if ($di->has($property)) {
+            return $this->$property = $di->getShared($property);
+        }
+        if ($property == 'di') {
+            return $this->di = $di;
+        }
+        return null;
     }
 }
