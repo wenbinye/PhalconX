@@ -153,7 +153,7 @@ class Valid extends Validator
         }
         $clz = $this->getDeclaringClass();
         if ($clz) {
-            $validator = $this->resolveImport($this->type, $clz);
+            $validator = $this->resolveImport($validator, $clz);
         }
         if (isset($args)) {
             return new $validator($args);
