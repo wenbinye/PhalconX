@@ -4,6 +4,10 @@ namespace PhalconX\Di;
 use Phalcon\DiInterface;
 use Phalcon\Di;
 
+/**
+ * This trait allows to access services in the service container
+ * by a public property name
+ */
 trait Injectable
 {
     private $dependencyInjector;
@@ -30,6 +34,10 @@ trait Injectable
         if ($property == 'di') {
             return $this->di = $di;
         }
+        if ($property == 'persistent') {
+            return $this->persistent = $di->get('sessionBag', [get_class($this)]);
+        }
+        trigger_error("Access to undefined property $property");
         return null;
     }
 }

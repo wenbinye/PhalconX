@@ -20,6 +20,12 @@
          processIsolation="false"
          stopOnFailure="false"
          syntaxCheck="false"
-         bootstrap="bootstrap.php"
->
+         bootstrap="tests/bootstrap.php">
+    <filter>
+        <directory suffix=".php">./tests</directory>
+        <exclude>
+            <directory>./tests/fixtures</directory>
+            <file>./tests/bootstrap.php</file>
+        </exclude>
+    </filter>
 </phpunit>

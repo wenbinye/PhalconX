@@ -1,5 +1,5 @@
 {
-    "name": "wenbinye/php-phalconx",
+    "name": "wenbinye/PhalconX",
     "description": "Phalcon extension library",
     "type": "library",
     "homepage": "http://github.com/wenbinye/PhalconX",
@@ -12,7 +12,7 @@
     ],
     "require": {
         "php": ">=5.5",
-        "ext-phalcon": ">=2.0"
+        "ext-phalcon": ">=2.0",
     },
     "autoload": {
         "psr-4": {
@@ -20,6 +20,6 @@
         }
     },
     "scripts": {
-        "post-install-cmd": ["bash contrib/setup.sh"]
+        "post-install-cmd": ["cp contrib/pre-commit .git/hooks && chmod +x .git/hooks/pre-commit"]
     }
 }
