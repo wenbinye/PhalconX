@@ -7,113 +7,67 @@ namespace PhalconX\Annotation;
 abstract class Annotation
 {
     /**
-     * default property name for constructor
+     * default property name
      */
     protected static $DEFAULT_PROPERTY = 'value';
-    
-    private $context;
 
-    private $annotations;
+    /**
+     * annotation context
+     */
+    private $context;
 
     /**
      * Constructor.
      *
      * @param array $arguments
      */
-    public function __construct($arguments)
+    public function __construct(array $arguments, Context $context = null)
     {
         if (isset($arguments[0]) && !isset($arguments[static::$DEFAULT_PROPERTY])) {
             $arguments[static::$DEFAULT_PROPERTY] = $arguments[0];
         }
-        parent::__construct($arguments);
+        foreach ($arguments as $key => $val) {
+            if (property_exists($this, $key)) {
+                $this->$key = $val;
+            }
+        }
+        $this->context = $context ?: Context::dummy();
     }
     
     public function getContext()
     {
-        static $dummyContext;
-        if (!$dummyContext) {
-            $dummyContext = new Context;
-        }
-        return isset($this->context) ? $this->context : $dummyContext;
-    }
-
-    public function setContext($context)
-    {
-        $this->context = $context;
-        return $this;
-    }
-
-    public function getAnnotations()
-    {
-        return $this->annotations;
-    }
-
-    public function setAnnotations($annotations)
-    {
-        $this->annotations = $annotations;
-        return $this;
-    }
-
-    protected function resolve($annotation)
-    {
-        return $this->annotations->resolveAnnotation($annotation, $this->getContext());
-    }
-
-    protected function resolveImport($name)
-    {
-        return $this->annotations->resolveImport($name, $this->getDeclaringClass());
+        return $this->context;
     }
     
     public function getClass()
     {
-        return $this->getContext()->class;
+        return $this->getContext()->getClass();
     }
 
     public function getDeclaringClass()
     {
-        return $this->getContext()->declaringClass;
+        return $this->getContext()->getDeclaringClass();
     }
     
-    public function getMethod()
+    public function isOnClass()
     {
-        return $this->getContext()->method;
+        return $this->getContext()->isOnClass();
     }
 
-    public function getProperty()
+    public function isOnProperty()
     {
-        return $this->getContext()->property;
-    }
-    
-    public function isClass()
-    {
-        return $this->getContext()->isClass();
+        return $this->getContext()->isOnProperty();
     }
 
-    public function isProperty()
+    public function isOnMethod()
     {
-        return $this->getContext()->isProperty();
-    }
-
-    public function isMethod()
-    {
-        return $this->getContext()->isMethod();
-    }
-
-    public function getContextType()
-    {
-        return $this->getContext()->type;
+        return $this->getContext()->isOnMethod();
     }
 
     public function __toString()
     {
-        if ($this->context) {
-            return sprintf(
-                "Annotation at %s %s%s%s",
-                $this->context->type,
-                $this->context->class,
-                $this->isMethod() ? "::" . $this->getMethod() : "",
-                $this->isProperty() ? "->" . $this->getProperty() : ""
-            );
+        if ($this->context->getClass()) {
+            return "Annotation on " . $this->context;
         } else {
             return "Annotation Object";
         }

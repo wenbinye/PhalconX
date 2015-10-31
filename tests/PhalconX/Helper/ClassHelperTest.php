@@ -1,0 +1,32 @@
+<?php
+namespace PhalconX\Helper;
+
+use PhalconX\Test\TestCase;
+
+/**
+ * TestCase for ClassHelper
+ */
+class ClassHelperTest extends TestCase
+{
+    public function testGetImports()
+    {
+        $imports = ClassHelper::getImports('PhalconX\Helper\Foo');
+        // var_export($imports);
+        $this->assertEquals(array (
+            'TestCase' => 'PhalconX\\Test\\TestCase',
+            'Helper' => 'PhalconX\\Helper\\ClassHelper',
+            'PhpImportParser' => 'PhalconX\\Helper\\PhpImportParser',
+            'Text' => 'Phalcon\\Text',
+        ), $imports);
+    }
+
+    public function testGetNamespaceName()
+    {
+        $this->assertEquals(ClassHelper::getNamespaceName('Foo\\Bar'), 'Foo\\');
+    }
+
+    public function testGetShortName()
+    {
+        $this->assertEquals(ClassHelper::getShortName('Foo\\Bar'), 'Bar');
+    }
+}

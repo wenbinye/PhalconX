@@ -4,13 +4,17 @@ Annotations 实现
 .. code-block:: php
 
 $annotations = new Annotations;
-$collection = $annotations->get($class);
-$collection->onClass();
-$collection->onMethod($method);
-$collection->onProperty($property);
-$collection->onProperties();
-$collection->onMethods();
-$collection->onClassOrMethods();
-$collection->onClassOrProperties();
-$collection->is(MyAnnotation::class);
+$classAnnotations = $annotations->get($class);
 
+$filterd = $annotations->filter($classAnnotations)
+->onClass();
+->onMethod($method);
+->onProperty($property);
+->onProperties();
+->onMethods();
+->onClassOrMethods();
+->onClassOrProperties();
+->is(MyAnnotation::class);
+
+foreach ($filterd as $annotation) {
+}

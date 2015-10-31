@@ -8,4 +8,54 @@ use PhalconX\Test\TestCase;
  */
 class AnnotationsTest extends TestCase
 {
+    private $annotations;
+    
+    public function setUp()
+    {
+        $this->annotations = new Annotations;
+    }
+
+    public function testGetNotImported()
+    {
+        $anno = $this->annotations->get(Form::class);
+        $this->assertTrue(empty($anno));
+    }
+
+    public function testGetImported()
+    {
+        $anno = $this->annotations->get(FormImported::class);
+        $this->assertAnnotationsMatches($anno);
+    }
+
+    public function testImport()
+    {
+        $this->annotations->import([
+            Validators\Max::class,
+            Validators\Range::class,
+            Validators\Match::class,
+        ]);
+        $anno = $this->annotations->get(Form::class);
+        $this->assertAnnotationsMatches($anno);
+    }
+
+    public function testImportAlias()
+    {
+        $this->annotations->import([
+            Validators\Max::class,
+            Validators\Range::class => 'Between',
+            Validators\Match::class,
+        ]);
+        $anno = $this->annotations->get(FormImportAlias::class);
+        // var_export($anno);
+        $this->assertAnnotationsMatches($anno);
+    }
+    
+    private function assertAnnotationsMatches($annotations)
+    {
+        $this->assertEquals(count($annotations), 3);
+        $anno = $annotations[0];
+        $this->assertTrue($anno instanceof Validators\Max);
+        $this->assertEquals($anno->max, 10);
+        $this->assertTrue($anno->isOnProperty());
+    }
 }
