@@ -6,6 +6,7 @@ use PhalconX\Validation\Form;
 use PhalconX\Annotation\Context;
 use PhalconX\Test\Enum\Gender;
 use PhalconX\Test\Model\Scope;
+use PhalconX\Test\Helper;
 
 use Phalcon\Validation\Validator\Regex;
 use Phalcon\Validation\Validator\Url;
@@ -38,14 +39,7 @@ class ValidatorFactoryTest extends TestCase
 
     private function create($options)
     {
-        return $this->factory->create($options, new Context([
-            'class' => get_class($this),
-            'declaringClass' => get_class($this),
-            'type' => Context::TYPE_PROPERTY,
-            'name' => 'value',
-            'file' => __FILE__,
-            'line' => __LINE__
-        ]));
+        return $this->factory->create($options, Helper::createAnnotationContext($this, 'property', 'value'));
     }
 
     /**

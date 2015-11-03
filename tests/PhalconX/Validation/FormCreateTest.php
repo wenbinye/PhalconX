@@ -3,7 +3,7 @@ namespace PhalconX\Validation;
 
 use PhalconX\Test\TestCase;
 use PhalconX\Test\Validation\User;
-use PhalconX\Forms\Form as PhalconForm;
+use Phalcon\Forms\Form as PhalconForm;
 use PhalconX\Helper\ArrayHelper;
 
 /**
@@ -22,6 +22,21 @@ class FormCreateTest extends TestCase
     {
         $form = $this->form->create(User::class);
         $this->assertTrue($form instanceof PhalconForm);
+    }
+
+    public function testFormClass()
+    {
+        $form = $this->form->create(User::class, \PhalconX\Forms\Form::class);
+        $this->assertTrue($form instanceof \PhalconX\Forms\Form);
+    }
+
+    public function testChangeFormClass()
+    {
+        $old = $this->form->getFormClass();
+        $this->form->setFormClass(\PhalconX\Forms\Form::class);
+        $form = $this->form->create(User::class);
+        $this->assertTrue($form instanceof \PhalconX\Forms\Form);
+        $this->form->setFormClass($old);
     }
     
     public function testAssertFieldsMatch()

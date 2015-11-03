@@ -4,54 +4,54 @@ namespace PhalconX\Forms\Annotations;
 use Phalcon\Forms\Element\Select as SelectElement;
 use Phalcon\Mvc\Model;
 use PhalconX\Enum\Enum;
+use PhalconX\Validation\Form;
+use PhalconX\Helper\ClassResolver;
 
 class Select extends Input
 {
-    protected static $elementClass = SelectElement::CLASS;
-
     /**
      * @var string enum class for domain
      */
-    public $enum;
+    public $model;
 
+    /**
+     * @var array arguments for model::find
+     */
     public $criteria;
 
-    public $using;
-
+    /**
+     * @var array select options label => value pair
+     */
     public $options;
 
-    public function getElement()
+    protected function getOptions(Form $form)
     {
-        $this->initialize();
-        $this->attributes['using'] = $this->using;
-        $elem = new static::$elementClass($this->name, $this->options, $this->attributes);
-        $elem->setLabel($this->getLabel());
-        return $elem;
+        if (is_array($this->options)) {
+            return $this->options;
+        }
+        $attributes = $this->getAttributes();
+        if ($this->model) {
+            $modelClass = (new ClassResolver($form->getCache()))
+                ->resolve($this->model, $this->getDeclaringClass());
+            if (is_subclass_of($modelClass, Enum::class)) {
+                $options = [];
+                foreach ($modelClass::instances() as $enum) {
+                    $options[$enum->value] = $enum->description;
+                }
+                return $options;
+            } elseif (is_subclass_of($modelClass, Model::class)) {
+                if (empty($attributes['using'])) {
+                    throw new \InvalidArgumentException("The 'using' parameter is required for " . $this);
+                }
+                $this->criteria['columns'] = $attributes['using'];
+                return $modelClass::find($this->criteria);
+            }
+        }
+        throw new \InvalidArgumentException();
     }
-
-    public function initialize()
+    
+    public function getElement(Form $form)
     {
-        if (!$this->enum) {
-            return;
-        }
-        $clz = $this->resolveImport($this->enum);
-        if (is_subclass_of($clz, Enum::CLASS)) {
-            $options = [];
-            foreach ($clz::all() as $enum) {
-                $options[$enum->value] = $enum->description;
-            }
-            $this->options = $options;
-        } elseif (is_subclass_of($clz, Model::CLASS)) {
-            if (empty($this->using)) {
-                throw new Exception("The 'using' parameter is required for " . $this);
-            }
-            $this->criteria['columns'] = $this->using;
-            $this->options = call_user_func(array($clz, 'find'), $this->criteria);
-        } else {
-            throw new Exception(
-                "Wrong enum class '$clz' for Select Element in " . $this,
-                Exception::ERROR_INVALID_ARGUMENT
-            );
-        }
+        return new SelectElement($this->name, $this->getOptions($form), $this->getAttributes());
     }
 }

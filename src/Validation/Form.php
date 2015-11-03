@@ -6,7 +6,6 @@ use Phalcon\Validation;
 use PhalconX\Annotation\Annotations;
 use PhalconX\Exception\Exception;
 use PhalconX\Exception\ValidationException;
-use PhalconX\Forms\Form as PhalconForm;
 use PhalconX\Forms\Annotations\InputInterface as Input;
 use PhalconX\Forms\Annotations\Label;
 use PhalconX\Validation\Annotations\ValidatorInterface as Validator;
@@ -30,6 +29,11 @@ class Form
     private $logger;
 
     /**
+     * @var string default form class
+     */
+    private static $FORM_CLASS = 'Phalcon\Forms\Form';
+
+    /**
      * Constructor.
      *
      * @param Annotations $annotations
@@ -41,6 +45,26 @@ class Form
         $this->annotations = $annotations ?: new Annotations();
     }
 
+    /**
+     * Sets the default form class
+     *
+     * @param string
+     */
+    public static function setFormClass($formClass)
+    {
+        self::$FORM_CLASS = $formClass;
+    }
+
+    /**
+     * Gets the default form class
+     *
+     * @return string
+     */
+    public static function getFormClass()
+    {
+        return self::$FORM_CLASS;
+    }
+    
     /**
      * Validate form object
      *
@@ -75,32 +99,35 @@ class Form
     /**
      * Create form object
      *
-     * @param string|object $form Form class or form object
+     * @param string|object $model model class or object
+     * @param string $formClass form class, default use Phalcon\Forms\Form
      * @return Phalcon\Forms\Form
      */
-    public function create($form)
+    public function create($model, $formClass = null)
     {
-        if (is_string($form)) {
-            return $this->createFormInternal($form, new $form);
+        if (is_string($model)) {
+            return $this->createFormInternal($model, new $model, $formClass);
         } else {
-            return $this->createFormInternal(get_class($form), $form);
+            return $this->createFormInternal(get_class($model), $model, $formClass);
         }
     }
 
-    private function createFormInternal($formClass, $formObject)
+    private function createFormInternal($modelClass, $modelObject, $formClass)
     {
-        $annotations = $this->annotations->get($formClass);
-        $validators = $this->getValidators($annotations, $formClass);
-        $elems = $this->getElements($annotations, $formClass);
+        $annotations = $this->annotations->get($modelClass);
+        $validators = $this->getValidators($annotations, $modelClass);
+        $elems = $this->getElements($annotations, $modelClass);
         if (empty($elems)) {
-            throw new Exception("Cannot find element annotations in '$formClass'");
+            throw new Exception("Cannot find element annotations in '$modelClass'");
         }
-        
-        $form = new PhalconForm();
+        if (!$formClass) {
+            $formClass = self::$FORM_CLASS;
+        }
+        $form = new $formClass();
         foreach ($elems as $property => $elem) {
             $form->add($elem);
         }
-        $form->bind((array) $formObject, $formObject);
+        $form->bind((array) $modelObject, $modelObject);
         
         foreach ($elems as $property => $elem) {
             if (isset($validators[$property])) {
@@ -186,7 +213,7 @@ class Form
             if (!isset($annotation->name)) {
                 $annotation->name = $property;
             }
-            $elem = $annotation->getElement();
+            $elem = $annotation->getElement($this);
             if ($annotation->label) {
                 $label = $annotation->label;
             } elseif (isset($labels[$property])) {

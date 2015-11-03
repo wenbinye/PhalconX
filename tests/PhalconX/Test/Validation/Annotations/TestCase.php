@@ -5,6 +5,7 @@ use Phalcon\Validation;
 use PhalconX\Annotation\Context;
 use PhalconX\Test\TestCase as BaseTestCase;
 use PhalconX\Validation\Form;
+use PhalconX\Test\Helper;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -20,14 +21,7 @@ abstract class TestCase extends BaseTestCase
 
     protected function getAnnotation($args = [])
     {
-        $context = new Context([
-            'class' => get_class($this),
-            'declaringClass' => get_class($this),
-            'type' => Context::TYPE_PROPERTY,
-            'name' => 'value',
-            'file' => __FILE__,
-            'line' => __LINE__
-        ]);
+        $context = Helper::createAnnotationContext($this, 'property', 'value');
         return new static::$annotationClass($args, $context);
     }
 }

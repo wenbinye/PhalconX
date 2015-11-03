@@ -3,6 +3,7 @@ namespace PhalconX\Forms\Annotations;
 
 use PhalconX\Annotation\Annotation;
 use PhalconX\Forms\Element\Input as InputElement;
+use PhalconX\Validation\Form;
 
 /**
  * Annotation class for form element
@@ -50,7 +51,7 @@ class Input extends Annotation implements InputInterface
      *
      * @return InputElement
      */
-    public function getElement()
+    public function getElement(Form $form)
     {
         return new static::$elementClass($this->name, $this->getAttributes());
     }
