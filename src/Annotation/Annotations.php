@@ -1,11 +1,11 @@
 <?php
 namespace PhalconX\Annotation;
 
-use Phalcon\Di;
 use Phalcon\Annotations\Reader;
 use Phalcon\Annotations\Annotation as PhalconAnnotation;
 use Phalcon\Cache\BackendInterface as Cache;
 use PhalconX\Helper\ClassHelper;
+use PhalconX\Helper\ClassResolver;
 
 class Annotations
 {
@@ -26,28 +26,27 @@ class Annotations
     private $parser;
 
     /**
-     * @var Logger
+     * @var Phalcon\Logger\Adapter
      */
     private $logger;
 
     /**
+     * @var ClassResolver
+     */
+    private $classResolver;
+
+    /**
      * Constructor
      * @param Cache $cache
-     * @param Reader $reader
      * @param Logger $logger
+     * @param Reader $reader
      */
-    public function __construct(Cache $cache = null, Reader $parser = null, $logger = null)
+    public function __construct(Cache $cache = null, $logger = null, Reader $parser = null)
     {
         $this->cache = $cache;
+        $this->logger = $logger;
         $this->parser = $parser ?: new Reader;
-        if ($logger) {
-            $this->logger = $logger;
-        } else {
-            $di = Di::getDefault();
-            if ($di->has('logger')) {
-                $this->logger = $di->getLogger();
-            }
-        }
+        $this->classResolver = new ClassResolver($cache);
     }
 
     /**
@@ -90,7 +89,18 @@ class Annotations
     }
 
     /**
-     * Gets FilterIterator on annotations array
+     * Gets all annotations as iterator
+     *
+     * @param string $class class name
+     * @return FilterIterator
+     */
+    public function iterate($class)
+    {
+        return $this->filter($this->get($class));
+    }
+
+    /**
+     * Creates filter iterator on annotations
      *
      * @param array $annotations
      * @return FilterIterator
@@ -185,7 +195,8 @@ class Annotations
         }
         $context['file'] = $annotation['file'];
         $context['line'] = $annotation['line'];
-        return new $annotationClass((new PhalconAnnotation($annotation))->getArguments(), new Context($context));
+        $args = (new PhalconAnnotation($annotation))->getArguments() ?: [];
+        return new $annotationClass($args, new Context($context));
     }
 
     /**
@@ -201,24 +212,36 @@ class Annotations
 
     /**
      * resolve annotation class name
+     *
+     * @return string
      */
     private function resolveClassName($name, $declaringClass)
     {
-        if ($this->cache) {
-            $imports = $this->cache->get('__PHX.imports.'.$declaringClass);
-        }
-        if (!isset($imports)) {
-            $imports = ClassHelper::getImports($declaringClass);
-            if ($this->cache) {
-                $this->cache->save('__PHX.imports.'.$declaringClass, $imports);
-            }
-        }
-        if (isset($imports[$name])) {
-            return $imports[$name];
-        }
-        $class = ClassHelper::getNamespaceName($declaringClass) . $name;
-        if (class_exists($class)) {
-            return $class;
-        }
+        return $this->classResolver->resolve($name, $declaringClass);
+    }
+
+    public function getImports()
+    {
+        return $this->imports;
+    }
+
+    public function getCache()
+    {
+        return $this->cache;
+    }
+
+    public function getParser()
+    {
+        return $this->parser;
+    }
+
+    public function getLogger()
+    {
+        return $this->logger;
+    }
+
+    public function getClassResolver()
+    {
+        return $this->classResolver;
     }
 }

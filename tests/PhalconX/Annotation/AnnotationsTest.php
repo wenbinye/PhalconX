@@ -2,6 +2,10 @@
 namespace PhalconX\Annotation;
 
 use PhalconX\Test\TestCase;
+use PhalconX\Test\Annotation\Form;
+use PhalconX\Test\Annotation\FormImported;
+use PhalconX\Test\Annotation\FormImportAlias;
+use PhalconX\Test\Annotation\Validators;
 
 /**
  * TestCase for Annotations

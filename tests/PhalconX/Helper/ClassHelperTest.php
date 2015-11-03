@@ -2,6 +2,7 @@
 namespace PhalconX\Helper;
 
 use PhalconX\Test\TestCase;
+use PhalconX\Test\Helper\Foo;
 
 /**
  * TestCase for ClassHelper
@@ -10,7 +11,7 @@ class ClassHelperTest extends TestCase
 {
     public function testGetImports()
     {
-        $imports = ClassHelper::getImports('PhalconX\Helper\Foo');
+        $imports = ClassHelper::getImports(Foo::class);
         // var_export($imports);
         $this->assertEquals(array (
             'TestCase' => 'PhalconX\\Test\\TestCase',

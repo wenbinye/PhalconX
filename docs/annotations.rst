@@ -3,18 +3,23 @@ Annotations 实现
 
 .. code-block:: php
 
-$annotations = new Annotations;
-$classAnnotations = $annotations->get($class);
+    use PhalconX\Annotation\Annotations;
 
-$filterd = $annotations->filter($classAnnotations)
-->onClass();
-->onMethod($method);
-->onProperty($property);
-->onProperties();
-->onMethods();
-->onClassOrMethods();
-->onClassOrProperties();
-->is(MyAnnotation::class);
+    $annotations = new Annotations();
+    $all = $annotations->get($class);
+    $it = $annotations->filter($all);
 
-foreach ($filterd as $annotation) {
-}
+    $it = $annotations->iterate($class)
+        ->onClass()
+        ->onMethod($method)
+        ->onProperty($property)
+        ->onProperties()
+        ->onMethods()
+        ->onClassOrMethods()
+        ->onClassOrProperties()
+        ->is(MyAnnotation::class);
+    
+    foreach ($it as $annotation) {
+    }
+    // to array
+    $all = iterator_to_array($it);

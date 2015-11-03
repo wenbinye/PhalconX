@@ -58,6 +58,6 @@ class ClassHelper
      */
     public static function getImportsFromFile($file)
     {
-        return (new PhpImportParser($file))->getImports();
+        return (new ClassImportParser($file))->get();
     }
 }

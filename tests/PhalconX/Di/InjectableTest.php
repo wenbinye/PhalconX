@@ -1,9 +1,10 @@
 <?php
 namespace PhalconX\Di;
 
-use PhalconX\Test\TestCase;
 use Phalcon\Di;
 use Phalcon\Config;
+use PhalconX\Test\TestCase;
+use PhalconX\Test\Di\MyService;
 
 /**
  * TestCase for Injectable
@@ -40,9 +41,4 @@ class InjectableTest extends TestCase
     {
         $this->assertNull(@$this->service->foo);
     }
-}
-
-class MyService
-{
-    use Injectable;
 }

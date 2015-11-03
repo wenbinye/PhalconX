@@ -26,17 +26,32 @@ abstract class Annotation
         if (isset($arguments[0]) && !isset($arguments[static::$DEFAULT_PROPERTY])) {
             $arguments[static::$DEFAULT_PROPERTY] = $arguments[0];
         }
+        $this->assign($arguments);
+        $this->context = $context ?: Context::dummy();
+    }
+
+    protected function assign($arguments)
+    {
         foreach ($arguments as $key => $val) {
             if (property_exists($this, $key)) {
                 $this->$key = $val;
             }
         }
-        $this->context = $context ?: Context::dummy();
     }
     
     public function getContext()
     {
         return $this->context;
+    }
+
+    public function getPropertyName()
+    {
+        return $this->context->isOnProperty() ? $this->context->getName() : null;
+    }
+
+    public function getMethodName()
+    {
+        return $this->context->isOnMethod() ? $this->context->getName() : null;
     }
     
     public function getClass()

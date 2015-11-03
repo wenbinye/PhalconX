@@ -1,6 +1,9 @@
 <?php
 namespace PhalconX\Mvc;
 
+/**
+ * Simple model implements array access and object property access
+ */
 abstract class SimpleModel implements \ArrayAccess
 {
     public function __construct(array $data = null)

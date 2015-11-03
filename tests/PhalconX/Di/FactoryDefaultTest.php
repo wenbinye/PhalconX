@@ -2,6 +2,7 @@
 namespace PhalconX\Di;
 
 use PhalconX\Test\TestCase;
+use PhalconX\Test\Di\MyServiceProvider;
 
 /**
  * TestCase for FactoryDefault

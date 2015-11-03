@@ -8,6 +8,8 @@ use PhalconX\Mvc\Metadata\Memory as MetadataAdapter;
 use Phalcon\Mvc\Model;
 use Phalcon\Db\Adapter\Pdo\Sqlite;
 
+define("FIXTURES_DIR", __DIR__."/fixtures");
+
 function bootstrap_test()
 {
     $autoload = __DIR__."/../vendor/autoload.php";

@@ -2,6 +2,8 @@
 namespace PhalconX\Annotation;
 
 use PhalconX\Test\TestCase;
+use PhalconX\Test\Annotation\FormFilter;
+use PhalconX\Test\Annotation\Validators;
 
 /**
  * TestCase for Annotations
@@ -18,61 +20,62 @@ class FilterIteratorTest extends TestCase
 
     public function testOnClass()
     {
-        $anno = array_values(iterator_to_array($this->annotations->onClass()));
+        $anno = $this->annotations->onClass()->toArray();
         $this->assertEquals(count($anno), 1);
         $this->assertTrue($anno[0]->isOnClass());
     }
 
     public function testOnMethods()
     {
-        $anno = array_values(iterator_to_array($this->annotations->onMethods()));
+        $anno = $this->annotations->onMethods()->toArray();
         $this->assertEquals(count($anno), 1);
         $this->assertTrue($anno[0]->isOnMethod());
     }
 
     public function testOnClassOrMethods()
     {
-        $anno = array_values(iterator_to_array($this->annotations->onClassOrMethods()));
+        $anno = $this->annotations->onClassOrMethods()->toArray();
         $this->assertEquals(count($anno), 2);
     }
 
     public function testOnProperties()
     {
-        $anno = array_values(iterator_to_array($this->annotations->onProperties()));
+        $anno = $this->annotations->onProperties()->toArray();
         $this->assertEquals(count($anno), 3);
     }
 
     public function testOnClassOrProperties()
     {
-        $anno = array_values(iterator_to_array($this->annotations->onClassOrProperties()));
+        $anno = $this->annotations->onClassOrProperties()->toArray();
         $this->assertEquals(count($anno), 4);
     }
 
     public function testIs()
     {
-        $anno = array_values(iterator_to_array($this->annotations->is(Validators\Max::class)));
+        $anno = $this->annotations->is(Validators\Max::class)->toArray();
         $this->assertEquals(count($anno), 2);
         $this->assertTrue($anno[0] instanceof Validators\Max);
     }
 
     public function testOnMethod()
     {
-        $anno = array_values(iterator_to_array($this->annotations->onMethod('foo')));
+        $anno = $this->annotations->onMethod('foo')->toArray();
         $this->assertEquals(count($anno), 1);
         $this->assertEquals($anno[0]->getContext()->getName(), 'foo');
     }
 
     public function testOnProperty()
     {
-        $anno = array_values(iterator_to_array($this->annotations->onProperty('size')));
+        $anno = $this->annotations->onProperty('size')->toArray();
         $this->assertEquals(count($anno), 1);
         $this->assertEquals($anno[0]->getContext()->getName(), 'size');
     }
 
     public function testCombo()
     {
-        $anno = array_values(iterator_to_array($this->annotations->is(Validators\Max::class)
-                                               ->onProperty('size')));
+        $anno = $this->annotations->is(Validators\Max::class)
+            ->onProperty('size')
+            ->toArray();
         
         $this->assertEquals(count($anno), 1);
         $this->assertEquals($anno[0]->getContext()->getName(), 'size');

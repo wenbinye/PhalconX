@@ -1,8 +1,14 @@
 <?php
 namespace PhalconX\Annotation;
 
+/**
+ * Annotation filter iterator
+ */
 class FilterIterator extends \FilterIterator
 {
+    /**
+     * @var array filter conditions
+     */
     private $filters;
     
     public function accept()
@@ -70,5 +76,10 @@ class FilterIterator extends \FilterIterator
     {
         $this->filters['property'] = $propertyName;
         return $this;
+    }
+
+    public function toArray()
+    {
+        return array_values(iterator_to_array($this));
     }
 }

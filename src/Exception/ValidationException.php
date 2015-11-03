@@ -4,7 +4,7 @@ namespace PhalconX\Exception;
 use Phalcon\Validation\Message;
 use Phalcon\Validation\Message\Group;
 
-class ValidationException extends \PhalconX\Exception
+class ValidationException extends \RuntimeException
 {
     private $errors;
     

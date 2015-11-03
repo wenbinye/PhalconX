@@ -101,7 +101,7 @@ class Context
     public function __toString()
     {
         return "{$this->type} {$this->class}"
-            . ($this->type == self::TYPE_METOHD ? "::" . $this->name
+            . ($this->type == self::TYPE_METHOD ? "::" . $this->name
                : ($this->type == self::TYPE_PROPERTY ? "->" . $this->name : ""))
             . " at {$this->file}:{$this->line}";
     }
