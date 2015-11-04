@@ -1,26 +1,33 @@
 <?php
 namespace PhalconX\Test;
 
+use Phalcon\Di;
 use PhalconX\Di\Injectable;
 
 trait DiService
 {
     use Injectable;
 
-    private $services = [];
-    
-    public function replaceService($service, $def)
+    private static $di;
+
+    /**
+     * @before
+     */
+    public function resetDi()
     {
-        $di = $this->getDi();
-        $this->services[$service] = $di->getService($service);
-        $di->set($service, $def);
+        self::$di = Di::getDefault();
+        $di = new Di;
+        foreach (self::$di->getServices() as $name => $service) {
+            $di->setRaw($name, $service);
+        }
+        Di::setDefault($di);
     }
 
-    public function restoreServices()
+    /**
+     * @after
+     */
+    public function restoreDi()
     {
-        $di = $this->getDi();
-        foreach ($this->services as $service => $def) {
-            $di->setRaw($service, $def);
-        }
+        Di::setDefault(self::$di);
     }
 }

@@ -1,3 +1,5 @@
+drop table if exists scopes;
+
 create table scopes (
 name varchar(50),
 description varchar(50)

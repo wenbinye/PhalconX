@@ -1,7 +1,7 @@
 <?php
 namespace PhalconX\Mvc;
 
-use PhalconX\Util;
+use Phalcon\Session\AdapterInterface as Session;
 
 class Auth implements AuthInterface
 {
@@ -21,21 +21,27 @@ class Auth implements AuthInterface
      * session 数据
      */
     private $sessionData = false;
+
     /**
      * session 组件
      */
     private $session;
+
     /**
      * 是否需要重新生成 session
      */
     private $needRegenerate = false;
 
-    public function __construct($options = null)
+    public function __construct(Session $session, $options = null)
     {
+        $this->session = $session;
         if (isset($options['sessionKey'])) {
             $this->sessionKey = $options['sessionKey'];
         }
-        $this->session = Util::service('session', $options);
+    }
+
+    public function initialize()
+    {
         $this->sessionData = $this->session->get($this->sessionKey);
         if (isset($this->sessionData)) {
             $now = time();

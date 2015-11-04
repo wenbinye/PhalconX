@@ -3,6 +3,9 @@ namespace PhalconX\Mvc;
 
 use Phalcon\Db\RawValue;
 
+/**
+ * Role manager
+ */
 class RoleManager implements RoleManagerInterface
 {
     const ROOT_ID = 1;

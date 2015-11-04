@@ -3,9 +3,10 @@ namespace PhalconX\Annotation;
 
 use Phalcon\Annotations\Reader;
 use Phalcon\Annotations\Annotation as PhalconAnnotation;
-use Phalcon\Cache\BackendInterface as Cache;
+use Phalcon\Cache;
 use PhalconX\Helper\ClassHelper;
 use PhalconX\Helper\ClassResolver;
+use PhalconX\Helper\FileHelper;
 
 class Annotations
 {
@@ -36,14 +37,22 @@ class Annotations
     private $classResolver;
 
     /**
+     * @var array
+     */
+    private $extensions = ['php'];
+    
+    /**
      * Constructor
      * @param Cache $cache
      * @param Logger $logger
      * @param Reader $reader
      */
-    public function __construct(Cache $cache = null, $logger = null, Reader $parser = null)
-    {
-        $this->cache = $cache;
+    public function __construct(
+        Cache\BackendInterface $cache = null,
+        $logger = null,
+        Reader $parser = null
+    ) {
+        $this->cache = $cache ?: new Cache\Backend\Memory(new Cache\Frontend\None);
         $this->logger = $logger;
         $this->parser = $parser ?: new Reader;
         $this->classResolver = new ClassResolver($cache);
@@ -67,6 +76,21 @@ class Annotations
         }
         return $this;
     }
+
+    public function scan($dir)
+    {
+        $annotations = $this->cache->get('_PHX.annotations_scan.'.$dir);
+        if (!isset($annotations)) {
+            $annotations = [];
+            foreach (FileHelper::find($dir, ['extension' => $this->extensions]) as $file => $fileInfo) {
+                foreach (ClassHelper::getClasses($file) as $class) {
+                    $annotations = array_merge($annotations, $this->get($class));
+                }
+            }
+            $this->cache->save('_PHX.annotations_scan.'.$dir, $annotations);
+        }
+        return $this->filter($annotations);
+    }
     
     /**
      * Gets all annotations in the class
@@ -76,14 +100,10 @@ class Annotations
      */
     public function get($class)
     {
-        if ($this->cache) {
-            $annotations = $this->cache->get('__PHX.annotations.' . $class);
-        }
+        $annotations = $this->cache->get('_PHX.annotations.' . $class);
         if (!isset($annotations)) {
             $annotations = $this->getAnnotations($class);
-            if ($this->cache) {
-                $this->cache->save('__PHX.annotations.' . $class, $annotations);
-            }
+            $this->cache->save('_PHX.annotations.' . $class, $annotations);
         }
         return $annotations;
     }

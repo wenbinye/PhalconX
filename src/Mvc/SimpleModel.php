@@ -6,6 +6,9 @@ namespace PhalconX\Mvc;
  */
 abstract class SimpleModel implements \ArrayAccess
 {
+    /**
+     * Constructor.
+     */
     public function __construct(array $data = null)
     {
         if ($data === null) {
@@ -14,6 +17,9 @@ abstract class SimpleModel implements \ArrayAccess
         $this->assign($data);
     }
 
+    /**
+     * Updates attributes
+     */
     public function assign($attrs)
     {
         foreach ($attrs as $key => $val) {
@@ -43,6 +49,9 @@ abstract class SimpleModel implements \ArrayAccess
          unset($this->$offset);
     }
 
+    /**
+     * Gets all attributes
+     */
     public function toArray()
     {
         return get_object_vars($this);

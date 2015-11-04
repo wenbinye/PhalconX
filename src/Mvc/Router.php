@@ -1,70 +1,88 @@
 <?php
-namespace PhalconX\Mvc\Router;
+namespace PhalconX\Mvc;
 
 use Phalcon\Text;
-use Phalcon\Mvc\Router;
-use PhalconX\Util;
-use PhalconX\Annotations\Mvc\Router\RoutePrefix;
-use PhalconX\Annotations\Mvc\Router\Route;
-use PhalconX\Annotations\ContextType;
+use Phalcon\Cache;
+use Phalcon\Mvc\Router as BaseRouter;
+use PhalconX\Annotation\Annotations;
+use PhalconX\Mvc\Annotations\Route\RoutePrefix;
+use PhalconX\Mvc\Annotations\Route\Route;
+use PhalconX\Helper\ArrayHelper;
+use PhalconX\Helper\ClassHelper;
 
-class Annotations extends Router
+class Router extends BaseRouter
 {
-    private $defaultAction;
+    /**
+     * @var boolean whether handlers is processed
+     */
     private $processed;
+
+    /**
+     * @var array cached handlers
+     */
     private $handlers = [];
+
+    /**
+     * @var string default action
+     */
+    private $defaultAction;
+
+    /**
+     * @var string controller suffix
+     */
     private $controllerSuffix;
+
+    /**
+     * @var string action suffix
+     */
     private $actionSuffix;
-    private $modelsMetadata;
-    private $reflection;
+
+    /**
+     * @var Annotations
+     */
     private $annotations;
+
+    /**
+     * @var Cache
+     */
+    private $cache;
+
+    /**
+     * @var logger
+     */
     private $logger;
 
-    public function __construct($options = null)
-    {
-        $this->defaultAction = Util::fetch($options, 'defaultAction', 'index');
-        $this->controllerSuffix = Util::fetch($options, 'controllerSuffix', 'Controller');
-        $this->actionSuffix = Util::fetch($options, 'actionSuffix', 'Action');
-        $this->modelsMetadata = Util::service('modelsMetadata', $options, false);
-        $this->reflection = Util::service('reflection', $options);
-        $this->annotations = Util::service('annotations', $options);
-        $this->logger = Util::service('logger', $options, false);
-        parent::__construct(Util::fetch($options, 'defaultRoutes', true));
+    public function __construct(
+        Annotations $annotations,
+        Cache\BackendInterface $cache = null,
+        $logger = null,
+        array $options = null
+    ) {
+        $this->annotations = $annotations;
+        $this->cache = $cache ?: new Cache\Backend\Memory(new Cache\Frontend\None);
+        $this->logger = $logger;
+        
+        $this->defaultAction = ArrayHelper::fetch($options, 'defaultAction', 'index');
+        $this->controllerSuffix = ArrayHelper::fetch($options, 'controllerSuffix', 'Controller');
+        $this->actionSuffix = ArrayHelper::fetch($options, 'actionSuffix', 'Action');
+        
+        parent::__construct(ArrayHelper::fetch($options, 'defaultRoutes', true));
     }
     
     public function scan($dir, $module = null)
     {
-        if ($this->modelsMetadata) {
-            $handlers = $this->modelsMetadata->read('routes:' . $dir);
-        }
+        $handlers = $this->cache->get('_PHX.route_controllers.' . $dir);
         if (!isset($handlers)) {
             $handlers = [];
-            foreach ($this->annotations->scan($dir, RoutePrefix::CLASS, ContextType::T_CLASS) as $annotation) {
+            $it = $this->annotations->scan($dir)
+                ->is(RoutePrefix::class)
+                ->onClass();
+            foreach ($it as $annotation) {
                 $handlers[] = [$annotation->value, $annotation->getClass(), $module];
             }
-            $this->modelsMetadata->write('routes:' . $dir, $handlers);
+            $this->cache->save('_PHX.route_controllers.' . $dir, $handlers);
         }
         $this->handlers = array_merge($this->handlers, $handlers);
-        $this->processed = false;
-    }
-
-    public function addFileResource($file, $module = null)
-    {
-        foreach ($this->annotations->scanFile($file, RoutePrefix::CLASS, ContextType::T_CLASS) as $annotation) {
-            $this->handlers[] = [$annotation->value, $annotation->getClass(), $module];
-        }
-        $this->processed = false;
-    }
-    
-    public function addResource($handler, $prefix = null)
-    {
-        $this->handlers[] = [$prefix, $handler . $this->controllerSuffix, null];
-        $this->processed = false;
-    }
-
-    public function addModuleResource($module, $handler, $prefix = null)
-    {
-        $this->handlers[] = [$prefix, $handler . $this->controllerSuffix, $module];
         $this->processed = false;
     }
 
@@ -95,14 +113,12 @@ class Annotations extends Router
 
     public function processHandler($handler, $prefix, $module)
     {
-        if ($this->modelsMetadata) {
-            $routes = $this->modelsMetadata->read($handler . ':routes');
-        }
+        $routes = $this->cache->get('_PHX.routes.'.$handler);
         if (isset($routes)) {
             $this->_routes = array_merge($this->_routes, $routes);
         } else {
             $routes = [];
-            list($namespace, $class) = Util::splitClassName($handler);
+            list($namespace, $class) = ClassHelper::splitName($handler);
             $context = [
                 'module' => $module,
                 'prefix' => $prefix,
@@ -110,39 +126,33 @@ class Annotations extends Router
                 'controller' => Text::uncamelize(substr($class, 0, -strlen($this->controllerSuffix))),
                 'action' => null
             ];
-            $collection = $this->annotations->get($handler, Route::CLASS);
-            // make sure priority of class route less then method
-            $annotations = $collection->classOnly()->merge($collection->methodsOnly());
+            $it = $this->annotations->iterate($handler)
+                ->is(Route::class)
+                ->onClassOrMethods();
             $methodRoutes = [];
-            foreach ($annotations as $annotation) {
-                if ($annotation->isClass()) {
+            foreach ($it as $annotation) {
+                if ($annotation->isOnClass()) {
                     $context['action'] = null;
                 } else {
-                    $method = $annotation->getMethod();
+                    $method = $annotation->getMethodName();
                     if ($this->actionSuffix && !Text::endsWith($method, $this->actionSuffix)) {
                         if ($this->logger) {
-                            $this->logger->error(sprintf(
-                                "Action %s::%s not match suffix %s",
-                                $handler,
-                                $method,
-                                $this->actionSuffix
-                            ));
+                            $this->logger->warning("Invalid route annotation " . $annotation);
                         }
                         continue;
                     }
+                    
                     if ($this->actionSuffix) {
                         $context['action'] = substr($method, 0, -strlen($this->actionSuffix));
                     } else {
-                        $context['action'] = $annotation->getMethod();
+                        $context['action'] = $annotation->getMethodName();
                     }
-                    $methodRoutes[$method] = true;
+                    $methodRoutes[strtolower($method)] = true;
                 }
                 $routes[] = $this->processAnnotation($annotation, $context);
             }
-            // 添加 defaultAction route
-            $defaultAction = strtolower($this->defaultAction.$this->actionSuffix);
-            if (method_exists($handler, $defaultAction)
-                && !isset($methodRoutes[$defaultAction])) {
+            $default = strtolower($this->defaultAction . $this->actionSuffix);
+            if (!isset($methodRoutes[$default]) && method_exists($handler, $default)) {
                 $routes[] = $this->add($context["prefix"].'[/]?', [
                     'module' => $context['module'],
                     'namespace' => $context['namespace'],
@@ -150,13 +160,10 @@ class Annotations extends Router
                     'action' => $this->defaultAction
                 ]);
             }
-            if ($this->logger) {
-                $this->logger->info("parse routing annotation from $handler");
-            }
-            $this->modelsMetadata->write($handler.':routes', $routes);
+            $this->cache->save('_PHX.routes.'.$handler, $routes);
         }
     }
-
+    
     private function processAnnotation($annotation, $context)
     {
         $paths = $annotation->paths;
@@ -165,6 +172,8 @@ class Annotations extends Router
                 $paths[$key] = $context[$key];
             }
         }
+
+        // normalize pattern
         $value = $annotation->value;
         if (isset($value)) {
             $value = ltrim($value, '/');
@@ -183,8 +192,8 @@ class Annotations extends Router
         }
         $route = $this->add($uri, $paths);
         $route->via($annotation->methods);
-        if (is_array($annotation->converts)) {
-            foreach ($annotation->converts as $param => $convert) {
+        if (is_array($annotation->converters)) {
+            foreach ($annotation->converters as $param => $convert) {
                 $route->convert($param, $convert);
             }
         }
@@ -197,15 +206,24 @@ class Annotations extends Router
         return $route;
     }
 
+    public function getAnnotations()
+    {
+        return $this->annotations;
+    }
+
+    public function getCache()
+    {
+        return $this->cache;
+    }
+
+    public function getLogger()
+    {
+        return $this->logger;
+    }
+
     public function getDefaultAction()
     {
         return $this->defaultAction;
-    }
-
-    public function setDefaultAction($defaultAction)
-    {
-        $this->defaultAction = $defaultAction;
-        return $this;
     }
 
     public function getControllerSuffix()
@@ -213,20 +231,8 @@ class Annotations extends Router
         return $this->controllerSuffix;
     }
 
-    public function setControllerSuffix($controllerSuffix)
-    {
-        $this->controllerSuffix = $controllerSuffix;
-        return $this;
-    }
-
     public function getActionSuffix()
     {
         return $this->actionSuffix;
-    }
-
-    public function setActionSuffix($actionSuffix)
-    {
-        $this->actionSuffix = $actionSuffix;
-        return $this;
     }
 }

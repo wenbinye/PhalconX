@@ -1,7 +1,7 @@
 <?php
 namespace PhalconX\Validation;
 
-use Phalcon\Cache\BackendInterface as Cache;
+use Phalcon\Cache;
 use Phalcon\Validation;
 use PhalconX\Annotation\Annotations;
 use PhalconX\Exception\Exception;
@@ -19,7 +19,7 @@ class Form
     private $annotations;
 
     /**
-     * @var Cache $cache
+     * @var Cache\BackendInterface $cache
      */
     private $cache;
 
@@ -38,11 +38,14 @@ class Form
      *
      * @param Annotations $annotations
      */
-    public function __construct(Cache $cache = null, $logger = null, Annotations $annotations = null)
-    {
-        $this->cache = $cache;
-        $this->logger = $logger;
+    public function __construct(
+        Annotations $annotations = null,
+        Cache\BackendInterface $cache = null,
+        $logger = null
+    ) {
         $this->annotations = $annotations ?: new Annotations();
+        $this->cache = $cache ?: new Cache\Backend\Memory(new Cache\Frontend\None);
+        $this->logger = $logger;
     }
 
     /**
@@ -164,31 +167,26 @@ class Form
      */
     private function getValidators($annotations, $class)
     {
-        if ($this->cache) {
-            $validators = $this->cache->get('__PHX.validators.' . $class);
-            if (isset($validators)) {
-                return $validators;
+        $validators = $this->cache->get('_PHX.validators.' . $class);
+        if (!isset($validators)) {
+            $validators = [];
+            $it = $this->annotations->filter($annotations)
+                ->is(Validator::class)
+                ->onProperties();
+            foreach ($it as $annotation) {
+                $property = $annotation->getPropertyName();
+                if (!isset($validators[$property])) {
+                    $validators[$property] = [
+                        'required' => false,
+                        'validators' => [],
+                    ];
+                }
+                $validators[$property]['validators'][] = $annotation->getValidator($this);
+                if ($annotation instanceof Required) {
+                    $validators[$property]['required'] = true;
+                }
             }
-        }
-        $validators = [];
-        $it = $this->annotations->filter($annotations)
-            ->is(Validator::class)
-            ->onProperties();
-        foreach ($it as $annotation) {
-            $property = $annotation->getPropertyName();
-            if (!isset($validators[$property])) {
-                $validators[$property] = [
-                    'required' => false,
-                    'validators' => [],
-                ];
-            }
-            $validators[$property]['validators'][] = $annotation->getValidator($this);
-            if ($annotation instanceof Required) {
-                $validators[$property]['required'] = true;
-            }
-        }
-        if ($this->cache) {
-            $this->cache->save('__PHX.validators.'.$class, $validators);
+            $this->cache->save('_PHX.validators.'.$class, $validators);
         }
         return $validators;
     }

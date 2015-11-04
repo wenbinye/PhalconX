@@ -1,11 +1,11 @@
 <?php
 namespace PhalconX\Helper;
 
-/**
- * Parses use statements
- */
-class ClassImportParser
+class ClassParser
 {
+    private $file;
+    private $linum;
+    
     public function __construct($file)
     {
         if (!is_readable($file)) {
@@ -13,13 +13,45 @@ class ClassImportParser
         }
         $this->file = $file;
     }
+    
+    public function getClasses()
+    {
+        $classes = [];
+        $code = file_get_contents($this->file);
+        $tokens = token_get_all($code);
+        $it = new \ArrayIterator($tokens);
+        $namespace = null;
+        try {
+            while ($it->valid()) {
+                $token = $it->current();
+                if (is_array($token)) {
+                    $this->linum = $token[2];
+                    if ($token[0] == T_NAMESPACE) {
+                        $namespace = $this->matchClassname($it);
+                    } elseif ($token[0] == T_DOUBLE_COLON) {
+                        $it->next();
+                        if ($it->valid()) {
+                            $it->next();
+                        }
+                    } elseif ($token[0] == T_CLASS || $token[0] == T_INTERFACE) {
+                        $class = $this->matchClassname($it);
+                        $classes[] = $namespace ? $namespace . '\\' . $class : $class;
+                    }
+                }
+                $it->next();
+            }
+        } catch (Exception $e) {
+            throw new Exception("syntax error at {$this->file}:{$this->linum}");
+        }
+        return $classes;
+    }
 
     /**
      * Gets all imported classes
      *
      * @return array
      */
-    public function get()
+    public function getImports()
     {
         $imports = [];
         $tokens = token_get_all(file_get_contents($this->file));
@@ -74,5 +106,31 @@ class ClassImportParser
             }
         }
         return $statements;
+    }
+
+    private function matchClassname($it)
+    {
+        $it->next();
+        while ($it->valid()) {
+            $token = $it->current();
+            if ($token[0] != T_WHITESPACE) {
+                break;
+            }
+            $it->next();
+        }
+        $class = '';
+        while ($it->valid()) {
+            $token = $it->current();
+            if ($token[0] == T_STRING || $token[0] == T_NS_SEPARATOR) {
+                $class .= $token[1];
+            } else {
+                break;
+            }
+            $it->next();
+        }
+        if (!$class) {
+            throw new Exception("Unexpect token");
+        }
+        return $class;
     }
 }

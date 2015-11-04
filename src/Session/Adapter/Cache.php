@@ -1,18 +1,29 @@
 <?php
-namespace PhalconX\Session;
+namespace PhalconX\Session\Adapter;
 
 use Phalcon\Session\Adapter;
 use Phalcon\Session\AdapterInterface;
-use PhalconX\Di\Injectable;
-use PhalconX\Util;
+use Phalcon\Cache\BackendInterface as Cache;
 
-class CacheAdapter extends Adapter implements AdapterInterface
+/**
+ * Use cache compoent as session storage
+ */
+class Cache extends Adapter implements AdapterInterface
 {
+    /**
+     * @var Cache
+     */
     private $cache;
-    private $lifetime = 3600;
-    private $prefix = 'session:';
 
-    use Injectable;
+    /**
+     * @var int
+     */
+    private $lifetime = 3600;
+
+    /**
+     * @var string cache prefix
+     */
+    private $prefix = 'session:';
     
     /**
      *
@@ -22,10 +33,9 @@ class CacheAdapter extends Adapter implements AdapterInterface
      *  - cookie_lifetime session cookie expiration
      *  - cookie_name session cookie name
      */
-    public function __construct($options = null)
+    public function __construct(Cache $cache, array $options = [])
     {
-        $this->cache = Util::service('cache', $options);
-
+        $this->cache = $cache;
         if (isset($options['prefix'])) {
             $this->prefix = $options['prefix'];
         }
@@ -105,5 +115,20 @@ class CacheAdapter extends Adapter implements AdapterInterface
     public function gc()
     {
         return true;
+    }
+
+    public function getCache()
+    {
+        return $this->cache;
+    }
+
+    public function getLifetime()
+    {
+        return $this->lifetime;
+    }
+
+    public function getPrefix()
+    {
+        return $this->prefix;
     }
 }

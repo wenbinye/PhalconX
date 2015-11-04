@@ -1,8 +1,7 @@
 <?php
 namespace PhalconX\Helper;
 
-use PhalconX\Exception\IOException;
-use Phalcon\Cache\BackendInterface as Cache;
+use Phalcon\Cache;
 
 /**
  * resolve full class name
@@ -10,13 +9,13 @@ use Phalcon\Cache\BackendInterface as Cache;
 class ClassResolver
 {
     /**
-     * @var Cache $cache
+     * @var Cache\BackendInterface $cache
      */
     private $cache;
     
-    public function __construct(Cache $cache = null)
+    public function __construct(Cache\BackendInterface $cache = null)
     {
-        $this->cache = $cache;
+        $this->cache = $cache ?: new Cache\Backend\Memory(new Cache\Frontend\None);
     }
 
     /**
@@ -31,14 +30,10 @@ class ClassResolver
         if (strpos($name, '\\') !== false) {
             return $name;
         }
-        if ($this->cache) {
-            $imports = $this->cache->get('__PHX.imports.'.$declaringClass);
-        }
+        $imports = $this->cache->get('_PHX.imports.'.$declaringClass);
         if (!isset($imports)) {
             $imports = ClassHelper::getImports($declaringClass);
-            if ($this->cache) {
-                $this->cache->save('__PHX.imports.'.$declaringClass, $imports);
-            }
+            $this->cache->save('_PHX.imports.'.$declaringClass, $imports);
         }
         if (isset($imports[$name])) {
             return $imports[$name];

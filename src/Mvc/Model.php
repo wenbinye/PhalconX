@@ -4,10 +4,15 @@ namespace PhalconX\Mvc;
 use Phalcon\Db\Column;
 use Phalcon\Mvc\Model as BaseModel;
 use Phalcon\Mvc\Model\Criteria;
-use PhalconX\Util;
+use PhalconX\Helper\ArrayHelper;
 
 abstract class Model extends BaseModel
 {
+    /**
+     * Finds model by primary key
+     *
+     * @param string|array
+     */
     public static function findPk($pk)
     {
         if (empty($pk)) {
@@ -30,6 +35,11 @@ abstract class Model extends BaseModel
         return static::findFirst($pk);
     }
 
+    /**
+     * Checks whether the model changes
+     *
+     * @return bool
+     */
     public function isChanged()
     {
         $snapshot = $this->_snapshot;
@@ -45,7 +55,7 @@ abstract class Model extends BaseModel
                 continue;
             }
             $value = $this->readAttribute($name);
-            $snapshotValue = Util::fetch($snapshot, $name);
+            $snapshotValue = ArrayHelper::fetch($snapshot, $name);
             if ($value === null) {
                 if ($snapshotValue !== null) {
                     return true;
@@ -54,7 +64,7 @@ abstract class Model extends BaseModel
                 if ($snapshotValue === null) {
                     return true;
                 }
-                $bindType = Util::fetch($bindDataTypes, $name);
+                $bindType = ArrayHelper::fetch($bindDataTypes, $name);
                 switch ($bindType) {
                     case Column::TYPE_DATE:
                     case Column::TYPE_VARCHAR:

@@ -11,15 +11,40 @@ use Phalcon\Text;
  */
 class Controller extends \Phalcon\Mvc\Controller
 {
+    /**
+     * path param offset
+     * set to 2 if url match /{controller}/{action}/param1/val1/param2/val2/..
+     * set to 3 if url match /{module}/{controller}/{action}/param1/val1/param2/val2/..
+     *
+     * @var int
+     */
     protected $pathParamOffset = 2;
+
+    /**
+     * view path
+     *
+     * @var string
+     */
     protected $viewPrefix = '';
 
+    /**
+     * cache path parameters
+     *
+     * @var array
+     */
     private $pathParameters;
     
     /**
      * 渲染页面
-     * @param $view 页面名 可以是 'controller/action' 的形式或 'action'形式
-     * @param $vars 页面参数
+     *
+     * <code>
+     *   $this->render('action', $vars);
+     *   $this->render('controller/action', $vars);
+     *   $this->render($vars);
+     * </code>
+     *
+     * @param string $view 页面名 可以是 'controller/action' 的形式或 'action'形式
+     * @param array $vars 页面参数
      * @param $return 是否返回渲染结果
      * @return null|string 如果 $return 为 true，返回渲染结果
      */
@@ -57,6 +82,7 @@ class Controller extends \Phalcon\Mvc\Controller
 
     /**
      * 跳转到其它 action
+     *
      * @param $action
      */
     public function forward($action)

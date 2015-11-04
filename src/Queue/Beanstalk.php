@@ -2,20 +2,43 @@
 namespace PhalconX\Queue;
 
 use Phalcon\Di;
-use PhalconX\Util;
+use Phalcon\Queue\Beanstalk as BaseQueue;
+use Phalcon\Cache\BackendInterface as Cache;
 
-class Beanstalk extends \Phalcon\Queue\Beanstalk
+/**
+ * Beanstalk job queue
+ */
+class Beanstalk extends BaseQueue
 {
+    /**
+     * @var Cache
+     */
     private $cache;
+
+    /**
+     * @var Logger
+     */
     private $logger;
 
-    public function __construct($options = null)
+    /**
+     * Constructor.
+     *
+     * @param Cache $cache
+     * @param Logger $logger
+     * @param array $options
+     */
+    public function __construct(Cache $cache, $logger = null, array $options = null)
     {
+        $this->cache = $cache;
+        $this->logger = $logger;
         parent::__construct($options);
-        $this->cache = Util::service('cache', $options);
-        $this->logger = Util::service('logger', $options, false);
     }
 
+    /**
+     * Gets current watching tubes
+     *
+     * @return array
+     */
     public function watching()
     {
         $this->write('list-tubes-watched');
@@ -26,6 +49,9 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
         return $response[2];
     }
 
+    /**
+     * Ignores the tube
+     */
     public function ignore($tube)
     {
         $this->write('ignore ' . $tube);
@@ -36,6 +62,9 @@ class Beanstalk extends \Phalcon\Queue\Beanstalk
         return $response[1];
     }
 
+    /**
+     * Ignores the default tube
+     */
     public function ignoreDefault()
     {
         return $this->ignore('default');

@@ -1,7 +1,7 @@
 <?php
 namespace PhalconX\Exception;
 
-class IOException extends \RuntimeException
+class IOException extends Exception
 {
     private $path;
     

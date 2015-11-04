@@ -1,11 +1,26 @@
 <?php
 namespace PhalconX\Http;
 
+/**
+ * Http Request
+ *
+ * Add functions for files and post body
+ */
 class Request extends \Phalcon\Http\Request
 {
+    /**
+     * @var string $body post body content
+     */
     private $body;
+
+    /**
+     * @var array $files
+     */
     private $files;
 
+    /**
+     * @return int
+     */
     public function hasFiles($onlySuccessful = true)
     {
         if (!is_array($_FILES)) {
@@ -26,7 +41,12 @@ class Request extends \Phalcon\Http\Request
         }
         return $files;
     }
-    
+
+    /**
+     * Gets upload file object by name
+     *
+     * @return Phalcon\Http\Request\File
+     */
     public function getFile($name)
     {
         if (!isset($this->files)) {
@@ -47,6 +67,11 @@ class Request extends \Phalcon\Http\Request
         }
     }
 
+    /**
+     * Gets post body content
+     *
+     * @return string
+     */
     public function getBody()
     {
         if (!isset($this->body)) {
@@ -59,6 +84,11 @@ class Request extends \Phalcon\Http\Request
         return $this->body;
     }
 
+    /**
+     * Sets post body content
+     *
+     * @param string $body
+     */
     public function setBody($body)
     {
         $this->body = $body;

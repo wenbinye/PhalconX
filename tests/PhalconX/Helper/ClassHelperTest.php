@@ -30,4 +30,11 @@ class ClassHelperTest extends TestCase
     {
         $this->assertEquals(ClassHelper::getShortName('Foo\\Bar'), 'Bar');
     }
+
+    public function testGetClasses()
+    {
+        $refl = new \ReflectionClass(Foo::class);
+        $classes = ClassHelper::getClasses($refl->getFilename());
+        $this->assertEquals([Foo::class], $classes);
+    }
 }

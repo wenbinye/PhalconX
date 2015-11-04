@@ -1,8 +1,6 @@
 <?php
 namespace PhalconX\Test;
 
-use Phalcon\Mvc\Application;
-
 abstract class ControllerTestCase extends DatabaseTestCase
 {
     protected function getDataSet()

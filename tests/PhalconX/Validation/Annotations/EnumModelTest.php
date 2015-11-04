@@ -5,7 +5,6 @@ use PhalconX\Test\Validation\Annotations\TestCase;
 use Phalcon\Validation\Validator\InclusionIn;
 use PhalconX\Validation\Validators\InclusionInModel;
 use PhalconX\Test\Enum\Gender;
-use PhalconX\Test\Model\Bootstrap;
 use PhalconX\Test\Model\Scope;
 
 /**
@@ -15,15 +14,12 @@ class EnumModelTest extends TestCase
 {
     protected static $annotationClass = Enum::class;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setupTable()
     {
-        parent::setUp();
-        Bootstrap::setUp();
-    }
-
-    public function tearDown()
-    {
-        Bootstrap::tearDown();
+        $this->db->execute($this->dataset('tables/scope.sql'));
     }
 
     /**

@@ -6,7 +6,7 @@
 #
 # see the README
 
-PHPCS_BIN=$HOME/.composer/vendor/bin/phpcs
+PHPCS_BIN=phpcs
 PHPCS_CODING_STANDARD=phpcs.xml
 PHPCS_FILE_PATTERN="\.php$"
 

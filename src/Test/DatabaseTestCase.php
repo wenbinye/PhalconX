@@ -5,20 +5,27 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
 {
     use DiService;
     use Dataset;
-    use Accessible;
-    
-    // only instantiate pdo once for test clean-up/fixture load
-    static private $pdo = null;
 
-    // only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
+    /**
+     * only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
+     * @var PDO
+     */
     private $conn = null;
+
+    /**
+     * @var array dataset memory cache
+     */
     private $cache = array();
+
+    /**
+     * @var string db connection service name
+     */
     protected $connectionService = 'db';
 
     protected function setUp()
     {
         $dataset = $this->getDataSet();
-        if ($dataset!=null) {
+        if ($dataset) {
             parent::setUp();
         }
     }
@@ -26,10 +33,9 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
     protected function tearDown()
     {
         $dataset = $this->getDataSet();
-        if ($dataset!=null) {
+        if ($dataset) {
             parent::tearDown();
         }
-        $this->restoreServices();
     }
 
     protected function setConnectionService($service)
@@ -40,27 +46,30 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
     public function getConnection()
     {
         if ($this->conn === null) {
-            if (self::$pdo == null) {
-                self::$pdo = $this->getDI()->get($this->connectionService)->getInternalHandler();
+            $pdo = $this->getDi()->get($this->connectionService)->getInternalHandler();
+            $dbname = '';
+            if (isset($this->config->database)) {
+                $dbname = $this->config->database->dbname;
             }
-            $this->conn = $this->createDefaultDBConnection(self::$pdo, $this->getDI()->getConfig()->database->dbname);
+            $this->conn = $this->createDefaultDBConnection($pdo, $dbname);
         }
         return $this->conn;
     }
 
     public function createDataSet($file)
     {
-        $path = $this->config->fixturesDir . '/' . $file;
-        if (isset($this->cache[$path])) {
-            return $this->cache[$path];
+        if (isset($this->cache[$file])) {
+            return $this->cache[$file];
         }
-        if (preg_match('/\.ya?ml$/', $file)) {
-            $dataset = parent::createArrayDataSet(yaml_parse_file($path));
-        } elseif (preg_match('/\.json$/', $file)) {
-            $dataset = parent::createArrayDataSet(json_decode(file_get_contents($path), true));
+        if (preg_match('/\.\(json|ya?ml|php|xml)$/', $file, $matches)) {
+            if ($matches[1] == 'xml') {
+                $dataset = parent::createFlatXMLDataSet($this->getDatasetFile($file));
+            } else {
+                $dataset = parent::createArrayDataSet($this->dataset($file));
+            }
+            return $this->cache[$path] = $dataset;
         } else {
-            $dataset = parent::createFlatXmlDataSet($path);
+            throw new \InvalidArgumentException("Could not load dataset, support only json, yaml, php, xml files");
         }
-        return $this->cache[$path] = $dataset;
     }
 }

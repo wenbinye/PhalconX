@@ -39,6 +39,22 @@ class ClassHelper
     }
 
     /**
+     * Splits class name to namespace and class name
+     *
+     * @param string $class
+     * @return array
+     */
+    public static function splitName($class)
+    {
+        $pos = strrpos($class, '\\');
+        if ($pos === false) {
+            return [null, $class];
+        } else {
+            return [substr($class, 0, $pos), substr($class, $pos+1)];
+        }
+    }
+    
+    /**
      * Gets all imported classes
      *
      * @param string $class
@@ -58,6 +74,17 @@ class ClassHelper
      */
     public static function getImportsFromFile($file)
     {
-        return (new ClassImportParser($file))->get();
+        return (new ClassParser($file))->getImports();
+    }
+
+    /**
+     * Gets all class defined in the file
+     *
+     * @param string $file
+     * @return array
+     */
+    public static function getClasses($file)
+    {
+        return (new ClassParser($file))->getClasses();
     }
 }

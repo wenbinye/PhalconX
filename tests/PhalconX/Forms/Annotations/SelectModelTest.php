@@ -4,7 +4,6 @@ namespace PhalconX\Forms\Annotations;
 use PhalconX\Test\TestCase;
 use PhalconX\Test\Helper;
 use PhalconX\Validation\Form;
-use PhalconX\Test\Model\Bootstrap;
 use PhalconX\Test\Model\Scope;
 
 /**
@@ -14,15 +13,13 @@ class SelectModelTest extends TestCase
 {
     private $form;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setupTable()
     {
         $this->form = new Form;
-        Bootstrap::setUp();
-    }
-
-    public function tearDown()
-    {
-        Bootstrap::tearDown();
+        $this->db->execute($this->dataset('tables/scope.sql'));
     }
     
     public function testRenderModel()
