@@ -12,8 +12,11 @@ abstract class TestCase extends BaseTestCase
     protected $form;
     protected $validation;
     protected $annotation;
-    
-    public function setUp()
+
+    /**
+     * @before
+     */
+    public function setupValidation()
     {
         $this->form = new Form();
         $this->validation = new Validation();

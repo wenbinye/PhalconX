@@ -12,7 +12,8 @@
     ],
     "require": {
         "php": ">=5.5",
-        "ext-phalcon": ">=2.0"
+        "ext-phalcon": ">=2.0",
+        "symfony/console": "~2.5"
     },
     "autoload": {
         "psr-4": {

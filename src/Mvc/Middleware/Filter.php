@@ -79,7 +79,7 @@ class Filter
             if ($this->eventsManager->fire('dispatch:beforeException', $dispatcher, $e) === false) {
                 return false;
             }
-            throw new FilterException('', 0, $e);
+            throw new FilterException(null, $e);
         }
     }
 }

@@ -1,8 +1,6 @@
 <?php
 namespace PhalconX\Enum;
 
-use PhalconX\Exception;
-
 /**
  * enum class
  */
@@ -172,7 +170,7 @@ abstract class Enum
         if (array_key_exists($name, $names)) {
             return new static($name, $names[$name]);
         }
-        throw new Exception("No enum constant '$name' in class " . get_called_class());
+        throw new \InvalidArgumentException("No enum constant '$name' in class " . get_called_class());
     }
     
     /**
@@ -186,7 +184,7 @@ abstract class Enum
         if (array_key_exists($value, $values)) {
             return new static($values[$value], $value);
         }
-        throw new Exception("No enum constant value '$value' class " . get_called_class());
+        throw new \InvalidArgumentException("No enum constant value '$value' class " . get_called_class());
     }
     
     /**

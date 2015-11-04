@@ -30,12 +30,10 @@ class ValidatorFactory
     ];
 
     private $form;
-    private $classResolver;
     
     public function __construct(Form $form)
     {
         $this->form = $form;
-        $this->classreSolver = new ClassResolver($this->form->getCache());
     }
     
     /**

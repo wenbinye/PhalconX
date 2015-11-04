@@ -11,8 +11,11 @@ use PhalconX\Test\Annotation\Validators;
 class FilterIteratorTest extends TestCase
 {
     private $annotations;
-    
-    public function setUp()
+
+    /**
+     * @before
+     */
+    public function setupAnnotations()
     {
         $annotations = new Annotations;
         $this->annotations = $annotations->filter($annotations->get(FormFilter::class));

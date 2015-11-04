@@ -13,8 +13,11 @@ use PhalconX\Test\Annotation\Validators;
 class AnnotationsTest extends TestCase
 {
     private $annotations;
-    
-    public function setUp()
+
+    /**
+     * @before
+     */
+    public function setupAnnotations()
     {
         $this->annotations = new Annotations;
     }

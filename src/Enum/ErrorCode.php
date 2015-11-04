@@ -17,4 +17,20 @@ class ErrorCode extends Enum
     const USER_NOT_FOUND     = "0103";
     const USER_ID_EXISTS     = "0104";
     const MODEL_VALIDATATION = "0105";
+
+    protected static $PROPERTIES = [
+        'message' => [
+            self::HTTP_METHOD_INVALID       => 'HTTP method is not suported for this request',
+            self::MISSING_REQUIRED_ARGUMENT => 'Miss required parameter \':arg\'',
+            self::INVALID_ARGUMENT          => 'Parameter :arg\'s value is invalid',
+            self::SERVICE_UNAVAILABLE       => 'Service is currently unavailable',
+            self::ACCESS_DENIED             => 'Access denied',
+            self::CSRF_TOKEN_INVALID        => 'Invalid request, likely attacking',
+            self::LOGIN_REQUIRED            => 'The page is displaying for user login only',
+            self::NOT_FOUND                 => 'The request url \':url\' is not valid',
+            self::USER_NOT_FOUND            => 'The user is not found',
+            self::USER_ID_EXISTS            => 'The user already exists',
+            self::MODEL_VALIDATATION        => 'The model is not valid',
+        ],
+    ];
 }

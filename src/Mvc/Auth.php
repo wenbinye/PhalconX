@@ -52,6 +52,7 @@ class Auth implements AuthInterface
         } else {
             $this->sessionData = false;
         }
+        return $this;
     }
     
     public function getSessionKey()

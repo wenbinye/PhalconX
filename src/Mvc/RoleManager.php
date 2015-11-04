@@ -2,35 +2,48 @@
 namespace PhalconX\Mvc;
 
 use Phalcon\Db\RawValue;
+use Phalcon\Cache;
 
 /**
  * Role manager
  */
 class RoleManager implements RoleManagerInterface
 {
+    /**
+     * @const default root user id
+     */
     const ROOT_ID = 1;
-    const DELIMITER = ' ';
-    
-    private $cache;
-    private $cachePrefix = 'user_roles:';
 
+    /**
+     * @const role delimiter
+     */
+    const DELIMITER = ' ';
+
+    /**
+     * @var Cache\BackendInterface
+     */
+    private $cache;
+
+    /**
+     * @var string
+     */
     private $model;
 
-    private $localCache;
-    
-    public function __construct($options)
+    /**
+     * @var array memory cache
+     */
+    private $localCache = [];
+
+    /**
+     * Constructor.
+     *
+     * @param Cache\BackendInterface $cache
+     * @param string $mode user model class
+     */
+    public function __construct(Cache\BackendInterface $cache, $model)
     {
-        if (!isset($options['cache'])) {
-            throw new \RuntimeException("The parameter 'cache' is required");
-        }
-        if (!isset($options['model'])) {
-            throw new \RuntimeException("The parameter 'model' is required");
-        }
-        $this->cache = $options['cache'];
-        $this->model = $options['model'];
-        if (isset($options['cachePrefix'])) {
-            $this->cachePrefix = $options['cachePrefix'];
-        }
+        $this->cache = $cache;
+        $this->model = $model;
     }
     
     public function isRoot($user_id)
@@ -70,7 +83,7 @@ class RoleManager implements RoleManagerInterface
     
     private function getModel($user_id)
     {
-        return call_user_func(array($this->model, 'findFirst'), $user_id);
+        return call_user_func([$this->model, 'findFirst'], $user_id);
     }
     
     private function saveRoles($user_id, $roles)
@@ -85,7 +98,7 @@ class RoleManager implements RoleManagerInterface
         if (empty($str)) {
             $str = new RawValue("''");
         }
-        $user->setRoles($str);
+        $user->roles = $str;
         if ($user->save()) {
             return $this;
         } else {

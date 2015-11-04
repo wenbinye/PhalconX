@@ -86,7 +86,7 @@ class Beanstalk extends BaseQueue
             $arguments['_handler'] = get_class($job);
             $jobId = $job->getId();
             if (isset($jobId)) {
-                $arguments['_id'] = Util::uuid();
+                $arguments['_id'] = uniq();
                 $this->cache->save($this->buildJobKey($jobId), $arguments['_id']);
             }
             if ($this->logger) {
@@ -144,6 +144,11 @@ class Beanstalk extends BaseQueue
                 $beanstalkJob->delete();
             }
         }
+    }
+
+    private static function uuid()
+    {
+        return uniqid("_PHX.queue", true);
     }
     
     private function createJob($beanstalkJob)

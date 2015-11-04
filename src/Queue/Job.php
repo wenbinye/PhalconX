@@ -1,9 +1,8 @@
 <?php
 namespace PhalconX\Queue;
 
-use PhalconX\Di\Injectable;
 use Phalcon\Queue\Beanstalk\Job as BeanstalkJob;
-use PhalconX\Util;
+use PhalconX\Di\Injectable;
 use PhalconX\Mvc\SimpleModel;
 
 abstract class Job extends SimpleModel implements JobInterface

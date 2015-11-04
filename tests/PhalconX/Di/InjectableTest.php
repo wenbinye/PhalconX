@@ -13,7 +13,10 @@ class InjectableTest extends TestCase
 {
     private $service;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setupDi()
     {
         $di = new Di;
         $di['config'] = new Config;

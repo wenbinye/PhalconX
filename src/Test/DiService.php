@@ -2,32 +2,38 @@
 namespace PhalconX\Test;
 
 use Phalcon\Di;
-use PhalconX\Di\Injectable;
 
 trait DiService
 {
-    use Injectable;
+    private static $DI = [];
 
-    private static $di;
+    private $di;
 
-    /**
-     * @before
-     */
-    public function resetDi()
+    public function getDi()
     {
-        self::$di = Di::getDefault();
+        return $this->di;
+    }
+
+    public function __get($property)
+    {
+        if ($this->di && $this->di->has($property)) {
+            return $this->di->getShared($property);
+        }
+    }
+    
+    public function setUp()
+    {
+        self::$DI[] = $default = Di::getDefault();
         $di = new Di;
-        foreach (self::$di->getServices() as $name => $service) {
+        foreach ($default->getServices() as $name => $service) {
             $di->setRaw($name, $service);
         }
         Di::setDefault($di);
+        $this->di = $di;
     }
 
-    /**
-     * @after
-     */
-    public function restoreDi()
+    public function tearDown()
     {
-        Di::setDefault(self::$di);
+        Di::setDefault(array_pop(self::$DI));
     }
 }

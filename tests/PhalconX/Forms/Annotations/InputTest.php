@@ -36,7 +36,10 @@ class InputTest extends TestCase
 {
     private $form;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setupForm()
     {
         $this->form = new Form;
     }

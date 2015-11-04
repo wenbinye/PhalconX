@@ -32,7 +32,10 @@ class ValidatorFactoryTest extends TestCase
 {
     private $factory;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setupFactory()
     {
         $this->factory = new ValidatorFactory(new Form());
     }

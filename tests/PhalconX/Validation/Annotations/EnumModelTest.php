@@ -17,7 +17,7 @@ class EnumModelTest extends TestCase
     /**
      * @before
      */
-    public function setupTable()
+    public function setupModel()
     {
         $this->db->execute($this->dataset('tables/scope.sql'));
     }
