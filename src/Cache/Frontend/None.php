@@ -8,7 +8,7 @@ class None implements FrontendInterface
 {
     protected $options;
 
-    protected function __construct($options)
+    public function __construct($options)
     {
         $this->options = $options;
     }
@@ -18,7 +18,7 @@ class None implements FrontendInterface
      */
     public function getLifetime()
     {
-        return ArrayHelpery::fetch($this->options, 'lifetime', 1);
+        return ArrayHelper::fetch($this->options, 'lifetime', 1);
     }
 
     /**

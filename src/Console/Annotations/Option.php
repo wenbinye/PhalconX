@@ -5,16 +5,18 @@ use Symfony\Component\Console\Input\InputOption;
 
 class Option extends Annotation
 {
+    protected static $DEFAULT_PROPERTY = 'mode';
+
     public $name;
 
     public $shortcut;
 
-    public $model;
+    public $mode;
 
     public function getMode()
     {
-        if ($this->model) {
-            return constant(InputOption::class . '::' . 'VALUE_' . strtoupper($this->model));
+        if ($this->mode) {
+            return constant(InputOption::class . '::' . 'VALUE_' . strtoupper($this->mode));
         }
     }
 }

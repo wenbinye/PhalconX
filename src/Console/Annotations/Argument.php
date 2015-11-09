@@ -5,6 +5,8 @@ use Symfony\Component\Console\Input\InputArgument;
 
 class Argument extends Annotation
 {
+    protected static $DEFAULT_PROPERTY = 'mode';
+    
     public $name;
 
     public $mode;
@@ -12,7 +14,7 @@ class Argument extends Annotation
     public function getMode()
     {
         if ($this->mode) {
-            return constant(InputArgument::class . '::' . strtoupper($this->model));
+            return constant(InputArgument::class . '::' . strtoupper($this->mode));
         }
     }
 }
