@@ -16,15 +16,24 @@ function bootstrap_test()
         system("composer dumpautoload") == 0
             or die("Cannot create autoload. Please download composer from https://getcomposer.org/");
     }
-
     $loader = require($autoload);
     $loader->add('PhalconX', array(__DIR__));
+    \Dotenv::load(__DIR__);
 
     $di = new FactoryDefault();
-    $di['config'] = $config = new Config(array(
+    $di['config'] = $config = new Config([
         'fixturesDir' => __DIR__ . '/fixtures',
-        'testBaseDir' => __DIR__
-    ));
+        'testBaseDir' => __DIR__,
+        'mysql' => [
+            'host' => $_ENV['DB_HOST'],
+            'username' => $_ENV['DB_USER'],
+            'password' => $_ENV['DB_PASS'],
+            'dbname' => 'test',
+            'dsn' => [
+                'charset' => 'utf-8'
+            ]
+        ]
+    ]);
     $di['db'] = function () {
         Model::setup(['notNullValidations' => false]);
         $db = new Sqlite(['dbname' => ':memory:']);

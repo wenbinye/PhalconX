@@ -5,7 +5,7 @@ class TestCaseTest extends TestCase
 {
     public function testDataset()
     {
-        $ret = $this->dataset("db/table1.json");
+        $ret = $this->dataset("db/user.json");
         $this->assertEquals($ret['name'], 'user');
     }
 }

@@ -36,6 +36,11 @@ abstract class Validator extends BaseValidator implements ValidatorInterface
         }
     }
 
+    public static function setDefaultMessages($messages)
+    {
+        self::$DEFAULT_MESSAGES = array_merge(self::$DEFAULT_MESSAGES, $messages);
+    }
+    
     protected function getMessageVars()
     {
         return [];

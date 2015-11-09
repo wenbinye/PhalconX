@@ -8,8 +8,8 @@ use PhalconX\Validation\ValidatorFactory;
 
 class IsArray extends Annotation implements ValidatorInterface
 {
-    protected static $DEFAULT_PROPERTY = 'class';
-    
+    protected static $DEFAULT_PROPERTY = 'element';
+
     public $element;
     
     public $message;
