@@ -12,7 +12,7 @@ class ClassHelper
      * @param string $class
      * @return class simple name
      */
-    public static function getShortName($class)
+    public static function getSimpleName($class)
     {
         $pos = strrpos($class, '\\');
         if ($pos === false) {

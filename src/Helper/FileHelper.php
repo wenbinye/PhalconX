@@ -32,4 +32,16 @@ class FileHelper
             yield $file => $fileInfo;
         }
     }
+
+    /**
+     * join file path
+     */
+    public static function catfile($dir, $file)
+    {
+        if ($dir) {
+            return rtrim($dir, '/') . '/' . ltrim($file, '/');
+        } else {
+            return $file;
+        }
+    }
 }

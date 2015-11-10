@@ -66,7 +66,7 @@ class Annotations
         foreach ($classes as $class => $alias) {
             if (is_integer($class)) {
                 $class = $alias;
-                $alias = ClassHelper::getShortName($class);
+                $alias = ClassHelper::getSimpleName($class);
             }
             if (isset($this->imports[$alias])) {
                 throw new \RuntimeException("Alias $alias for $class exists, previous is "
