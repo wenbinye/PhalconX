@@ -165,6 +165,7 @@ class DbHelper
             throw new Exception("database adapter is missing for " . json_encode($dsn));
         }
         $class = 'Phalcon\Db\Adapter\Pdo\\' . ucfirst($dsn['adapter']);
-        return Mixin::create(new $class($dsn), new self);
+        $conn = new $class($dsn);
+        return Mixin::create($conn, new self);
     }
 }

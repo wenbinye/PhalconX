@@ -25,13 +25,11 @@ function bootstrap_test()
         'fixturesDir' => __DIR__ . '/fixtures',
         'testBaseDir' => __DIR__,
         'mysql' => [
+            'adapter' => 'mysql',
             'host' => $_ENV['DB_HOST'],
             'username' => $_ENV['DB_USER'],
             'password' => $_ENV['DB_PASS'],
             'dbname' => 'test',
-            'dsn' => [
-                'charset' => 'utf-8'
-            ]
         ]
     ]);
     $di['db'] = function () {

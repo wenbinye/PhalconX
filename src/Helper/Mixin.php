@@ -8,7 +8,7 @@ class Mixin
     public static function create($obj, $mixin)
     {
         $class = self::createMixinClass($obj, $mixin);
-        return (new \ReflectionClass($clz))->newInstanceWithoutConstructor()
+        return (new \ReflectionClass($class))->newInstanceWithoutConstructor()
             ->_setOrigin($obj)
             ->_setMixin($mixin);
     }

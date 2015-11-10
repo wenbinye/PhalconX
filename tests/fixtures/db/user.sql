@@ -8,4 +8,4 @@ create table user(
   unique key (name),
   unique key (status, address_id),
   key(age, status)
-) default charset=utf8 engine=InnoDB;
+) DEFAULT charset=utf8 ENGINE=InnoDB;
