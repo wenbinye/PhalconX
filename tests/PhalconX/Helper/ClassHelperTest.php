@@ -28,7 +28,7 @@ class ClassHelperTest extends TestCase
 
     public function testGetShortName()
     {
-        $this->assertEquals(ClassHelper::getShortName('Foo\\Bar'), 'Bar');
+        $this->assertEquals(ClassHelper::getSimpleName('Foo\\Bar'), 'Bar');
     }
 
     public function testGetClasses()
