@@ -5,4 +5,4 @@ before_script:
   - curl -s http://mirrors.chaozhuo.net/composer/wenbinye/php-phalconx/$hash.xz | tar xJ
 phpunit:
   script:
-    - sudo docker run --rm --volumes-from $DATA_VOLUME --link ${MYSQL_CONTAINER}:mysql --workdir `pwd` chaozhuo/phpunit phpunit tests
+    - sudo docker run --rm --volumes-from $DATA_VOLUME --link ${MYSQL_CONTAINER}:mysql --workdir `pwd` chaozhuo/phpunit tests
