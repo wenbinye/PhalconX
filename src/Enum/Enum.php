@@ -85,6 +85,12 @@ abstract class Enum
             return $this->$name;
         }
     }
+
+    public function __isset($name)
+    {
+        return isset(static::$PROPERTIES[$name][$this->value])
+            || isset($this->$name);
+    }
     
     /**
      * Gets all enum values

@@ -7,8 +7,23 @@ use PhalconX\Enum\Enum;
 use PhalconX\Validation\Form;
 use PhalconX\Helper\ClassResolver;
 
+/**
+ * select
+ *
+ * <example>
+ * use PhalconX\Forms\Annotations\Select;
+ *
+ * @Select(options = ['yes', 'no'])
+ *
+ * @Select(model = Enum)
+ *
+ * @Select(model = Model, using = ['id', 'name'])
+ * </example>
+ */
 class Select extends Input
 {
+    protected static $elementClass = SelectElement::class;
+    
     /**
      * @var string enum class for domain
      */
@@ -52,6 +67,6 @@ class Select extends Input
     
     public function getElement(Form $form)
     {
-        return new SelectElement($this->name, $this->getOptions($form), $this->getAttributes());
+        return new static::$elementClass($this->name, $this->getOptions($form), $this->getAttributes());
     }
 }
