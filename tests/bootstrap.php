@@ -18,7 +18,9 @@ function bootstrap_test()
     }
     $loader = require($autoload);
     $loader->add('PhalconX', array(__DIR__));
-    \Dotenv::load(__DIR__);
+    if (file_exists(__DIR__.'/.env')) {
+        \Dotenv::load(__DIR__);
+    }
 
     $di = new FactoryDefault();
     $di['config'] = $config = new Config([
@@ -26,9 +28,9 @@ function bootstrap_test()
         'testBaseDir' => __DIR__,
         'mysql' => [
             'adapter' => 'mysql',
-            'host' => $_ENV['DB_HOST'],
-            'username' => $_ENV['DB_USER'],
-            'password' => $_ENV['DB_PASS'],
+            'host' => isset($_SERVER['DB_HOST']) ? $_SERVER['DB_HOST'] : '127.0.0.1',
+            'username' => isset($_SERVER['DB_USER']) ? $_SERVER['DB_USER'] : 'root',
+            'password' => isset($_SERVER['DB_PASS']) ? $_SERVER['DB_PASS'] : '',
             'dbname' => 'test',
         ]
     ]);

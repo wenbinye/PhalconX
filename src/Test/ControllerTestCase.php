@@ -43,10 +43,14 @@ abstract class ControllerTestCase extends DatabaseTestCase
     
     public function getResponse($format = null)
     {
-        $this->router->handle();
-        $this->dispatcher->setControllerName($this->router->getControllerName());
-        $this->dispatcher->setActionName($this->router->getActionName());
-        $this->dispatcher->dispatch();
+        $router = $this->router;
+        $dispatcher = $this->dispatcher;
+        $router->handle();
+        $dispatcher->setModuleName($router->getModuleName());
+        $dispatcher->setNamespaceName($router->getNamespaceName());
+        $dispatcher->setControllerName($router->getControllerName());
+        $dispatcher->setActionName($router->getActionName());
+        $dispatcher->dispatch();
         $response = $this->response->getContent();
         if (isset($format)) {
             if ($format == 'json') {

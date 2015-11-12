@@ -14,6 +14,12 @@ trait DiService
         return $this->di;
     }
 
+    public function setDi($di)
+    {
+        $this->di = $di;
+        Di::setDefault($di);
+    }
+
     public function __get($property)
     {
         if ($this->di && $this->di->has($property)) {
@@ -28,8 +34,7 @@ trait DiService
         foreach ($default->getServices() as $name => $service) {
             $di->setRaw($name, $service);
         }
-        Di::setDefault($di);
-        $this->di = $di;
+        $this->setDi($di);
     }
 
     public function tearDown()

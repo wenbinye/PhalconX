@@ -69,14 +69,10 @@ class FactoryDefault extends Di
      *
      * @param array $autoloads name of service. service alias
      * @param string|ServiceProvider $provider service provider
-     * @param boolean $shared whether is shared service
+     * @param array options: shared, instances, prefix
      */
     public function autoload(array $autoloads, $provider, $options = [])
     {
-        $options = array_merge([
-            'shared' => true,
-            'prefix' => ''
-        ], $options);
         foreach ($autoloads as $name => $alias) {
             if (is_int($name)) {
                 $name = $alias;
@@ -84,16 +80,25 @@ class FactoryDefault extends Di
             if (empty($name)) {
                 throw new \InvalidArgumentException("Cannot not autoload empty service");
             }
-            if ($options['prefix']) {
+            if (!empty($options['prefix'])) {
                 $alias = $options['prefix'] . ucfirst($alias);
+            }
+            $shared = true;
+            if (isset($options['shared'])) {
+                if (is_array($options['shared'])) {
+                    $shared = in_array($name, $options['shared']);
+                } else {
+                    $shared = $options['shared'];
+                }
+            } elseif (isset($options['instances'])) {
+                $shared = !in_array($name, $options['instances']);
             }
             $this->set($alias, function () use ($name, $provider) {
                 if (!is_object($provider)) {
-                    $provider = new $provider;
+                    $provider = $this->getShared($provider);
                 }
-                $provider->setDi($this);
                 return $provider->provide($name, func_get_args());
-            }, $options['shared']);
+            }, $shared);
         }
         return $this;
     }
@@ -111,37 +116,19 @@ class FactoryDefault extends Di
     public function load($provider, $options = null)
     {
         if (!is_object($provider)) {
-            $provider = new $provider;
+            $provider = $this->getShared($provider);
         }
         $names = $provider->getNames();
-        if (isset($options['instances'])) {
-            $shared = array_diff($names, $options['instances']);
-            $instances = $options['instances'];
-            unset($options['instances']);
-        } elseif (isset($options['shared'])) {
-            $shared = $options['shared'];
-            $instances = array_diff($names, $options['shared']);
-            unset($options['shared']);
-        } else {
-            $shared = $names;
-            $instances = [];
-        }
         if (isset($options['aliases'])) {
-            $shared = $this->createLoadAliases($shared, $options['aliases']);
-            $instances = $this->createLoadAliases($instances, $options['aliases']);
+            $services = $this->createServiceAliases($names, $options['aliases']);
             unset($options['aliases']);
+        } else {
+            $services = $names;
         }
-        if (!empty($shared)) {
-            $options['shared'] = true;
-            $this->autoload($shared, $provider, $options);
-        }
-        if (!empty($instances)) {
-            $options['shared'] = false;
-            $this->autoload($instances, $provider, $options);
-        }
+        $this->autoload($services, $provider, $options);
     }
 
-    private function createLoadAliases($names, $aliases)
+    private function createServiceAliases($names, $aliases)
     {
         $keys = array_keys($aliases);
         $common = array_intersect($names, $keys);

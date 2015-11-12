@@ -8,18 +8,14 @@ use Phalcon\Di\Exception;
 /**
  * Service provider for autoload services
  */
-abstract class ServiceProvider
+abstract class ServiceProvider extends \Phalcon\Di\Injectable
 {
     const METHOD_PREFIX = 'provide';
-    
+
+    /**
+     * @var array service definitions
+     */
     protected $services = [];
-
-    protected $di;
-
-    public function setDi($di)
-    {
-        $this->di = $di;
-    }
 
     /**
      * Creates service instance
@@ -32,7 +28,7 @@ abstract class ServiceProvider
         $services = $this->getServices();
         if (isset($services[$name])) {
             return (new Service($name, $services[$name]))
-                ->resolve($args, $this->di);
+                ->resolve($args, $this->getDi());
         } else {
             $method = self::METHOD_PREFIX . $name;
             if (method_exists($this, $method)) {
