@@ -32,7 +32,7 @@ class NodeVisitor extends NodeVisitorAbstract
     {
         $refl = new \ReflectionClass($this);
         $rules = [];
-                
+
         foreach ($refl->getMethods() as $method) {
             if (Text::startsWith($method->getName(), 'rule')) {
                 $params = $method->getParameters();
@@ -43,7 +43,7 @@ class NodeVisitor extends NodeVisitorAbstract
         }
         self::$rules[get_class($this)] = $rules;
     }
-    
+
     public function enterNode(Node $node)
     {
         foreach ($this->getRuleMethods($node) as $method) {
@@ -64,7 +64,7 @@ class NodeVisitor extends NodeVisitorAbstract
         }
         return $this->cachedRules[$type];
     }
-    
+
     protected function checkClassExists(Node $name)
     {
         if (!$name instanceof Node\Name) {
@@ -131,7 +131,7 @@ class NodeVisitor extends NodeVisitorAbstract
     }
 
     /**
-     * collect use 
+     * collect use
      */
     protected function ruleUse(Node\Stmt\Use_ $node)
     {
@@ -184,7 +184,7 @@ class NodeVisitor extends NodeVisitorAbstract
         $this->checkClassExists($node->class);
     }
 
-    protected function ruleInstanceof(Node\Expr\Instanceof_ $node) 
+    protected function ruleInstanceof(Node\Expr\Instanceof_ $node)
     {
         $this->checkClassExists($node->class);
     }
@@ -193,12 +193,12 @@ class NodeVisitor extends NodeVisitorAbstract
     {
         $this->checkClassExists($node->type);
     }
-    
+
     protected function ruleFuncall(Node\Expr\FuncCall $node)
     {
         $name = $node->name;
         // not Node\Expr\Variable and not global function
-        if ($name instanceof Node\Name && count($name->parts) > 1) { 
+        if ($name instanceof Node\Name && count($name->parts) > 1) {
             array_pop($name->parts);
             $this->checkClassExists($name);
         }

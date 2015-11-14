@@ -16,6 +16,7 @@
         "symfony/console": "~2.5",
         "nikic/php-parser": "2.0.x-dev"
     },
+    "bin": ["bin/phalconx"],
     "require-dev": {
         "vlucas/phpdotenv": "~1.0",
         "phpunit/phpunit": "^5.0",

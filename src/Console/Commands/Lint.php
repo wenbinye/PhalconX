@@ -40,9 +40,9 @@ class Lint extends BaseCommand
     protected function call()
     {
         if ($this->autoload) {
-            require_once($this->autoload);
+            include_once $this->autoload;
         } elseif (file_exists('vendor/autoload.php')) {
-            require_once('vendor/autoload.php');
+            include_once 'vendor/autoload.php';
         }
         
         $this->excludePattern = $this->buildExcludePattern();
