@@ -3,6 +3,7 @@ namespace PhalconX\Validation\Annotations;
 
 use Phalcon\Validation\Validator\Uniqueness as UniquenessValidator;
 use PhalconX\Validation\Form;
+use PhalconX\Helper\ClassResolver;
 
 class Uniqueness extends Validator
 {

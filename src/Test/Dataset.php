@@ -15,18 +15,20 @@ trait Dataset
      *
      * @return array
      */
-    public function dataset($file)
+    public function dataset($file, $format = null)
     {
-        $ext = pathinfo($file, \PATHINFO_EXTENSION);
         $file = $this->getDatasetFile($file);
         if (!file_exists($file)) {
             throw new \InvalidArgumentException("Could not find dataset file '$file'");
         }
-        if ($ext == 'json') {
+        if (!$format) {
+            $format = pathinfo($file, \PATHINFO_EXTENSION);
+        }
+        if ($format == 'json') {
             return json_decode(file_get_contents($file), true);
-        } elseif (in_array($ext, array('yml', 'yaml'))) {
+        } elseif (in_array($format, array('yml', 'yaml'))) {
             return yaml_parse_file($file);
-        } elseif ($ext == 'php') {
+        } elseif ($format == 'php') {
             return require($file);
         } else {
             return file_get_contents($file);

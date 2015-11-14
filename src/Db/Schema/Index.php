@@ -55,7 +55,7 @@ class Index extends SimpleModel
                 'type' => trim($matches[1])
             ]);
         } else {
-            throw new Exception("Invalid index definition '$definition'");
+            throw new \InvalidArgumentException("Invalid index definition '$definition'");
         }
     }
 

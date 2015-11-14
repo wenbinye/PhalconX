@@ -16,7 +16,11 @@ class Option extends Annotation
     public function getMode()
     {
         if ($this->mode) {
-            return constant(InputOption::class . '::' . 'VALUE_' . strtoupper($this->mode));
+            $mode = 0;
+            foreach (explode('|', strtoupper($this->mode)) as $one) {
+                $mode |= constant(InputOption::class . '::' . 'VALUE_' . $one);
+            }
+            return $mode;
         }
     }
 }

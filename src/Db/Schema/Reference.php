@@ -65,7 +65,7 @@ class Reference extends SimpleModel
             $def['name'] = $name;
             return new self($def);
         } else {
-            throw new Exception("Invalid reference definition '$definition'");
+            throw new \InvalidArgumentException("Invalid reference definition '$definition'");
         }
     }
 

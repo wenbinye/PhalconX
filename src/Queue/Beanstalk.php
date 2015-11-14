@@ -161,7 +161,7 @@ class Beanstalk extends BaseQueue
                 $jobKey = $this->buildJobKey($jobId);
                 $id = $this->cache->get($jobKey);
                 if ($id === null) {
-                    $this->cache->save($jobKey, Util::uuid());
+                    $this->cache->save($jobKey, self::uuid());
                 } elseif ($id != $arguments['_id']) {
                     if ($this->logger) {
                         $this->logger->error("Duplicate job " . json_encode($arguments));

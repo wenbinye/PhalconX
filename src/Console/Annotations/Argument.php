@@ -14,7 +14,11 @@ class Argument extends Annotation
     public function getMode()
     {
         if ($this->mode) {
-            return constant(InputArgument::class . '::' . strtoupper($this->mode));
+            $mode = 0;
+            foreach (explode('|', strtoupper($this->mode)) as $one) {
+                $mode |= constant(InputArgument::class . '::' . $one);
+            }
+            return $mode;
         }
     }
 }

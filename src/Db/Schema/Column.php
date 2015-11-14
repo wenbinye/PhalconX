@@ -194,7 +194,7 @@ class Column extends SimpleModel
     public static function create($name, $definition)
     {
         if (!is_string($definition)) {
-            throw new Exception("Invalid column definition for column '$name'");
+            throw new \InvalidArgumentException("Invalid column definition for column '$name'");
         }
         $def = [];
         $pos = strpos($definition, ' {');

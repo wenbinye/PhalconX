@@ -5,6 +5,7 @@ use Phalcon\Mvc\Model\Behavior;
 use Phalcon\Mvc\Model\BehaviorInterface;
 use Phalcon\Mvc\ModelInterface;
 use PhalconX\Helper\ArrayHelper;
+use Phalcon\Mvc\Model\Exception;
 
 /**
  * Fix timestamp behavior:

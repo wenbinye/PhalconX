@@ -3,7 +3,8 @@
 use PhalconX\Di\FactoryDefault;
 use PhalconX\Annotation\Annotations;
 use PhalconX\Console\Command;
-use PhalconX\Test\Console\GreetCommand;
+use Phalcon\Logger\Adapter\Stream as ConsoleLogger;
+use Phalcon\Logger\Formatter\Line as LineFormatter;
 
 $loader = require(__DIR__ . '/../vendor/autoload.php');
 $loader->add('PhalconX', __DIR__ . '/../tests');
@@ -12,6 +13,12 @@ $di = new FactoryDefault;
 $di['annotations'] = function() {
     return new Annotations();
 };
+$di['logger'] = function() {
+    $formatter = new LineFormatter("%date% [%type%] %message%\n");
+    $logger = new ConsoleLogger("php://stderr");
+    $logger->setFormatter($formatter);
+    return $logger;
+};
 
-$refl = new ReflectionClass(GreetCommand::class);
+$refl = new ReflectionClass(Command::class);
 Command::createApplication(dirname($refl->getFilename()))->run();

@@ -1,6 +1,9 @@
 <?php
 namespace PhalconX\Helper;
 
+use PhalconX\Exception\IOException;
+use PhalconX\Exception\Exception;
+
 class ClassParser
 {
     private $file;

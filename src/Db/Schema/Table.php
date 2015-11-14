@@ -58,7 +58,7 @@ class Table extends AbstractTable
     {
         $def = self::parseName($name);
         if (empty($definition['columns'])) {
-            throw new Exception("The table must contain at least one column");
+            throw new \InvalidArgumentException("The table must contain at least one column");
         }
         foreach (['columns' => Column::class,
                   'indexes' => Index::class,
@@ -191,7 +191,7 @@ class Table extends AbstractTable
     {
         if ($this->name != $table->name
             || $this->schema != $table->schema) {
-            throw new Exception("Table name is not the same");
+            throw new \InvalidArgumentException("Table name is not the same");
         }
         $diff = new TableDiff(['name' => $this->name, 'schema' => $this->schema]);
         $diff->assign($this->diffColumns($table));
@@ -220,7 +220,7 @@ class Table extends AbstractTable
                     return $col->toColumn();
             }, $this->columns);
         } else {
-            throw new Exception("The table must contain at least one column");
+            throw new \InvalidArgumentException("The table must contain at least one column");
         }
     }
 
@@ -347,7 +347,7 @@ class Table extends AbstractTable
         if ($diff->dropedColumns) {
             foreach ($diff->dropedColumns as $col) {
                 if (!isset($columns[$col->name])) {
-                    throw new Exception("The column '{$col->name}' was not precent in table " . $this->getName());
+                    throw new \InvalidArgumentException("The column '{$col->name}' was not precent in table " . $this->getName());
                 }
                 unset($columns[$col->name]);
             }
@@ -355,7 +355,7 @@ class Table extends AbstractTable
         if ($diff->renamedColumns) {
             foreach ($diff->renamedColumns as $name => $col) {
                 if (!isset($columns[$name])) {
-                    throw new Exception("The column '{$name}' was not precent in table " . $this->getName());
+                    throw new \InvalidArgumentException("The column '{$name}' was not precent in table " . $this->getName());
                 }
             }
             unset($columns[$name]);
