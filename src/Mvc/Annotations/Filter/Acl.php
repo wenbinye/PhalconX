@@ -1,8 +1,8 @@
 <?php
 namespace PhalconX\Mvc\Annotations\Filter;
 
-use PhalconX\Exception\FilterException;
-use PhalconX\Enum\ErrorCode;
+use PhalconX\Exception\AccessDeniedException;
+use PhalconX\Exception\UnauthorizedException;
 
 class Acl extends AbstractFilter
 {
@@ -11,13 +11,11 @@ class Acl extends AbstractFilter
     public function filter()
     {
         if ($this->auth->isGuest()) {
-            $this->response->setStatusCode(401);
-            throw new FilterException(ErrorCode::LOGIN_REQUIRED);
+            throw new UnauthorizedException();
         }
         foreach ($this->getRoles() as $role) {
             if (!$this->roleManager->checkAccess($this->auth->user_id, $role)) {
-                $this->response->setStatusCode(403);
-                throw new FilterException(ErrorCode::ACCESS_DENIED);
+                throw new AccessDeniedException();
             }
         }
     }

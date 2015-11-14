@@ -1,8 +1,7 @@
 <?php
 namespace PhalconX\Mvc\Annotations\Filter;
 
-use PhalconX\Exception\FilterException;
-use PhalconX\Enum\ErrorCode;
+use PhalconX\Exception\HttpMethodNotAllowedException;
 
 class RequestMethod extends AbstractFilter
 {
@@ -13,8 +12,7 @@ class RequestMethod extends AbstractFilter
     public function filter()
     {
         if (!in_array($this->request->getMethod(), $this->methods)) {
-            $this->response->setStatusCode(405);
-            throw new FilterException(ErrorCode::HTTP_METHOD_INVALID);
+            throw new HttpMethodNotAllowedException();
         }
     }
 }

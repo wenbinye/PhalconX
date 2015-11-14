@@ -7,10 +7,12 @@ class Identical extends Validator
 {
     protected static $validatorClass = IdenticalValidator::class;
 
+    protected static $DEFAULT_PROPERTY = 'accepted';
+
     /**
      * @var string the value should be identical
      */
-    public $value;
+    public $accepted;
 
     /**
      * @var string error message

@@ -1,8 +1,7 @@
 <?php
 namespace PhalconX\Mvc\Annotations\Filter;
 
-use PhalconX\Exception\FilterException;
-use PhalconX\Enum\ErrorCode;
+use PhalconX\Exception\UnauthorizedException;
 
 class LoginOnly extends AbstractFilter
 {
@@ -12,7 +11,7 @@ class LoginOnly extends AbstractFilter
     {
         if ($this->auth->isGuest()) {
             $this->response->setStatusCode(401);
-            throw new FilterException(ErrorCode::LOGIN_REQUIRED);
+            throw new UnauthorizedException();
         }
     }
 }

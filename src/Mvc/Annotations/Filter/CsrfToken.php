@@ -1,8 +1,8 @@
 <?php
 namespace PhalconX\Mvc\Annotations\Filter;
 
-use PhalconX\Exception\FilterException;
-use PhalconX\Enum\ErrorCode;
+use PhalconX\Exception\HttpMethodNotAllowedException;
+use PhalconX\Exception\CsrfTokenInvalidException;
 
 class CsrfToken extends AbstractFilter
 {
@@ -13,13 +13,11 @@ class CsrfToken extends AbstractFilter
     public function filter()
     {
         if (!in_array($this->request->getMethod(), self::$ALLOWED_METHODS)) {
-            $this->response->setStatusCode(405);
-            throw new FilterException(ErrorCode::HTTP_METHOD_INVALID);
+            throw new HttpMethodNotAllowedException();
         }
         $destroy = !$this->repeatOk;
         if (!$this->security->checkToken(null, null, $destroy)) {
-            $this->response->setStatusCode(400);
-            throw new FilterException(ErrorCode::CSRF_TOKEN_INVALID);
+            throw new CsrfTokenInvalidException();
         }
     }
 }

@@ -3,7 +3,7 @@ namespace PhalconX\Mvc\Annotations\Filter;
 
 use PhalconX\Test\TestCase;
 use PhalconX\Mvc\SimpleAuth;
-use PhalconX\Exception\FilterException;
+use PhalconX\Exception\UnauthorizedException;
 use PhalconX\Enum\ErrorCode;
 
 /**
@@ -26,7 +26,7 @@ class AclTest extends TestCase
 
     public function testFilter()
     {
-        $this->setExpectedException(FilterException::class, 'login', ErrorCode::LOGIN_REQUIRED);
+        $this->setExpectedException(UnauthorizedException::class);
         $this->filter->filter();
     }
 

@@ -2,8 +2,7 @@
 namespace PhalconX\Test\Mvc\Middleware;
 
 use PhalconX\Mvc\Annotations\Filter\AbstractFilter;
-use PhalconX\Exception\FilterException;
-use PhalconX\Enum\ErrorCode;
+use PhalconX\Exception\HttpMethodNotAllowedException;
 
 class Foo extends AbstractFilter
 {
@@ -17,7 +16,7 @@ class Foo extends AbstractFilter
         } elseif ($ret == 'false') {
             return $this->registry->filterResult = false;
         } else {
-            throw new FilterException(ErrorCode::INVALID_ARGUMENT);
+            throw new HttpMethodNotAllowedException;
         }
     }
 }

@@ -68,7 +68,7 @@ class Mysql extends BaseMysql
         return $sql;
     }
     
-    protected function _getTableOptions($def)
+    protected function _getTableOptions(array $def)
     {
         if (isset($def['options'])) {
             $options = $def['options'];

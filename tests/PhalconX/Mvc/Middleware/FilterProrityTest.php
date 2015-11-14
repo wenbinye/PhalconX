@@ -7,7 +7,6 @@ use PhalconX\Test\TestCase;
 use PhalconX\Annotation\Annotations;
 use PhalconX\Helper\ClassHelper;
 use PhalconX\Test\Mvc\Middleware\ProController;
-use PhalconX\Exception\FilterException;
 
 /**
  * TestCase for Filter

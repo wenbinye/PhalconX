@@ -33,7 +33,7 @@ class IdenticalTest extends TestCase
      */
     public function testValidate($value, $expect)
     {
-        $validator = $this->getAnnotation(['value' => 'foo'])->getValidator($this->form);
+        $validator = $this->getAnnotation(['accepted' => 'foo'])->getValidator($this->form);
         $this->validation->add('value', $validator);
         $errors = $this->validation->validate(['value' => $value]);
         $this->assertEquals(count($errors), $expect, "value = $value");
