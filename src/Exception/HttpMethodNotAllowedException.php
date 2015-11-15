@@ -1,7 +1,7 @@
 <?php
 namespace PhalconX\Exception;
 
-class HttpMethodNotAllowedException extends FilterException
+class HttpMethodNotAllowedException extends HttpException
 {
     public function __construct($message = null, $previous = null)
     {

@@ -66,13 +66,13 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
         if (isset($this->cache[$file])) {
             return $this->cache[$file];
         }
-        if (preg_match('/\.\(json|ya?ml|php|xml)$/', $file, $matches)) {
+        if (preg_match('/\.(json|ya?ml|php|xml)$/', $file, $matches)) {
             if ($matches[1] == 'xml') {
                 $dataset = parent::createFlatXMLDataSet($this->getDatasetFile($file));
             } else {
                 $dataset = parent::createArrayDataSet($this->dataset($file));
             }
-            return $this->cache[$path] = $dataset;
+            return $this->cache[$file] = $dataset;
         } else {
             throw new \InvalidArgumentException("Could not load dataset, support only json, yaml, php, xml files");
         }

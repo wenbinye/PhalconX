@@ -32,11 +32,26 @@ class Listener extends Injectable
 
     public function beforeQuery($event, $connection, $binds)
     {
-        $this->reconnectIfTimeout();
-        $this->loggingStatment();
+        $this->reconnectIfTimeout($connection);
+        $this->loggingStatment($connection, $binds);
     }
 
-    private function loggingStatment()
+    private function reconnectIfTimeout()
+    {
+        if (!$this->isTimeout() || !$connection->isUnderTransaction()) {
+            return;
+        }
+        $this->logger->info("connection timeout, reconnecting");
+        $this->lastActiveTime = time();
+        $connection->connect();
+    }
+
+    private function isTimeout()
+    {
+        return time() - $this->lastActiveTime > $this->timeout;
+    }
+
+    private function loggingStatment($connection, $binds)
     {
         if (!$this->logging) {
             return;
@@ -56,21 +71,6 @@ class Listener extends Injectable
             $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
             $bind_params = ' bind=' . json_encode($binds, $flags);
         }
-        $this->logger->info($sql . $bind_params, 'info');
-    }
-
-    private function reconnectIfTimeout()
-    {
-        if (!$this->isTimeout() || !$connection->isUnderTransaction()) {
-            return;
-        }
-        $this->logger->info("connection timeout, reconnecting");
-        $this->lastActiveTime = time();
-        $connection->connect();
-    }
-
-    private function isTimeout()
-    {
-        return time() - $this->lastActiveTime > $this->timeout;
+        $this->logger->info($sql . $bind_params);
     }
 }

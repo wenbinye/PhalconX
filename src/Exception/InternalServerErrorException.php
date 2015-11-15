@@ -1,10 +1,10 @@
 <?php
 namespace PhalconX\Exception;
 
-class AccessDeniedException extends HttpException
+class InternalServerErrorException extends HttpException
 {
     public function __construct($message = null, $previous = null)
     {
-        parent::__construct(403, $message, $previous);
+        parent::__construct(500, $message, $previous);
     }
 }

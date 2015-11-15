@@ -4,7 +4,7 @@ namespace PhalconX\Mvc\Middleware;
 use Phalcon\Events\Manager as EventsManager;
 use PhalconX\Annotation\Annotations;
 use PhalconX\Mvc\Annotations\Filter\FilterInterface;
-use PhalconX\Exception\FilterException;
+use PhalconX\Exception\HttpException;
 
 class Filter
 {
@@ -79,7 +79,7 @@ class Filter
             if ($this->eventsManager->fire('dispatch:beforeException', $dispatcher, $e) === false) {
                 return false;
             }
-            throw new FilterException(400, '', $e);
+            throw new HttpException($e->getStatusCode(), null, $e);
         }
     }
 }

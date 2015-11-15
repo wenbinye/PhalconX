@@ -3,7 +3,7 @@ namespace PhalconX\Session\Adapter;
 
 use Phalcon\Session\Adapter;
 use Phalcon\Session\AdapterInterface;
-use Phalcon\Cache\BackendInterface as Cache;
+use Phalcon\Cache\BackendInterface;
 
 /**
  * Use cache compoent as session storage
@@ -33,7 +33,7 @@ class Cache extends Adapter implements AdapterInterface
      *  - cookie_lifetime session cookie expiration
      *  - cookie_name session cookie name
      */
-    public function __construct(Cache $cache, array $options = [])
+    public function __construct(BackendInterface $cache, array $options = [])
     {
         $this->cache = $cache;
         if (isset($options['prefix'])) {

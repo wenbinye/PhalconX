@@ -1,7 +1,7 @@
 <?php
 namespace PhalconX\Exception;
 
-class UnauthorizedException extends FilterException
+class UnauthorizedException extends HttpException
 {
     public function __construct($message = null, $previous = null)
     {
