@@ -8,7 +8,7 @@ use PhalconX\Annotation\Annotations;
 use PhalconX\Helper\ClassHelper;
 use PhalconX\Test\Mvc\Middleware\MyController;
 use PhalconX\Test\Mvc\Middleware\Foo;
-use PhalconX\Exception\FilterException;
+use PhalconX\Exception\HttpException;
 
 /**
  * TestCase for Filter
@@ -67,7 +67,8 @@ class FilterTest extends TestCase
         $dispatcher->setActionName('index');
         try {
             $ret = $this->eventsManager->fire('dispatch:beforeExecuteRoute', $dispatcher);
-        } catch (FilterException $e) {
+        } catch (HttpException $e) {
+            $this->assertEquals($e->getStatusCode(), 405);
             $trace = $e->getPrevious()->getTrace();
             $this->assertEquals($trace[0]['class'], Foo::class);
         }
