@@ -226,13 +226,31 @@ class Router extends BaseRouter
         return $this->defaultAction;
     }
 
+    public function setDefaultAction($action)
+    {
+        $this->defaultAction = $action;
+        return $this;
+    }
+
     public function getControllerSuffix()
     {
         return $this->controllerSuffix;
     }
 
+    public function setControllerSuffix($suffix)
+    {
+        $this->controllerSuffix = $suffix;
+        return $this;
+    }
+
     public function getActionSuffix()
     {
         return $this->actionSuffix;
+    }
+
+    public function setActionSuffix($suffix)
+    {
+        $this->actionSuffix = $suffix;
+        return $this;
     }
 }
