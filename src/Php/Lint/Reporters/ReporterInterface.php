@@ -1,7 +1,7 @@
 <?php
-namespace PhalconX\PhpLint\Reporters;
+namespace PhalconX\Php\Lint\Reporters;
 
-use PhalconX\PhpLint\Errors\ErrorInterface;
+use PhalconX\Php\Lint\Errors\ErrorInterface;
 
 interface ReporterInterface
 {

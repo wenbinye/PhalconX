@@ -1,6 +1,8 @@
 <?php
-namespace PhalconX\PhpLint;
+namespace PhalconX\Php;
 
+use PhalconX\Php\Lint\Reporters\ReporterInterface;
+use PhalconX\Php\Lint\Errors\SyntaxError;
 use PhpParser\ParserFactory;
 use PhpParser\NodeTraverser;
 use PhpParser\Error;
@@ -8,7 +10,7 @@ use PhpParser\Error;
 /**
  * php lint
  */
-class PhpLint
+class Lint
 {
     private $file;
     private $stream;
@@ -20,7 +22,7 @@ class PhpLint
      * @param string $source file name or code
      * @param Reporters\ReporterInterface $reporter
      */
-    public function __construct($source, Reporters\ReporterInterface $reporter)
+    public function __construct($source, ReporterInterface $reporter)
     {
         if (is_resource($source)) {
             $this->stream = $source;
@@ -43,7 +45,7 @@ class PhpLint
             $traverser->addVisitor($visitor);
             $traverser->traverse($stmts);
         } catch (Error $e) {
-            $error = (new Errors\SyntaxError())
+            $error = (new SyntaxError())
                 ->setLine($e->getStartLine())
                 ->setFile($this->file);
             $this->reporter->add($error);

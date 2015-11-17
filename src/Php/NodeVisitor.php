@@ -1,9 +1,11 @@
 <?php
-namespace PhalconX\PhpLint;
+namespace PhalconX\Php;
 
 use Phalcon\Text;
 use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
+use PhalconX\Php\Lint\Errors;
+use PhalconX\Php\Lint\Reporters\ReporterInterface;
 
 class NodeVisitor extends NodeVisitorAbstract
 {
@@ -16,7 +18,7 @@ class NodeVisitor extends NodeVisitorAbstract
 
     private static $rules;
 
-    public function __construct(Reporters\ReporterInterface $reporter, $file)
+    public function __construct(ReporterInterface $reporter, $file)
     {
         if (!isset(self::$rules[get_class($this)])) {
             $this->buildRules();

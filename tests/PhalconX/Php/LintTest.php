@@ -1,12 +1,13 @@
 <?php
-namespace PhalconX\PhpLint;
+namespace PhalconX\Php;
 
 use PhalconX\Test\TestCase;
+use PhalconX\Php\Lint\Reporters\TextReporter;
 
 /**
  * TestCase for PhpLint
  */
-class PhpLintTest extends TestCase
+class LintTest extends TestCase
 {
     /**
      * @dataProvider passedScripts
@@ -63,7 +64,7 @@ class PhpLintTest extends TestCase
     private function lint($case)
     {
         $file = $this->getDatasetFile('lint/'. $case. '.php');
-        return (new PhpLint($file, new Reporters\TextReporter))
+        return (new Lint($file, new TextReporter))
             ->lint()
             ->getReporter();
     }

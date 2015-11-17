@@ -6,8 +6,8 @@ use PhalconX\Console\Annotations\Command;
 use PhalconX\Console\Annotations\Argument;
 use PhalconX\Console\Annotations\Option;
 use PhalconX\Console\Command as BaseCommand;
-use PhalconX\PhpLint\PhpLint;
-use PhalconX\PhpLint\Reporters\TextReporter;
+use PhalconX\Php\Lint as PhpLint;
+use PhalconX\Php\Lint\Reporters\TextReporter;
 
 /**
  * @Command('lint', desc="phplint")

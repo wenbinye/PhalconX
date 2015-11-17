@@ -1,5 +1,5 @@
 <?php
-namespace PhalconX\PhpLint\Errors;
+namespace PhalconX\Php\Lint\Errors;
 
 class SyntaxError extends AbstractError
 {

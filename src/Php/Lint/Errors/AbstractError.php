@@ -1,5 +1,5 @@
 <?php
-namespace PhalconX\PhpLint\Errors;
+namespace PhalconX\Php\Lint\Errors;
 
 abstract class AbstractError implements ErrorInterface
 {
