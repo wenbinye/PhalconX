@@ -6,8 +6,13 @@ use PhalconX\Console\Command;
 use Phalcon\Logger\Adapter\Stream as ConsoleLogger;
 use Phalcon\Logger\Formatter\Line as LineFormatter;
 
-$loader = require(__DIR__ . '/../vendor/autoload.php');
-$loader->add('PhalconX', __DIR__ . '/../tests');
+foreach ([__DIR__ .'/../../../autoload.php',
+          __DIR__ . '/../vendor/autoload.php'] as $file) {
+    if (file_exists($file)) {
+        $loader = require($file);
+        break;
+    }
+}
 
 $di = new FactoryDefault;
 $di['annotations'] = function() {

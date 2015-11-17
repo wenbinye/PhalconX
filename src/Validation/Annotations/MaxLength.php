@@ -2,7 +2,7 @@
 namespace PhalconX\Validation\Annotations;
 
 use Phalcon\Validation\Validator\StringLength as StringLengthValidator;
-use PhalconX\Validation\Form;
+use PhalconX\Validation\Validation;
 
 class MaxLength extends Validator
 {
@@ -15,7 +15,7 @@ class MaxLength extends Validator
 
     public $message;
 
-    public function getValidator(Form $form)
+    public function getValidator(Validation $validation)
     {
         return new static::$validatorClass([
             'max' => $this->value,

@@ -125,7 +125,7 @@ class FactoryDefault extends Di
         } else {
             $services = $names;
         }
-        $this->autoload($services, $provider, $options);
+        return $this->autoload($services, $provider, $options);
     }
 
     private function createServiceAliases($names, $aliases)

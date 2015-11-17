@@ -1,10 +1,11 @@
 <?php
 namespace PhalconX\Validation;
 
-use Phalcon\Cache\BackendInterface as Cache;
 use Phalcon\Validation\Validator\Regex;
 use Phalcon\Validation\Validator\StringLength;
 use Phalcon\Validation\Validator\PresenceOf;
+use Phalcon\Validation\Validator\InclusionIn;
+use Phalcon\Validation\ValidatorInterface;
 use PhalconX\Annotation\Context;
 use PhalconX\Helper\ClassResolver;
 use PhalconX\Helper\ArrayHelper;
@@ -14,8 +15,8 @@ use PhalconX\Validation\Annotations\Number;
 use PhalconX\Validation\Annotations\Email;
 use PhalconX\Validation\Annotations\Url;
 use PhalconX\Validation\Annotations\IsArray;
-use PhalconX\Validation\Annotations\IsA;
 use PhalconX\Validation\Annotations\Enum;
+use PhalconX\Validation\Validators\IsA;
 use PhalconX\Validation\Validators\Datetime;
 use PhalconX\Validation\Validators\Range;
 
@@ -26,29 +27,32 @@ class ValidatorFactory
         'integer' => Integer::CLASS,
         'number'  => Number::CLASS,
         'email'   => Email::CLASS,
-        'url' => Url::CLASS
+        'url'     => Url::CLASS
     ];
 
     private $form;
+    private $logger;
     
-    public function __construct(Form $form)
+    public function __construct(Validation $form)
     {
         $this->form = $form;
+        $this->logger = $form->getLogger();
     }
     
     /**
-     * required
-     * type
-     * pattern
-     * element
-     * min
-     * max
-     * exclusiveMinimum
-     * exclusiveMaximum
-     * maxLength
-     * minLength
-     * enum
-     * attribute
+     * options 可指定以下选项：
+     *  - required
+     *  - type
+     *  - pattern
+     *  - element
+     *  - min
+     *  - max
+     *  - exclusiveMinimum
+     *  - exclusiveMaximum
+     *  - maxLength
+     *  - minLength
+     *  - enum
+     *  - attribute
      */
     public function create($options, Context $context = null)
     {
@@ -69,9 +73,21 @@ class ValidatorFactory
                     'element' => ArrayHelper::fetch($options, 'element')
                 ], $context))->getValidator($this->form);
             } else {
-                $validators[] = (new IsA([
-                    'class' => $type
-                ], $context))->getValidator($this->form);
+                if ($context) {
+                    $type = (new ClassResolver($this->form->getCache()))
+                           ->resolve($type, $context->getDeclaringClass());
+                }
+                if (class_exists($type)) {
+                    if (is_a($type, ValidatorInterface::class)) {
+                        $validators[] = new $type($options);
+                    } else {
+                        $validators[] = new IsA($this->form, ['class' => $type]);
+                    }
+                } else {
+                    if ($this->logger) {
+                        $this->logger->warning("unknown validator type {$type}");
+                    }
+                }
             }
         }
         if (isset($options['min']) || isset($options['max'])) {
@@ -89,10 +105,14 @@ class ValidatorFactory
             ]);
         }
         if (isset($options['enum'])) {
-            $validators[] = (new Enum([
-                'model' => $options['enum'],
-                'attribute' => ArrayHelper::fetch($options, 'attribute'),
-            ], $context))->getValidator($this->form);
+            if (is_array($options['enum'])) {
+                $validators[] = new InclusionIn(['domain' => $options['enum']]);
+            } else {
+                $validators[] = (new Enum([
+                    'model' => $options['enum'],
+                    'attribute' => ArrayHelper::fetch($options, 'attribute'),
+                ], $context))->getValidator($this->form);
+            }
         }
         if (isset($options['pattern']) && $type != 'datetime') {
             $validators[] = new Regex([ 'pattern' => $options['pattern'] ]);

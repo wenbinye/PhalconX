@@ -1,6 +1,8 @@
 <?php
 namespace PhalconX\Helper;
 
+use PhalconX\Exception\IOException;
+
 class FileHelper
 {
     /**
@@ -58,11 +60,11 @@ class FileHelper
                 }
             }
             if (!rmdir($path)) {
-                throw new Exception("Cannot rmdir '$path'");
+                throw new IOException("Cannot rmdir '$path'", 0, null, $path);
             }
         } elseif (file_exists($path)) {
             if (!unlink($path)) {
-                throw new Exception("Cannot unlink '$path'");
+                throw new IOException("Cannot unlink '$path'", 0, null, $path);
             }
         }
     }
@@ -74,7 +76,7 @@ class FileHelper
     {
         if (is_dir($src)) {
             if (!is_dir($dst) && !mkdir($dst)) {
-                throw new Exception("Cannot mkdir '$dst'");
+                throw new IOException("Cannot mkdir '$dst'", 0, null, $path);
             }
             $files = scandir($src);
             foreach ($files as $file) {
@@ -84,7 +86,7 @@ class FileHelper
             }
         } elseif (file_exists($src)) {
             if (!copy($src, $dst)) {
-                throw new Exception("Cannot copy '$src' to '$dst'");
+                throw new IOException("Cannot copy '$src' to '$dst'", 0, null, $src);
             }
         }
     }

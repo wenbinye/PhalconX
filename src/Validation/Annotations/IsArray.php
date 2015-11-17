@@ -3,7 +3,7 @@ namespace PhalconX\Validation\Annotations;
 
 use PhalconX\Validation\Validators\IsArray as IsArrayValidator;
 use PhalconX\Annotation\Annotation;
-use PhalconX\Validation\Form;
+use PhalconX\Validation\Validation;
 use PhalconX\Validation\ValidatorFactory;
 
 class IsArray extends Annotation implements ValidatorInterface
@@ -14,11 +14,11 @@ class IsArray extends Annotation implements ValidatorInterface
     
     public $message;
 
-    public function getValidator(Form $form)
+    public function getValidator(Validation $validation)
     {
         $args = ['message' => $this->message];
         if (isset($this->element)) {
-            $factory = new ValidatorFactory($form);
+            $factory = new ValidatorFactory($validation);
             $options = $this->element;
             if (!is_array($options)) {
                 $options = ['type' => $options];

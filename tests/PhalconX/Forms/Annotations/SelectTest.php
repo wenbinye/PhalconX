@@ -4,7 +4,7 @@ namespace PhalconX\Forms\Annotations;
 use PhalconX\Test\TestCase;
 use PhalconX\Test\Enum\Gender;
 use PhalconX\Test\Helper;
-use PhalconX\Validation\Form;
+use PhalconX\Validation\Validation;
 
 /**
  * TestCase for Select
@@ -18,7 +18,7 @@ class SelectTest extends TestCase
      */
     public function setupForm()
     {
-        $this->form = new Form;
+        $this->form = new Validation;
     }
     
     public function testRenderEnum()

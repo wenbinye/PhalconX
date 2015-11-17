@@ -17,7 +17,7 @@ class FormValidationTest extends TestCase
      */
     public function setupForm()
     {
-        $this->form = new Form;
+        $this->form = new Validation;
     }
 
     public function testValidateName()

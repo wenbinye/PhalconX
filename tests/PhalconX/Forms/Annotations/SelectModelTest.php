@@ -3,7 +3,7 @@ namespace PhalconX\Forms\Annotations;
 
 use PhalconX\Test\TestCase;
 use PhalconX\Test\Helper;
-use PhalconX\Validation\Form;
+use PhalconX\Validation\Validation;
 use PhalconX\Test\Model\Scope;
 
 /**
@@ -18,7 +18,7 @@ class SelectModelTest extends TestCase
      */
     public function setupTable()
     {
-        $this->form = new Form;
+        $this->form = new Validation;
         $this->db->execute($this->dataset('tables/scope.sql'));
     }
     

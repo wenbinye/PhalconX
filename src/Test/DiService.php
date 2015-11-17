@@ -30,7 +30,8 @@ trait DiService
     public function setUp()
     {
         self::$DI[] = $default = Di::getDefault();
-        $di = new Di;
+        $defaultDi = get_class($default);
+        $di = new $defaultDi;
         foreach ($default->getServices() as $name => $service) {
             $di->setRaw($name, $service);
         }

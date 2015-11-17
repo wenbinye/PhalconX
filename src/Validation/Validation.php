@@ -2,7 +2,6 @@
 namespace PhalconX\Validation;
 
 use Phalcon\Cache;
-use Phalcon\Validation;
 use PhalconX\Annotation\Annotations;
 use PhalconX\Exception\Exception;
 use PhalconX\Exception\ValidationException;
@@ -11,7 +10,7 @@ use PhalconX\Forms\Annotations\Label;
 use PhalconX\Validation\Annotations\ValidatorInterface as Validator;
 use PhalconX\Validation\Annotations\Required;
 
-class Form
+class Validation
 {
     /**
      * @var Annotations $annotations
@@ -69,30 +68,20 @@ class Form
     }
     
     /**
-     * Validate form object
+     * Validate model object
      *
      * @param object|array $model
      * @throws ValidationException
      */
-    public function validate($form)
+    public function validate($model, $validators = null)
     {
-        $validation = new Validation;
-        $formClass = get_class($form);
-        $annotations = $this->annotations->get($formClass);
-        $propValidators = $this->getValidators($annotations, $formClass);
-        if (empty($propValidators)) {
-            if ($this->logger) {
-                $this->logger->warning("Cannot find any validator annotations in '$formClass'");
-            }
+        if (isset($validators) && is_array($validators)) {
+            $validation = $this->validateArray($model, $validators);
         } else {
-            $validation->setLabels($this->getLabels($annotations));
-            foreach ($propValidators as $property => $fieldValidators) {
-                $value = $this->getValue($form, $property);
-                if ($fieldValidators['required'] || $this->hasValue($value)) {
-                    $validation->rules($property, $fieldValidators['validators']);
-                }
-            }
-            $errors = $validation->validate($form);
+            $validation = $this->validateModel($model);
+        }
+        if ($validation) {
+            $errors = $validation->validate($model);
             if (count($errors)) {
                 throw new ValidationException($errors);
             }
@@ -106,7 +95,7 @@ class Form
      * @param string $formClass form class, default use Phalcon\Forms\Form
      * @return Phalcon\Forms\Form
      */
-    public function create($model, $formClass = null)
+    public function createForm($model, $formClass = null)
     {
         if (is_string($model)) {
             return $this->createFormInternal($model, new $model, $formClass);
@@ -158,6 +147,38 @@ class Form
             $labels[$annotation->getPropertyName()] = $annotation->value;
         }
         return $labels;
+    }
+
+    private function validateModel($model)
+    {
+        $validation = new \Phalcon\Validation;
+        $modelClass = get_class($model);
+        $annotations = $this->annotations->get($modelClass);
+        $propValidators = $this->getValidators($annotations, $modelClass);
+        if (empty($propValidators)) {
+            if ($this->logger) {
+                $this->logger->warning("Cannot find any validator annotations in '$modelClass'");
+            }
+            return;
+        } else {
+            $validation->setLabels($this->getLabels($annotations));
+            foreach ($propValidators as $property => $fieldValidators) {
+                $value = $this->getValue($model, $property);
+                if ($fieldValidators['required'] || $this->hasValue($value)) {
+                    $validation->rules($property, $fieldValidators['validators']);
+                }
+            }
+            return $validation;
+        }
+    }
+
+    private function validateArray($model, $validators)
+    {
+        $factory = new ValidatorFactory($this);
+        foreach ($validators as $field => $options) {
+            $validation->rules($field, $factory->create($options));
+        }
+        return $validation;
     }
     
     /**
@@ -255,6 +276,14 @@ class Form
     private function hasValue($value)
     {
         return isset($value) && $value !== '';
+    }
+
+    /**
+     * @return logger
+     */
+    public function getLogger()
+    {
+        return $this->logger;
     }
 
     /**

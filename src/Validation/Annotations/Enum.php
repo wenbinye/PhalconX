@@ -5,7 +5,7 @@ use Phalcon\Validation\Validator\InclusionIn;
 use Phalcon\Mvc\Model;
 use Phalcon\Text;
 use PhalconX\Annotation\Annotation;
-use PhalconX\Validation\Form;
+use PhalconX\Validation\Validation;
 use PhalconX\Enum\Enum as EnumType;
 use PhalconX\Helper\ClassResolver;
 use PhalconX\Validation\Validators\InclusionInModel;
@@ -34,7 +34,7 @@ class Enum extends Annotation implements ValidatorInterface
      */
     public $message;
 
-    public function getValidator(Form $form)
+    public function getValidator(Validation $validation)
     {
         if (is_array($this->model) || is_array($this->domain)) {
             return new InclusionIn([
@@ -48,7 +48,7 @@ class Enum extends Annotation implements ValidatorInterface
                 $modelClass = substr($modelClass, 0, -7);
                 $useEnumValues = true;
             }
-            $classResolver = new ClassResolver($form->getCache());
+            $classResolver = new ClassResolver($validation->getCache());
             $modelClass = $classResolver->resolve($modelClass, $this->getDeclaringClass());
             if ($modelClass) {
                 if (is_subclass_of($modelClass, EnumType::class)) {
