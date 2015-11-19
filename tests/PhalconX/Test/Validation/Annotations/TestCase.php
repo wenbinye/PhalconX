@@ -18,7 +18,7 @@ abstract class TestCase extends BaseTestCase
     public function setupValidation()
     {
         $this->form = new \PhalconX\Validation\Validation();
-        $this->validation = new Validation();
+        $this->validation = $this->get(Validation::class);
     }
 
     protected function getAnnotation($args = [])

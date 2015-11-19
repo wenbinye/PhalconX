@@ -1,12 +1,16 @@
 <?php
 namespace PhalconX\Mvc\Middleware;
 
-use Phalcon\Events\Manager as EventsManager;
+use Phalcon\Di;
+use Phalcon\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
+use Phalcon\Events\EventsAwareInterface;
+use Phalcon\Events\ManagerInterface;
 use PhalconX\Annotation\Annotations;
 use PhalconX\Mvc\Annotations\Filter\FilterInterface;
 use PhalconX\Exception\HttpException;
 
-class Filter
+class Filter implements InjectionAwareInterface, EventsAwareInterface
 {
     /**
      * @var Annotations
@@ -22,18 +26,15 @@ class Filter
      * @var Logger
      */
     private $logger;
-    
-    public function __construct(Annotations $annotations, EventsManager $eventsManager, $logger = null)
-    {
-        $this->annotations = $annotations;
-        $this->eventsManager = $eventsManager;
-        $this->logger = $logger;
-    }
+    /**
+     * @var DiInterface
+     */
+    private $di;
     
     public function beforeExecuteRoute($event, $dispatcher)
     {
         $controllerClass = $dispatcher->getHandlerClass();
-        $filters = $this->annotations->iterate($controllerClass)
+        $filters = $this->getAnnotations()->iterate($controllerClass)
             ->is(FilterInterface::class)
             ->onClassOrMethods()
             ->toArray();
@@ -68,18 +69,75 @@ class Filter
         });
         try {
             foreach ($methodFilters as $type => $filter) {
-                if ($this->logger) {
-                    $this->logger->debug("Apply filter $type");
-                }
+                $this->getLogger()->debug("Apply filter $type");
                 if ($filter[1]->filter() === false) {
                     return false;
                 }
             }
         } catch (\Exception $e) {
-            if ($this->eventsManager->fire('dispatch:beforeException', $dispatcher, $e) === false) {
+            if ($this->getEventsManager()->fire('dispatch:beforeException', $dispatcher, $e) === false) {
                 return false;
             }
             throw new HttpException($e->getStatusCode(), null, $e);
         }
+    }
+
+    public function getAnnotations()
+    {
+        if ($this->annotations === null) {
+            $this->annotations = $this->getDi()->getAnnotations();
+        }
+        return $this->annotations;
+    }
+
+    public function setAnnotations($annotations)
+    {
+        $this->annotations = $annotations;
+        return $this;
+    }
+
+    public function getEventsManager()
+    {
+        if ($this->eventsManager === null) {
+            $this->eventsManager = $this->getDi()->getEventsManager();
+        }
+        return $this->eventsManager;
+    }
+
+    public function setEventsManager(ManagerInterface $eventsManager)
+    {
+        $this->eventsManager = $eventsManager;
+        return $this;
+    }
+    
+    /**
+     * @return Logger\AdapterInterface
+     */
+    public function getLogger()
+    {
+        if ($this->logger === null) {
+            $this->logger = $this->getAnnotations()->getLogger();
+        }
+        return $this->logger;
+    }
+
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
+        return $this;
+    }
+
+    public function getDi()
+    {
+        if ($this->di === null) {
+            $this->di = Di::getDefault();
+        }
+        return $this->di;
+    }
+
+    public function setDi(DiInterface $di)
+    {
+        $this->di = $di;
+        return $this;
     }
 }

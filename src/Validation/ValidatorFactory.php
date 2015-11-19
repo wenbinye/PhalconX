@@ -1,11 +1,11 @@
 <?php
 namespace PhalconX\Validation;
 
+use Phalcon\Validation\ValidatorInterface;
 use Phalcon\Validation\Validator\Regex;
 use Phalcon\Validation\Validator\StringLength;
 use Phalcon\Validation\Validator\PresenceOf;
 use Phalcon\Validation\Validator\InclusionIn;
-use Phalcon\Validation\ValidatorInterface;
 use PhalconX\Annotation\Context;
 use PhalconX\Helper\ClassResolver;
 use PhalconX\Helper\ArrayHelper;

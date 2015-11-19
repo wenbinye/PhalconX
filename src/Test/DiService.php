@@ -26,6 +26,11 @@ trait DiService
             return $this->di->getShared($property);
         }
     }
+
+    public function get($service, $args = null)
+    {
+        return $this->getDi()->get($service, $args);
+    }
     
     public function setUp()
     {

@@ -19,7 +19,7 @@ class SerializerTest extends TestCase
      */
     public function setupSerializer()
     {
-        $this->serializer = new Serializer(new Annotations());
+        $this->serializer = new Serializer();
     }
     
     public function testDeserializeType()

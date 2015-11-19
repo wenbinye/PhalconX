@@ -3,6 +3,7 @@
 use PhalconX\Di\FactoryDefault;
 use PhalconX\Annotation\Annotations;
 use PhalconX\Console\Command;
+use Phalcon\Logger;
 use Phalcon\Logger\Adapter\Stream as ConsoleLogger;
 use Phalcon\Logger\Formatter\Line as LineFormatter;
 
@@ -20,6 +21,7 @@ $di['annotations'] = function() {
 };
 $di['logger'] = function() {
     $logger = new ConsoleLogger("php://stderr");
+    $logger->setLogLevel(Logger::INFO);
     // $logger->setFormatter(new LineFormatter("%date% [%type%] %message%\n"));
     return $logger;
 };

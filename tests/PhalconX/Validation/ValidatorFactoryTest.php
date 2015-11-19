@@ -36,7 +36,7 @@ class ValidatorFactoryTest extends TestCase
      */
     public function setupFactory()
     {
-        $this->factory = new ValidatorFactory(new Validation());
+        $this->factory = new ValidatorFactory($this->get(Validation::class));
     }
 
     private function create($options)

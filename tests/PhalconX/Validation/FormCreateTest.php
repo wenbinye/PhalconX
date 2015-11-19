@@ -18,7 +18,7 @@ class FormCreateTest extends TestCase
      */
     public function setupForm()
     {
-        $this->form = new Validation;
+        $this->form = $this->get(Validation::class);
     }
 
     public function testIsForm()

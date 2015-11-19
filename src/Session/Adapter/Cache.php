@@ -1,9 +1,11 @@
 <?php
 namespace PhalconX\Session\Adapter;
 
+use Phalcon\Di;
+use Phalcon\Di\Exception;
 use Phalcon\Session\Adapter;
 use Phalcon\Session\AdapterInterface;
-use Phalcon\Cache\BackendInterface;
+use Phalcon\Cache;
 
 /**
  * Use cache compoent as session storage
@@ -33,9 +35,8 @@ class Cache extends Adapter implements AdapterInterface
      *  - cookie_lifetime session cookie expiration
      *  - cookie_name session cookie name
      */
-    public function __construct(BackendInterface $cache, array $options = [])
+    public function __construct(array $options = [])
     {
-        $this->cache = $cache;
         if (isset($options['prefix'])) {
             $this->prefix = $options['prefix'];
         }
@@ -119,7 +120,20 @@ class Cache extends Adapter implements AdapterInterface
 
     public function getCache()
     {
+        if ($this->cache === null) {
+            $di = Di::getDefault();
+            if (!$di->has('cache')) {
+                throw new Exception(__CLASS__ . "require cache, please set cache servce in di");
+            }
+            $this->cache = Di::getDefault()->getCache();
+        }
         return $this->cache;
+    }
+
+    public function setCache(Cache\BackendInterface $cache)
+    {
+        $this->cache = $cache;
+        return $this;
     }
 
     public function getLifetime()

@@ -18,7 +18,7 @@ class SelectModelTest extends TestCase
      */
     public function setupTable()
     {
-        $this->form = new Validation;
+        $this->form = $this->get(Validation::class);
         $this->db->execute($this->dataset('tables/scope.sql'));
     }
     

@@ -20,6 +20,15 @@ interface JobInterface
      */
     public function getPriority();
 
+    public function isRunOnce();
+
+    /**
+     * @return self
+     */
+    public function setRunOnce($isRunOnce);
+
+    public function setBeanstalk(Beanstalk $queue);
+
     /**
      * 任务处理函数
      */
@@ -37,11 +46,6 @@ interface JobInterface
 
     public function stats();
     
-    /**
-     * @return string 任务唯一ID。返回 null 表示任务可在队列中运行任意次数
-     */
-    public function getId();
-
     public function setBeanstalkJob(BeanstalkJob $job);
     
     public function getBeanstalkJob();

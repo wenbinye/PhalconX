@@ -1,10 +1,13 @@
 <?php
 namespace PhalconX\Db;
 
-use Phalcon\DI\Injectable;
 use PhalconX\Helper\ArrayHelper;
+use Phalcon\Logger;
+use Phalcon\Di;
+use Phalcon\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
 
-class Listener extends Injectable
+class Listener implements InjectionAwareInterface
 {
     /**
      * @var int timeout seconds
@@ -15,7 +18,15 @@ class Listener extends Injectable
      * @var boolean
      */
     private $logging;
+    /**
+     * @var DiInterface
+     */
+    private $di;
 
+    /**
+     * @var Logger\AdapterInterface
+     */
+    private $logger;
     /**
      * last active time
      *
@@ -41,7 +52,7 @@ class Listener extends Injectable
         if (!$this->isTimeout() || !$connection->isUnderTransaction()) {
             return;
         }
-        $this->logger->debug("connection timeout, reconnecting");
+        $this->getLogger()->debug("connection timeout, reconnecting");
         $this->lastActiveTime = time();
         $connection->connect();
     }
@@ -71,6 +82,44 @@ class Listener extends Injectable
             $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
             $bind_params = ' bind=' . json_encode($binds, $flags);
         }
-        $this->logger->debug($sql . $bind_params);
+        $this->getLogger()->debug($sql . $bind_params);
+    }
+    
+    /**
+     * @return Logger\AdapterInterface
+     */
+    public function getLogger()
+    {
+        if ($this->logger === null) {
+            $di = $this->getDi();
+            if ($di->has('logger')) {
+                $this->logger = $di->getLogger();
+            } else {
+                $logger = new Logger\Adapter\Stream('php://stderr');
+                $logger->setLogLevel(Logger::WARNING);
+                $this->logger = $logger;
+            }
+        }
+        return $this->logger;
+    }
+
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
+        return $this;
+    }
+
+    public function getDi()
+    {
+        if ($this->di === null) {
+            $this->di = Di::getDefault();
+        }
+        return $this->di;
+    }
+
+    public function setDi(DiInterface $di)
+    {
+        $this->di = $di;
+        return $this;
     }
 }

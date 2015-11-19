@@ -2,15 +2,20 @@
 namespace PhalconX\Validation;
 
 use Phalcon\Cache;
+use Phalcon\Di;
+use Phalcon\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
 use PhalconX\Annotation\Annotations;
-use PhalconX\Exception\Exception;
 use PhalconX\Exception\ValidationException;
-use PhalconX\Forms\Annotations\InputInterface as Input;
+use PhalconX\Forms\Annotations\InputInterface;
 use PhalconX\Forms\Annotations\Label;
-use PhalconX\Validation\Annotations\ValidatorInterface as Validator;
+use PhalconX\Validation\Annotations\ValidatorInterface;
 use PhalconX\Validation\Annotations\Required;
 
-class Validation
+/**
+ * Allows to validate data using annotations
+ */
+class Validation implements InjectionAwareInterface
 {
     /**
      * @var Annotations $annotations
@@ -26,26 +31,15 @@ class Validation
      * @var Phalcon\Logger\Adapter
      */
     private $logger;
+    /**
+     * @var DiInterface
+     */
+    private $di;
 
     /**
      * @var string default form class
      */
     private static $FORM_CLASS = 'Phalcon\Forms\Form';
-
-    /**
-     * Constructor.
-     *
-     * @param Annotations $annotations
-     */
-    public function __construct(
-        Annotations $annotations = null,
-        Cache\BackendInterface $cache = null,
-        $logger = null
-    ) {
-        $this->annotations = $annotations ?: new Annotations();
-        $this->cache = $cache ?: new Cache\Backend\Memory(new Cache\Frontend\None);
-        $this->logger = $logger;
-    }
 
     /**
      * Sets the default form class
@@ -71,6 +65,7 @@ class Validation
      * Validate model object
      *
      * @param object|array $model
+     * @param array $validators
      * @throws ValidationException
      */
     public function validate($model, $validators = null)
@@ -106,11 +101,11 @@ class Validation
 
     private function createFormInternal($modelClass, $modelObject, $formClass)
     {
-        $annotations = $this->annotations->get($modelClass);
+        $annotations = $this->getAnnotations()->get($modelClass);
         $validators = $this->getValidators($annotations, $modelClass);
         $elems = $this->getElements($annotations, $modelClass);
         if (empty($elems)) {
-            throw new Exception("Cannot find element annotations in '$modelClass'");
+            throw new \InvalidArgumentException("Cannot find element annotations in '$modelClass'");
         }
         if (!$formClass) {
             $formClass = self::$FORM_CLASS;
@@ -139,7 +134,7 @@ class Validation
      */
     private function getLabels($annotations)
     {
-        $it = $this->annotations->filter($annotations)
+        $it = $this->getAnnotations()->filter($annotations)
             ->is(Label::class)
             ->onProperties();
         $labels = [];
@@ -153,13 +148,10 @@ class Validation
     {
         $validation = new \Phalcon\Validation;
         $modelClass = get_class($model);
-        $annotations = $this->annotations->get($modelClass);
+        $annotations = $this->getAnnotations()->get($modelClass);
         $propValidators = $this->getValidators($annotations, $modelClass);
         if (empty($propValidators)) {
-            if ($this->logger) {
-                $this->logger->warning("Cannot find any validator annotations in '$modelClass'");
-            }
-            return;
+            $this->getLogger()->warning("Cannot find any validator annotations in '$modelClass'");
         } else {
             $validation->setLabels($this->getLabels($annotations));
             foreach ($propValidators as $property => $fieldValidators) {
@@ -168,8 +160,8 @@ class Validation
                     $validation->rules($property, $fieldValidators['validators']);
                 }
             }
-            return $validation;
         }
+        return $validation;
     }
 
     private function validateArray($model, $validators)
@@ -188,11 +180,11 @@ class Validation
      */
     private function getValidators($annotations, $class)
     {
-        $validators = $this->cache->get('_PHX.validators.' . $class);
+        $validators = $this->getCache()->get('_PHX.validators.' . $class);
         if (!isset($validators)) {
             $validators = [];
-            $it = $this->annotations->filter($annotations)
-                ->is(Validator::class)
+            $it = $this->getAnnotations()->filter($annotations)
+                ->is(ValidatorInterface::class)
                 ->onProperties();
             foreach ($it as $annotation) {
                 $property = $annotation->getPropertyName();
@@ -224,8 +216,8 @@ class Validation
         $defaultValues = $reflection->getDefaultProperties();
 
         $elements = [];
-        $it = $this->annotations->filter($annotations)
-            ->is(Input::class)
+        $it = $this->getAnnotations()->filter($annotations)
+            ->is(InputInterface::class)
             ->onProperties();
         foreach ($it as $annotation) {
             $property = $annotation->getPropertyName();
@@ -283,7 +275,16 @@ class Validation
      */
     public function getLogger()
     {
+        if ($this->logger === null) {
+            $this->logger = $this->getAnnotations()->getLogger();
+        }
         return $this->logger;
+    }
+
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
+        return $this;
     }
 
     /**
@@ -293,7 +294,16 @@ class Validation
      */
     public function getAnnotations()
     {
+        if ($this->annotations === null) {
+            $this->annotations = $this->getDi()->getAnnotations();
+        }
         return $this->annotations;
+    }
+
+    public function setAnnotations(Annotations $annotations)
+    {
+        $this->annotations = $annotations;
+        return $this;
     }
 
     /**
@@ -303,6 +313,29 @@ class Validation
      */
     public function getCache()
     {
+        if ($this->cache === null) {
+            $this->cache = $this->getAnnotations()->getCache();
+        }
         return $this->cache;
+    }
+
+    public function setCache(Cache\BackendInterface $cache)
+    {
+        $this->cache = $cache;
+        return $this;
+    }
+
+    public function getDi()
+    {
+        if ($this->di === null) {
+            $this->di = Di::getDefault();
+        }
+        return $this->di;
+    }
+
+    public function setDi(DiInterface $di)
+    {
+        $this->di = $di;
+        return $this;
     }
 }

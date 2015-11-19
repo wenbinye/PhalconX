@@ -2,23 +2,38 @@
 namespace PhalconX\Queue;
 
 use Phalcon\Queue\Beanstalk\Job as BeanstalkJob;
-use PhalconX\Di\Injectable;
 use PhalconX\Mvc\SimpleModel;
 
+/**
+ * job 中任何公开成员变量都将作为任务参数。
+ * 如果 job.id 非空，将检查是否有相同任务存在，如果有相同任务，将替换
+ * 已经存在的任务。
+ */
 abstract class Job extends SimpleModel implements JobInterface
 {
-    use Injectable;
-    
     const DEFAULT_DELAY = 0;       // no delay
     const DEFAULT_PRIORITY = 1024; // most urgent: 0, least urgent: 4294967295
     const DEFAULT_TTR = 60;        // 1 minute
 
-    private $beanstalkJob;
-
-    protected $id;
     protected $delay = self::DEFAULT_DELAY;
     protected $priority = self::DEFAULT_PRIORITY;
     protected $ttr = self::DEFAULT_TTR;
+    protected $runOnce;
+
+    /**
+     * @var Beanstalk
+     */
+    private $beanstalk;
+
+    /**
+     * @var BeanstalkJob
+     */
+    private $beanstalkJob;
+
+    /**
+     * @var array fields to serialize
+     */
+    private static $SERIALIZABLE_FIELDS;
     
     public function getDelay()
     {
@@ -35,14 +50,20 @@ abstract class Job extends SimpleModel implements JobInterface
         return $this->priority;
     }
 
-    public function getId()
+    public function isRunOnce()
     {
-        return $this->id;
+        return $this->runOnce;
+    }
+
+    public function setRunOnce($runOnce)
+    {
+        $this->runOnce = $runOnce;
+        return $this;
     }
 
     public function delete()
     {
-        return $this->beanstalkJob->delete();
+        return $this->beanstalk->delete($this);
     }
 
     public function release()
@@ -69,6 +90,17 @@ abstract class Job extends SimpleModel implements JobInterface
     {
         return $this->beanstalkJob->stats();
     }
+
+    public function getBeanstalk()
+    {
+        return $this->beanstalk;
+    }
+
+    public function setBeanstalk(Beanstalk $beanstalk)
+    {
+        $this->beanstalk = $beanstalk;
+        return $this;
+    }
     
     public function getBeanstalkJob()
     {
@@ -81,8 +113,24 @@ abstract class Job extends SimpleModel implements JobInterface
         return $this;
     }
 
+    private static function getSerialiableFields($class)
+    {
+        if (!self::$SERIALIZABLE_FIELDS[$class]) {
+            $fields = [];
+            $refl = new \ReflectionClass($class);
+            foreach ($refl->getProperties() as $prop) {
+                if ($prop->isStatic() || $prop->isPrivate()) {
+                    continue;
+                }
+                $fields[] = $prop->getName();
+            }
+            self::$SERIALIZABLE_FIELDS[$class] = $fields;
+        }
+        return self::$SERIALIZABLE_FIELDS[$class];
+    }
+
     public function __sleep()
     {
-        return array_diff(array_keys(get_object_vars($this)), ['beanstalkJob', 'di']);
+        return self::getSerialiableFields(get_class($this));
     }
 }

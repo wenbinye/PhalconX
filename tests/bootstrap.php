@@ -1,6 +1,7 @@
 <?php
-use Phalcon\Di\FactoryDefault;
+use PhalconX\Di\FactoryDefault;
 use Phalcon\Config;
+use Phalcon\Logger;
 use Phalcon\Logger\Adapter\Stream as ConsoleLogger;
 use Phalcon\Logger\Formatter\Line as LineFormatter;
 use Phalcon\Mvc\Model;
@@ -22,7 +23,7 @@ function bootstrap_test()
         \Dotenv::load(__DIR__);
     }
 
-    $di = new FactoryDefault();
+    $di = new FactoryDefault('fpm');
     $di['config'] = $config = new Config([
         'fixturesDir' => __DIR__ . '/fixtures',
         'testBaseDir' => __DIR__,
@@ -41,9 +42,11 @@ function bootstrap_test()
     };
     $di['logger'] = function () {
         // Changing the logger format
-        $formatter = new LineFormatter("%date% [%type%] %message%\n");
         $logger = new ConsoleLogger('php://stderr');
-        $logger->setFormatter($formatter);
+        if (!in_array('--debug', $_SERVER['argv'])) {
+            $logger->setLogLevel(Logger::ERROR);
+        }
+        // $logger->setFormatter(new LineFormatter("%date% [%type%] %message%\n"));
         return $logger;
     };
     return $di;

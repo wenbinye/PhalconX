@@ -1,7 +1,8 @@
 <?php
 namespace PhalconX\Mvc;
 
-use Phalcon\Session\AdapterInterface as Session;
+use Phalcon\Session;
+use Phalcon\Di;
 
 class Auth implements AuthInterface
 {
@@ -32,9 +33,8 @@ class Auth implements AuthInterface
      */
     private $needRegenerate = false;
 
-    public function __construct(Session $session, $options = null)
+    public function __construct($options = null)
     {
-        $this->session = $session;
         if (isset($options['sessionKey'])) {
             $this->sessionKey = $options['sessionKey'];
         }
@@ -129,5 +129,31 @@ class Auth implements AuthInterface
     public function isNeedLogin()
     {
         return $this->isGuest() || $this->needRegenerate;
+    }
+    
+
+    public function getSessionData()
+    {
+        return $this->sessionData;
+    }
+
+    public function setSessionData($sessionData)
+    {
+        $this->sessionData = $sessionData;
+        return $this;
+    }
+
+    public function getSession()
+    {
+        if ($this->session === null) {
+            $this->session = Di::getDefault()->getSession();
+        }
+        return $this->session;
+    }
+
+    public function setSession(Session\AdapterInterface $session)
+    {
+        $this->session = $session;
+        return $this;
     }
 }

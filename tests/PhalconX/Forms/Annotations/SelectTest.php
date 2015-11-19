@@ -18,7 +18,7 @@ class SelectTest extends TestCase
      */
     public function setupForm()
     {
-        $this->form = new Validation;
+        $this->form = $this->get(Validation::class);
     }
     
     public function testRenderEnum()

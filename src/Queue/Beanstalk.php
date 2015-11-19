@@ -2,16 +2,25 @@
 namespace PhalconX\Queue;
 
 use Phalcon\Di;
+use Phalcon\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
+use Phalcon\Cache;
 use Phalcon\Queue\Beanstalk as BaseQueue;
-use Phalcon\Cache\BackendInterface as Cache;
+use Phalcon\Queue\Beanstalk\Job as BeanstalkJob;
 
 /**
  * Beanstalk job queue
  */
-class Beanstalk extends BaseQueue
+class Beanstalk extends BaseQueue implements InjectionAwareInterface
 {
+    const CACHE_JOB = '_PHX.job.';
     /**
-     * @var Cache
+     * @var DiInterface
+     */
+    private $di;
+
+    /**
+     * @var Cache\BackendInterface
      */
     private $cache;
 
@@ -19,20 +28,6 @@ class Beanstalk extends BaseQueue
      * @var Logger
      */
     private $logger;
-
-    /**
-     * Constructor.
-     *
-     * @param Cache $cache
-     * @param Logger $logger
-     * @param array $options
-     */
-    public function __construct(Cache $cache, $logger = null, array $options = null)
-    {
-        $this->cache = $cache;
-        $this->logger = $logger;
-        parent::__construct($options);
-    }
 
     /**
      * Gets current watching tubes
@@ -71,35 +66,44 @@ class Beanstalk extends BaseQueue
     }
     
     /**
-     * 添加任务到队列
+     * Inserts jobs into the queue
      *
-     * job 中任何公开成员变量都将作为任务参数。
-     * 如果 job.id 非空，将检查是否有相同任务存在，如果有相同任务，将替换
-     * 已经存在的任务。
-     *
-     * @param JobInterface $job 任务对象
+     * @param mixed $job JobInterface or any data
+     * @param array options
      */
     public function put($job, $options = null)
     {
         if ($job instanceof JobInterface) {
-            $arguments = get_object_vars($job);
-            $arguments['_handler'] = get_class($job);
-            $jobId = $job->getId();
-            if (isset($jobId)) {
-                $arguments['_id'] = uniq();
-                $this->cache->save($this->buildJobKey($jobId), $arguments['_id']);
+            if ($job->isRunOnce()) {
+                $cacheKey = self::CACHE_JOB . get_class($job);
+                if ($this->getCache()->get($cacheKey) === null) {
+                    $expire = $job->getDelay() + $job->getTtr() + 60;
+                    $this->getCache()->save($cacheKey, 1, $expire);
+                } else {
+                    return true;
+                }
             }
-            if ($this->logger) {
-                $this->logger->info('Add job ' . json_encode($arguments));
-            }
-            return parent::put($arguments, [
+            $options = [
                 'delay' => $job->getDelay(),
                 'ttr' => $job->getTtr(),
                 'priority' => $job->getPriority()
-            ]);
-        } else {
-            return parent::put($job, $options);
+            ];
         }
+        $this->getLogger()->info('Add job ' . json_encode($job));
+        return parent::put($job, $options);
+    }
+
+    /**
+     * deletes job from queue
+     *
+     * @var JobInterface $job
+     */
+    public function delete(JobInterface $job)
+    {
+        if ($job->isRunOnce()) {
+            $this->getCache()->delete(self::CACHE_JOB.get_class($job));
+        }
+        return $job->getBeanstalkJob()->delete();
     }
 
     public function reserve($timeout = null)
@@ -122,16 +126,11 @@ class Beanstalk extends BaseQueue
         $start = time();
         do {
             $job = $this->reserve($timeout);
-            if ($job) {
+            if ($job instanceof JobInterface) {
                 $job->process();
-                $job->delete();
             }
+            $job->delete();
         } while (isset($timeout) && time() - $start > $timeout);
-    }
-
-    private function buildJobKey($jobId)
-    {
-        return 'job:' . $jobId;
     }
 
     private function convertJob($beanstalkJob)
@@ -141,45 +140,87 @@ class Beanstalk extends BaseQueue
             if ($job) {
                 return $job;
             } else {
-                $beanstalkJob->delete();
+                return $beanstalkJob;
             }
+        }
+    }
+    
+    private function createJob(BeanstalkJob $beanstalkJob)
+    {
+        $arguments = $beanstalkJob->getBody();
+        $job = null;
+        if (is_array($arguments)) {
+            $job = $this->createOldJob($arguments, $beanstalkJob);
+        } elseif ($arguments instanceof JobInterface) {
+            $job = $arguments;
+        }
+        if (isset($job)) {
+            $job->setBeanstalk($this)
+                ->setBeanstalkJob($beanstalkJob);
+        } else {
+            $this->getLogger()->error("Job was not created properly: " . json_encode($arguments));
+        }
+        return $job;
+    }
+
+    private function createOldJob($arguments)
+    {
+        if (isset($arguments['_handler']) && class_exists($arguments['_handler'])) {
+            $job = $this->getDi()->get($arguments['_handler']);
+            $job->assign($arguments);
+            return $job;
         }
     }
 
-    private static function uuid()
+    public function getCache()
     {
-        return uniqid("_PHX.queue", true);
+        if (!$this->cache) {
+            $this->cache = $this->getDi()->getCache();
+        }
+        return $this->cache;
+    }
+
+    public function setCache(Cache\BackendInterface $cache)
+    {
+        $this->cache = $cache;
+        return $this;
     }
     
-    private function createJob($beanstalkJob)
+    /**
+     * @return Logger\AdapterInterface
+     */
+    public function getLogger()
     {
-        $arguments = $beanstalkJob->getBody();
-        if (isset($arguments['_handler']) && class_exists($arguments['_handler'])) {
-            $job = Di::getDefault()->get($arguments['_handler']);
-            if (isset($arguments['_id'])) {
-                $jobId = $job->getId();
-                $jobKey = $this->buildJobKey($jobId);
-                $id = $this->cache->get($jobKey);
-                if ($id === null) {
-                    $this->cache->save($jobKey, self::uuid());
-                } elseif ($id != $arguments['_id']) {
-                    if ($this->logger) {
-                        $this->logger->error("Duplicate job " . json_encode($arguments));
-                    }
-                    return;
-                }
-            }
-            foreach ($arguments as $key => $val) {
-                if ($key && $key[0] != '_') {
-                    $job->$key = $val;
-                }
-            }
-            $job->setBeanstalkJob($beanstalkJob);
-            return $job;
-        } else {
-            if ($this->logger) {
-                $this->logger->error("Job was not created properly: " . json_encode($arguments));
+        if ($this->logger === null) {
+            $di = $this->getDi();
+            if ($di->has('logger')) {
+                $this->logger = $di->getLogger();
+            } else {
+                $logger = new Logger\Adapter\Stream('php://stderr');
+                $logger->setLogLevel(Logger::WARNING);
+                $this->logger = $logger;
             }
         }
+        return $this->logger;
+    }
+
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
+        return $this;
+    }
+
+    public function getDi()
+    {
+        if ($this->di === null) {
+            $this->di = Di::getDefault();
+        }
+        return $this->di;
+    }
+
+    public function setDi(DiInterface $di)
+    {
+        $this->di = $di;
+        return $this;
     }
 }

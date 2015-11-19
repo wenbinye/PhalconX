@@ -24,12 +24,17 @@ class FilterProrityTest extends TestCase
      */
     public function setupFilter()
     {
+        $di = $this->getDi();
+        $this->filter = $di->get(Filter::class);
+
         $em = new EventsManager;
-        $this->filter = new Filter(new Annotations(), $em);
-        $em->attach('dispatch', $this->filter);
         $this->eventsManager = $em;
+        $em->attach('dispatch', $this->filter);
+        $di['eventsManager'] = $em;
+
         $this->registry = new Config();
-        $this->getDi()->setShared('registry', $this->registry);
+        $di['registry'] = $this->registry;
+        $di['annotations'] = Annotations::class;
     }
 
     public function testFilterMethodWin()

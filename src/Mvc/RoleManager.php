@@ -180,7 +180,7 @@ class RoleManager implements RoleManagerInterface
     /**
      * 检查用户是否包含指定的所有权限
      * @param string $user_id
-     * @param string $roles | 表示或，&表示与
+     * @param string|array $roles | 表示或，&表示与
      * @return bool
      */
     public function checkAccess($user_id, $roles)
@@ -188,7 +188,9 @@ class RoleManager implements RoleManagerInterface
         if ($this->isRoot($user_id)) {
             return true;
         }
-        if (strpos($roles, '|') !== false) {
+        if (is_array($roles)) {
+            $this->hasRoles($user_id, $roles);
+        } elseif (strpos($roles, '|') !== false) {
             return $this->hasAnyRole($user_id, explode('|', $roles));
         } else {
             return $this->hasRoles($user_id, explode('&', $roles));

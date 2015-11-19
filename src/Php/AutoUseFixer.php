@@ -121,16 +121,18 @@ class AutoUseFixer extends NodeVisitor
         if ($code) {
             $len = 0;
             if ($this->stmts) {
-                $first = array_shift($this->stmts);
+                $first = $this->stmts[0];
                 $offset = $first->getLine();
                 $len = $first->getAttribute('endLine') - $offset + 1;
                 foreach ($this->stmts as $stmt) {
-                    $lines = $stmt->getAttribute('endLine') - $stmt->getLine() + 1;
-                    if (trim($this->lines->get($stmt->getLine()+1)) === '') {
+                    $endLine = $stmt->getAttribute('endLine');
+                    $lines = $endLine - $stmt->getLine() + 1;
+                    if (trim($this->lines->get($endLine+1)) === '') {
                         $lines++;
                     }
                     $this->lines->delete($stmt->getLine(), $lines);
                 }
+                $code[] = '';
             } elseif ($this->namespace) {
                 $offset = $this->namespace->getLine() + 1;
                 array_unshift($code, '');

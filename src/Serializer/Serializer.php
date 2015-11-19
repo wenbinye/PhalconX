@@ -3,17 +3,19 @@ namespace PhalconX\Serializer;
 
 use Phalcon\Cache;
 use Phalcon\Text;
-use PhalconX\Annotation\Annotations;
+use Phalcon\Di;
+use Phalcon\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
 use PhalconX\Validation\Annotations\IsA;
 use PhalconX\Validation\Annotations\IsArray;
 use PhalconX\Serializer\Annotations\SerializeName;
 use PhalconX\Helper\ClassResolver;
 use PhalconX\Exception\BadAnnotationException;
 
-class Serializer
+class Serializer implements InjectionAwareInterface
 {
     /**
-     * @var Annotations
+     * @var \PhalconX\Annotation\Annotations;
      */
     private $annotations;
     /**
@@ -24,13 +26,10 @@ class Serializer
      * @var ClassResolver
      */
     private $classResolver;
-    
-    public function __construct(Annotations $annotations, Cache\BackendInterface $cache = null)
-    {
-        $this->annotations = $annotations;
-        $this->cache = $cache ?: new Cache\Backend\Memory(new Cache\Frontend\None);
-        $this->classResolver = new ClassResolver($this->cache);
-    }
+    /**
+     * @var DiInterface
+     */
+    private $di;
 
     /**
      * Serializes data into json
@@ -120,56 +119,63 @@ class Serializer
      */
     private function getClassProperties($class)
     {
-        $properties = $this->cache->get('_PHX.serialze_properties.'. $class);
+        $properties = $this->getCache()->get('_PHX.serialze_properties.'. $class);
         if (!isset($properties)) {
-            $properties = [];
-            $refl = new \ReflectionClass($class);
-            foreach ($refl->getProperties(\ReflectionProperty::IS_PUBLIC) as $prop) {
-                if ($prop->isStatic()) {
-                    continue;
-                }
-                $properties[$prop->getName()] = [
-                    'isPublic' => true,
-                    'name' => $prop->getName()
-                ];
-            }
-            foreach ($refl->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-                if ($method->isStatic()) {
-                    continue;
-                }
-                $name = $method->getName();
-                if (Text::startsWith($name, 'set')) {
-                    $prop = lcfirst(substr($name, 3));
-                    if ($prop) {
-                        $params = $method->getParameters();
-                        if (count($params) == 1) {
-                            $properties[$prop]['setter'] = $name;
-                            $type = $params[0]->getClass();
-                            if ($type) {
-                                $properties[$prop]['type'] = $type;
-                            }
-                        }
-                    }
-                } elseif (preg_match('/(get|is|has)(.+)$/i', $name, $matches)
-                          && !$method->getParameters()) {
-                    $properties[lcfirst($matches[2])]['getter'] = $name;
-                }
-            }
-            foreach ($this->annotations->get($class) as $annotation) {
+            $classResolver = $this->getClassResolver();
+            $properties = $this->getReflectionProperties($class);
+            foreach ($this->getAnnotations()->get($class) as $annotation) {
                 if ($annotation instanceof IsA) {
                     $properties[$this->getAnnotationProperty($annotation)]['type']
-                        = $this->classResolver->resolve($annotation->class, $annotation->getDeclaringClass());
+                        = $classResolver->resolve($annotation->class, $annotation->getDeclaringClass());
                 } elseif ($annotation instanceof IsArray && is_scalar($annotation->element)) {
                     $name = $this->getAnnotationProperty($annotation);
                     $properties[$name]['type'] = 'array';
                     $properties[$name]['element']
-                        = $this->classResolver->resolve($annotation->element, $annotation->getDeclaringClass());
+                        = $classResolver->resolve($annotation->element, $annotation->getDeclaringClass());
                 } elseif ($annotation instanceof SerializeName) {
                     $properties[$this->getAnnotationProperty($annotation)]['serializeName']
                         = $annotation->value;
                 }
             }
-            $this->cache->save('_PHX.serialze_properties.'.$class, $properties);
+            $this->getCache()->save('_PHX.serialze_properties.'.$class, $properties);
+        }
+        return $properties;
+    }
+
+    private function getReflectionProperties($class)
+    {
+        $properties = [];
+        $refl = new \ReflectionClass($class);
+        foreach ($refl->getProperties(\ReflectionProperty::IS_PUBLIC) as $prop) {
+            if ($prop->isStatic()) {
+                continue;
+            }
+            $properties[$prop->getName()] = [
+                'isPublic' => true,
+                'name' => $prop->getName()
+            ];
+        }
+        foreach ($refl->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->isStatic()) {
+                continue;
+            }
+            $name = $method->getName();
+            if (Text::startsWith($name, 'set')) {
+                $prop = lcfirst(substr($name, 3));
+                if ($prop) {
+                    $params = $method->getParameters();
+                    if (count($params) == 1) {
+                        $properties[$prop]['setter'] = $name;
+                        $type = $params[0]->getClass();
+                        if ($type) {
+                            $properties[$prop]['type'] = $type;
+                        }
+                    }
+                }
+            } elseif (preg_match('/(get|is|has)(.+)$/i', $name, $matches)
+                      && !$method->getParameters()) {
+                $properties[lcfirst($matches[2])]['getter'] = $name;
+            }
         }
         return $properties;
     }
@@ -193,5 +199,61 @@ class Serializer
             throw new \InvalidArgumentException("Malformed json");
         }
         return $data;
+    }
+
+    public function getAnnotations()
+    {
+        if (!$this->annotations) {
+            $this->annotations = $this->getDi()->getAnnotations();
+        }
+        return $this->annotations;
+    }
+
+    public function setAnnotations($annotations)
+    {
+        $this->annotations = $annotations;
+        return $this;
+    }
+
+    public function getCache()
+    {
+        if (!$this->cache) {
+            $this->cache = $this->getAnnotations()->getCache();
+        }
+        return $this->cache;
+    }
+
+    public function setCache($cache)
+    {
+        $this->cache = $cache;
+        return $this;
+    }
+
+    public function getClassResolver()
+    {
+        if (!$this->classResolver) {
+            $this->classResolver = new ClassResolver($this->getCache());
+        }
+        return $this->classResolver;
+    }
+
+    public function setClassResolver($classResolver)
+    {
+        $this->classResolver = $classResolver;
+        return $this;
+    }
+
+    public function getDi()
+    {
+        if ($this->di === null) {
+            $this->di = Di::getDefault();
+        }
+        return $this->di;
+    }
+
+    public function setDi(DiInterface $di)
+    {
+        $this->di = $di;
+        return $this;
     }
 }

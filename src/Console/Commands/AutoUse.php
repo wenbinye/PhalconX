@@ -9,6 +9,8 @@ use PhalconX\Console\Command as BaseCommand;
 use PhalconX\Php\ClassHierarchy;
 use PhalconX\Php\ClassExtractor;
 use PhalconX\Php\AutoUseFixer;
+use PhalconX\Exception\IOException;
+use PhpParser\Error;
 
 /**
  * @Command('auto-use', desc="add use statment automaticly")
@@ -36,7 +38,7 @@ class AutoUse extends BaseCommand
     protected function call()
     {
         if (!$this->file) {
-            $this->file = '.';
+            $this->file = '-';
         }
         if ($this->file === '-') {
             $this->stdin = true;
@@ -56,7 +58,9 @@ class AutoUse extends BaseCommand
             $dir_it = new \RecursiveDirectoryIterator($this->file);
             $filter_it = new \RecursiveCallbackFilterIterator($dir_it, [$this, 'filter']);
             foreach (new \RecursiveIteratorIterator($filter_it) as $file => $fileinfo) {
-                $this->autouse($file);
+                if (is_file($file)) {
+                    $this->autouse($file);
+                }
             }
         } else {
             $this->autouse($this->file);
@@ -67,18 +71,22 @@ class AutoUse extends BaseCommand
     {
         $this->logger->debug("auto use fix $file");
         $fixer = new AutoUseFixer($file, $this->hierarchy, $this->logger);
-        if ($this->stdin) {
-            echo $fixer->fix();
-        } else {
-            file_put_contents($file, $fixer->fix());
+        try {
+            if ($this->stdin) {
+                echo $fixer->fix();
+            } else {
+                file_put_contents($file, $fixer->fix());
+            }
+        } catch (Error $e) {
+            $this->logger->error("Syntax error on {$file} line " . $e->getStartLine());
         }
     }
 
     private function createClassHierarchy()
     {
-        $name = str_replace($this->projectDir, '/', '_');
+        $name = str_replace('/', '_', $this->projectDir);
         $dir = '/tmp/phalconx/' . $name;
-        if (!is_dir($dir) && !mkdir($dir, 077, true)) {
+        if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
             throw new IOException("Cannot create directory '$dir'", 0, null, $dir);
         }
         $cache = $dir . '/classes.data';
@@ -118,7 +126,7 @@ class AutoUse extends BaseCommand
             if (!is_file($file)) {
                 continue;
             }
-            $this->logger->info("add class in '$file'");
+            $this->logger->debug("add class in '$file'");
             $extractor = new ClassExtractor($file);
             foreach ($extractor->getClasses() as $class => $info) {
                 $hierarchy->addClass($class, $info['extends'], $info['implements']);
