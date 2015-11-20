@@ -6,4 +6,4 @@ before_script:
   - curl -s http://mirrors.chaozhuo.net/composer/wenbinye/php-phalconx/$hash.xz | tar xJ
 phpunit:
   script:
-    - time docker run --rm --volumes-from $DATA_VOLUME --link ${MYSQL_CONTAINER}:mysql --link ${BEANSTALK_CONTAINER}:beanstalk --workdir `pwd` chaozhuo/phpunit tests
+    - time docker run --rm -u $UID --volumes-from $DATA_VOLUME --link ${MYSQL_CONTAINER}:mysql --link ${BEANSTALK_CONTAINER}:beanstalk --workdir `pwd` chaozhuo/phpunit tests
