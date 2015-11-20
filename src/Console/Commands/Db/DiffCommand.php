@@ -13,11 +13,11 @@ use PhalconX\Helper\ExportHelper;
 class DiffCommand extends BaseSchemaCommand
 {
     /**
-     * @Option(optional, shortcut='-s', desc="diff from")
+     * @Option(required, shortcut='-s', desc="diff from")
      */
     public $source;
     /**
-     * @Option(optional, shortcut='-t', desc="diff target")
+     * @Option(required, shortcut='-t', desc="diff target")
      */
     public $target;
 

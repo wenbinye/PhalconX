@@ -10,7 +10,7 @@ use PhalconX\Db\DbHelper;
 abstract class BaseCommand extends Command
 {
     /**
-     * @Option(optional, shortcut='-c', desc='Connection service name or dsn')
+     * @Option(required, shortcut='-c', desc='Connection service name or dsn')
      */
     public $connection = 'db';
 

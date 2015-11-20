@@ -13,7 +13,7 @@ use PhalconX\Helper\ExportHelper;
 class LoadCommand extends BaseCommand
 {
     /**
-     * @Option(optional, shortcut='-f', desc="input format，support json/yaml/php. required when input from stdin")
+     * @Option(required, shortcut='-f', desc="input format，support json/yaml/php. required when input from stdin")
      */
     public $format;
     /**

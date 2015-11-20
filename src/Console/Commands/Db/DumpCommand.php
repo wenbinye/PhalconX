@@ -13,11 +13,11 @@ use PhalconX\Helper\ExportHelper;
 class DumpCommand extends BaseCommand
 {
     /**
-     * @Option(optional, shortcut='-f', desc="output format, supprot json/yaml/php")
+     * @Option(required, shortcut='-f', desc="output format, supprot json/yaml/php")
      */
-    public $format;
+    public $format = 'yaml';
     /**
-     * @Option(optional, shortcut='-l', desc="number of records")
+     * @Option(required, shortcut='-l', desc="number of records")
      */
     public $limit = 10;
     /**

@@ -9,12 +9,12 @@ use PhalconX\Db\Schema\Table;
 abstract class BaseSchemaCommand extends BaseCommand
 {
     /**
-     * @Option(optional, shortcut='-f', desc="Output format, support sql/yaml/json/php")
+     * @Option(required, shortcut='-f', desc="Output format, support sql/yaml/json/php")
      */
     public $format = 'yaml';
 
     /**
-     * @Option(optional, shortcut='-d', help="Database schema name")
+     * @Option(required, shortcut='-d', help="Database schema name")
      */
     public $dbname;
 

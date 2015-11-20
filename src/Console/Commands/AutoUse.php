@@ -23,7 +23,7 @@ class AutoUse extends BaseCommand
     public $file;
 
     /**
-     * @Option('optional|is_array', shortcut="-e", desc="directory to exclude")
+     * @Option('required|is_array', shortcut="-e", desc="directory to exclude")
      */
     public $exclude;
 

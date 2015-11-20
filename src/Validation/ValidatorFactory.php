@@ -23,11 +23,11 @@ use PhalconX\Validation\Validators\Range;
 class ValidatorFactory
 {
     private static $TYPES = [
-        'boolean' => Boolean::CLASS,
-        'integer' => Integer::CLASS,
-        'number'  => Number::CLASS,
-        'email'   => Email::CLASS,
-        'url'     => Url::CLASS
+        'boolean' => Boolean::class,
+        'integer' => Integer::class,
+        'number'  => Number::class,
+        'email'   => Email::class,
+        'url'     => Url::class
     ];
 
     private $form;

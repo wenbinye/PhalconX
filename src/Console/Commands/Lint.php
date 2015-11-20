@@ -20,12 +20,12 @@ class Lint extends BaseCommand
     public $dir;
 
     /**
-     * @Option('optional|is_array', shortcut="-e", desc="directory to exclude")
+     * @Option('required|is_array', shortcut="-e", desc="directory to exclude")
      */
     public $exclude;
 
     /**
-     * @Option(optional, shortcut="-l", desc="autoload file")
+     * @Option(required, shortcut="-l", desc="autoload file")
      */
     public $autoload;
 

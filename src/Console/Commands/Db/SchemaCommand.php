@@ -12,7 +12,7 @@ use PhalconX\Console\Annotations\Command;
 class SchemaCommand extends BaseSchemaCommand
 {
     /**
-     * @Option(optional, shortcut='-s', desc="database source")
+     * @Option(required, shortcut='-s', desc="database source")
      */
     public $source;
 
