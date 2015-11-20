@@ -1,8 +1,9 @@
 before_script:
   - echo DB_HOST=$(sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' $MYSQL_CONTAINER) > tests/.env
   - echo -e "DB_USER=root\nDB_PASS=" >> tests/.env
+  - echo BEANSTALK_HOST=$(sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' $BEANSTALK_CONTAINER) >> tests/.env
   - hash=$(md5sum composer.json|cut -d ' ' -f 1)
   - curl -s http://mirrors.chaozhuo.net/composer/wenbinye/php-phalconx/$hash.xz | tar xJ
 phpunit:
   script:
-    - sudo docker run --rm --volumes-from $DATA_VOLUME --link ${MYSQL_CONTAINER}:mysql --workdir `pwd` chaozhuo/phpunit tests
+    - time sudo docker run --rm --volumes-from $DATA_VOLUME --link ${MYSQL_CONTAINER}:mysql --link ${BEANSTALK_CONTAINER}:beanstalk --workdir `pwd` chaozhuo/phpunit tests
