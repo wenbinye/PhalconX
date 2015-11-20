@@ -13,7 +13,7 @@ class ClassResolver
      */
     private $cache;
     
-    public function __construct(Cache\BackendInterface $cache = null)
+    public function __construct($cache = null)
     {
         $this->cache = $cache ?: new Cache\Backend\Memory(new Cache\Frontend\None);
     }

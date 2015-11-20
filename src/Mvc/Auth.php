@@ -42,7 +42,7 @@ class Auth implements AuthInterface
 
     public function initialize()
     {
-        $this->sessionData = $this->session->get($this->sessionKey);
+        $this->sessionData = $this->getSession()->get($this->sessionKey);
         if (isset($this->sessionData)) {
             $now = time();
             $discard_time = isset($this->sessionData[self::REGENERATE_AFTER])
@@ -89,7 +89,7 @@ class Auth implements AuthInterface
         }
         $lifetime = ini_get('session.cookie_lifetime');
         $this->sessionData[self::REGENERATE_AFTER] = time() + $lifetime - min($lifetime*0.2, 300);
-        $this->session->set($this->sessionKey, $this->sessionData);
+        $this->getSession()->set($this->sessionKey, $this->sessionData);
     }
 
     /**
@@ -98,9 +98,9 @@ class Auth implements AuthInterface
     public function logout($destroySession = true)
     {
         if ($destroySession) {
-            $this->session->destroy();
+            $this->getSession()->destroy();
         } else {
-            $this->session->set($this->sessionKey, false);
+            $this->getSession()->set($this->sessionKey, false);
         }
         $this->sessionData = false;
     }
@@ -129,18 +129,6 @@ class Auth implements AuthInterface
     public function isNeedLogin()
     {
         return $this->isGuest() || $this->needRegenerate;
-    }
-    
-
-    public function getSessionData()
-    {
-        return $this->sessionData;
-    }
-
-    public function setSessionData($sessionData)
-    {
-        $this->sessionData = $sessionData;
-        return $this;
     }
 
     public function getSession()

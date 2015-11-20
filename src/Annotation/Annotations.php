@@ -257,7 +257,7 @@ class Annotations implements InjectionAwareInterface
         return $this->cache;
     }
 
-    public function setCache(Cache\BackendInterface $cache)
+    public function setCache($cache)
     {
         $this->cache = $cache;
         return $this;

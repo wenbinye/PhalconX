@@ -5,7 +5,7 @@ use Phalcon\Di;
 use Phalcon\Di\Exception;
 use Phalcon\Session\Adapter;
 use Phalcon\Session\AdapterInterface;
-use Phalcon\Cache;
+use Phalcon\Cache\BackendInterface;
 
 /**
  * Use cache compoent as session storage
@@ -130,7 +130,7 @@ class Cache extends Adapter implements AdapterInterface
         return $this->cache;
     }
 
-    public function setCache(Cache\BackendInterface $cache)
+    public function setCache(BackendInterface $cache)
     {
         $this->cache = $cache;
         return $this;

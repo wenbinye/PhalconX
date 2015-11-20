@@ -20,6 +20,11 @@ class RoleManager implements RoleManagerInterface
     const DELIMITER = ' ';
 
     /**
+     * @const roles cache prefix
+     */
+    const CACHE_PREFIX = '_PHX.roles.';
+
+    /**
      * @var Cache\BackendInterface
      */
     private $cache;
@@ -40,7 +45,7 @@ class RoleManager implements RoleManagerInterface
      * @param Cache\BackendInterface $cache
      * @param string $mode user model class
      */
-    public function __construct(Cache\BackendInterface $cache, $model)
+    public function __construct($cache, $model)
     {
         $this->cache = $cache;
         $this->model = $model;
@@ -65,7 +70,7 @@ class RoleManager implements RoleManagerInterface
         if (isset($this->localCache[$user_id])) {
             return $this->localCache[$user_id];
         }
-        $cacheKey = $this->cachePrefix . $user_id;
+        $cacheKey = self::CACHE_PREFIX . $user_id;
         $roles = $this->cache->get($cacheKey);
         if ($roles === null) {
             $user = $this->getModel($user_id);
@@ -93,7 +98,7 @@ class RoleManager implements RoleManagerInterface
             throw new \UnexpectedValueException("user '$user_id' does not exists");
         }
         $this->localCache[$user_id] = $roles;
-        $this->cache->save($this->cachePrefix . $user_id, $roles);
+        $this->cache->save(self::CACHE_PREFIX . $user_id, $roles);
         $str = implode(self::DELIMITER, array_keys($roles));
         if (empty($str)) {
             $str = new RawValue("''");
@@ -142,7 +147,7 @@ class RoleManager implements RoleManagerInterface
 
     public function clearCache($user_id)
     {
-        $this->cache->delete($this->cachePrefix . $user_id);
+        $this->cache->delete(self::CACHE_PREFIX . $user_id);
         unset($this->localCache[$user_id]);
     }
     

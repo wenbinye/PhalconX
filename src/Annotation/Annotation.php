@@ -14,7 +14,12 @@ abstract class Annotation
     /**
      * annotation context
      */
-    private $context;
+    protected $context;
+
+    /**
+     * @var array fields to serialize
+     */
+    private static $SERIALIZABLE_FIELDS;
 
     /**
      * Constructor.
@@ -86,5 +91,26 @@ abstract class Annotation
         } else {
             return "Annotation Object";
         }
+    }
+
+    private static function getSerialiableFields($class)
+    {
+        if (!isset(self::$SERIALIZABLE_FIELDS[$class])) {
+            $fields = [];
+            $refl = new \ReflectionClass($class);
+            foreach ($refl->getProperties() as $prop) {
+                if ($prop->isStatic() || $prop->isPrivate()) {
+                    continue;
+                }
+                $fields[] = $prop->getName();
+            }
+            self::$SERIALIZABLE_FIELDS[$class] = $fields;
+        }
+        return self::$SERIALIZABLE_FIELDS[$class];
+    }
+
+    public function __sleep()
+    {
+        return self::getSerialiableFields(get_class($this));
     }
 }

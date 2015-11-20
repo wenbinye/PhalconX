@@ -75,6 +75,7 @@ class Lint extends BaseCommand
     public function filter($current, $file, $it)
     {
         return !preg_match($this->excludePattern, $file)
+            && is_readable($file)
             && (is_dir($file) || Text::endsWith($file, '.php'));
     }
 

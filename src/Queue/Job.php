@@ -29,11 +29,6 @@ abstract class Job extends SimpleModel implements JobInterface
      * @var BeanstalkJob
      */
     private $beanstalkJob;
-
-    /**
-     * @var array fields to serialize
-     */
-    private static $SERIALIZABLE_FIELDS;
     
     public function getDelay()
     {
@@ -111,26 +106,5 @@ abstract class Job extends SimpleModel implements JobInterface
     {
         $this->beanstalkJob = $beanstalkJob;
         return $this;
-    }
-
-    private static function getSerialiableFields($class)
-    {
-        if (!self::$SERIALIZABLE_FIELDS[$class]) {
-            $fields = [];
-            $refl = new \ReflectionClass($class);
-            foreach ($refl->getProperties() as $prop) {
-                if ($prop->isStatic() || $prop->isPrivate()) {
-                    continue;
-                }
-                $fields[] = $prop->getName();
-            }
-            self::$SERIALIZABLE_FIELDS[$class] = $fields;
-        }
-        return self::$SERIALIZABLE_FIELDS[$class];
-    }
-
-    public function __sleep()
-    {
-        return self::getSerialiableFields(get_class($this));
     }
 }

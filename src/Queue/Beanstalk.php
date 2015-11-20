@@ -5,6 +5,7 @@ use Phalcon\Di;
 use Phalcon\DiInterface;
 use Phalcon\Di\InjectionAwareInterface;
 use Phalcon\Cache;
+use Phalcon\Logger;
 use Phalcon\Queue\Beanstalk as BaseQueue;
 use Phalcon\Queue\Beanstalk\Job as BeanstalkJob;
 
@@ -180,7 +181,7 @@ class Beanstalk extends BaseQueue implements InjectionAwareInterface
         return $this->cache;
     }
 
-    public function setCache(Cache\BackendInterface $cache)
+    public function setCache($cache)
     {
         $this->cache = $cache;
         return $this;

@@ -7,6 +7,11 @@ namespace PhalconX\Mvc;
 abstract class SimpleModel implements \ArrayAccess
 {
     /**
+     * @var array fields to serialize
+     */
+    private static $SERIALIZABLE_FIELDS;
+
+    /**
      * Constructor.
      */
     public function __construct(array $data = null)
@@ -55,5 +60,26 @@ abstract class SimpleModel implements \ArrayAccess
     public function toArray()
     {
         return get_object_vars($this);
+    }
+
+    private static function getSerialiableFields($class)
+    {
+        if (!isset(self::$SERIALIZABLE_FIELDS[$class])) {
+            $fields = [];
+            $refl = new \ReflectionClass($class);
+            foreach ($refl->getProperties() as $prop) {
+                if ($prop->isStatic() || $prop->isPrivate()) {
+                    continue;
+                }
+                $fields[] = $prop->getName();
+            }
+            self::$SERIALIZABLE_FIELDS[$class] = $fields;
+        }
+        return self::$SERIALIZABLE_FIELDS[$class];
+    }
+
+    public function __sleep()
+    {
+        return self::getSerialiableFields(get_class($this));
     }
 }
