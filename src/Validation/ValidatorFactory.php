@@ -78,7 +78,7 @@ class ValidatorFactory
                            ->resolve($type, $context->getDeclaringClass());
                 }
                 if (class_exists($type)) {
-                    if (is_a($type, ValidatorInterface::class)) {
+                    if (is_subclass_of($type, ValidatorInterface::class)) {
                         $validators[] = new $type($options);
                     } else {
                         $validators[] = new IsA($this->form, ['class' => $type]);
