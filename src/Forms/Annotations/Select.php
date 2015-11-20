@@ -4,6 +4,7 @@ namespace PhalconX\Forms\Annotations;
 use Phalcon\Forms\Element\Select as SelectElement;
 use Phalcon\Mvc\Model;
 use PhalconX\Enum\Enum;
+use PhalconX\Exception\BadAnnotationException;
 use PhalconX\Validation\Validation;
 use PhalconX\Helper\ClassResolver;
 
@@ -62,7 +63,7 @@ class Select extends Input
                 return $modelClass::find($this->criteria);
             }
         }
-        throw new \InvalidArgumentException();
+        throw new BadAnnotationException($this, "model or options parameter is required");
     }
     
     public function getElement(Validation $form)

@@ -23,11 +23,6 @@ class Validation implements InjectionAwareInterface
     private $annotations;
 
     /**
-     * @var Cache\BackendInterface $cache
-     */
-    private $cache;
-
-    /**
      * @var Phalcon\Logger\Adapter
      */
     private $logger;
@@ -115,6 +110,7 @@ class Validation implements InjectionAwareInterface
             $form->add($elem);
         }
         $form->bind((array) $modelObject, $modelObject);
+        $form->setEntity($modelObject);
         
         foreach ($elems as $property => $elem) {
             if (isset($validators[$property])) {
@@ -180,26 +176,21 @@ class Validation implements InjectionAwareInterface
      */
     private function getValidators($annotations, $class)
     {
-        $validators = $this->getCache()->get('_PHX.validators.' . $class);
-        if (!isset($validators)) {
-            $validators = [];
-            $it = $this->getAnnotations()->filter($annotations)
-                ->is(ValidatorInterface::class)
-                ->onProperties();
-            foreach ($it as $annotation) {
-                $property = $annotation->getPropertyName();
-                if (!isset($validators[$property])) {
-                    $validators[$property] = [
-                        'required' => false,
-                        'validators' => [],
-                    ];
-                }
-                $validators[$property]['validators'][] = $annotation->getValidator($this);
-                if ($annotation instanceof Required) {
-                    $validators[$property]['required'] = true;
-                }
+        $it = $this->getAnnotations()->filter($annotations)
+            ->is(ValidatorInterface::class)
+            ->onProperties();
+        foreach ($it as $annotation) {
+            $property = $annotation->getPropertyName();
+            if (!isset($validators[$property])) {
+                $validators[$property] = [
+                    'required' => false,
+                    'validators' => [],
+                ];
             }
-            $this->cache->save('_PHX.validators.'.$class, $validators);
+            $validators[$property]['validators'][] = $annotation->getValidator($this);
+            if ($annotation instanceof Required) {
+                $validators[$property]['required'] = true;
+            }
         }
         return $validators;
     }
@@ -313,16 +304,7 @@ class Validation implements InjectionAwareInterface
      */
     public function getCache()
     {
-        if ($this->cache === null) {
-            $this->cache = $this->getAnnotations()->getCache();
-        }
-        return $this->cache;
-    }
-
-    public function setCache($cache)
-    {
-        $this->cache = $cache;
-        return $this;
+        return $this->getAnnotations()->getCache();
     }
 
     public function getDi()

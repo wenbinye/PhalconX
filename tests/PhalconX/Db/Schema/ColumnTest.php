@@ -45,6 +45,20 @@ class ColumnTest extends TestCase
                 'integer(11)=int isNumeric notNull autoIncrement first',
             ],
             [
+                array(
+                    'name' => 'is_public',
+                    'type' => 'integer',
+                    'size' => '4',
+                    'isNumeric' => true,
+                    'notNull' => true,
+                    'first' => true,
+                    'bindType' => 'int',
+                    'default' => '0',
+                    'comment' => 'is public'
+                ),
+                'integer(4)=int isNumeric notNull first {"default":"0","comment":"is public"}'
+            ],
+            [
                 array (
                     'name' => 'created_at',
                     'type' => 'datetime',

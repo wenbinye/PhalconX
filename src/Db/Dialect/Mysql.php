@@ -27,6 +27,11 @@ class Mysql extends BaseMysql
         if ($column instanceof Column && $column->getComment()) {
             $sql .= " COMMENT \"" . addcslashes($column->getComment(), '"') . "\"";
         }
+        $def = $column->getDefault();
+        // empty value will ignore when create table
+        if (isset($def) && in_array($def, [0, '', '0'])) {
+            $sql .= ' DEFAULT "' . $def . '"';
+        }
         if ($column->getType() == Column::TYPE_INTEGER
             && $column->getSize() == 4) {
             $sql = preg_replace('/^INT/', 'TINYINT', $sql);
@@ -43,8 +48,9 @@ class Mysql extends BaseMysql
             $sql .= sprintf('MODIFY `%s` ', $column->getName());
         }
         $sql .= $this->getColumnDefinition($column);
+        // getColumnDefinition will not add default when value is empty
         $def = $column->getDefault();
-        if (isset($def)) {
+        if (!empty($def)) {
             $sql .= ' DEFAULT "' . addcslashes($def, '"') . '"';
         }
         if ($column->isNotNull()) {
@@ -58,8 +64,9 @@ class Mysql extends BaseMysql
         $sql = 'ALTER TABLE `' . ($schema ? $schema . '`.`' : '') . $table . '` ADD `'
             . $column->getName() . '` '
             . $this->getColumnDefinition($column);
+        // getColumnDefinition will not add default when value is empty
         $def = $column->getDefault();
-        if (isset($def)) {
+        if (!empty($def)) {
             $sql .= ' DEFAULT "' . addcslashes($def, '"') . '"';
         }
         if ($column->isNotNull()) {

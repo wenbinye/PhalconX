@@ -1,7 +1,7 @@
 before_script:
   - echo DB_HOST=$(sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' $MYSQL_CONTAINER) > tests/.env
   - echo -e "DB_USER=root\nDB_PASS=" >> tests/.env
-  - echo BEANSTALKD_HOST=$(sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' $BEANSTALK_CONTAINER) >> tests/.env
+  - echo BEANSTALK_HOST=$(sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' $BEANSTALK_CONTAINER) >> tests/.env
   - hash=$(md5sum composer.json|cut -d ' ' -f 1)
   - curl -s http://mirrors.chaozhuo.net/composer/wenbinye/php-phalconx/$hash.xz | tar xJ
 phpunit:

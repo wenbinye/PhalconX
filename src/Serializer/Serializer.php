@@ -188,7 +188,7 @@ class Serializer implements InjectionAwareInterface
         } elseif ($annotation->isOnProperty()) {
             return $annotation->getPropertyName();
         } else {
-            throw new BadAnnotationException($annotation);
+            throw new BadAnnotationException($annotation, "Annotation SerialzeName should add to property or getter/setters");
         }
     }
     

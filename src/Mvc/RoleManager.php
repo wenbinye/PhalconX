@@ -194,7 +194,7 @@ class RoleManager implements RoleManagerInterface
             return true;
         }
         if (is_array($roles)) {
-            $this->hasRoles($user_id, $roles);
+            return $this->hasRoles($user_id, $roles);
         } elseif (strpos($roles, '|') !== false) {
             return $this->hasAnyRole($user_id, explode('|', $roles));
         } else {
