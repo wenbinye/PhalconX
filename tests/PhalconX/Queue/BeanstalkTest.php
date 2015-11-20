@@ -23,8 +23,7 @@ class BeanstalkTest extends TestCase
         $di['cache'] = new Cache\Backend\Memory(new None(['lifetime' => 10000]));
 
         $beanstalk = new Beanstalk([
-            'host' => ArrayHelper::fetch($_SERVER, 'BEANSTALK_HOST', '127.0.0.1'),
-            'port' => ArrayHelper::fetch($_SERVER, 'BEANSTALK_PORT', '11300')
+            'host' => ArrayHelper::fetch($_SERVER, 'BEANSTALKD_HOST', '127.0.0.1'),
         ]);
         $beanstalk->watch('test');
         $beanstalk->choose('test');
