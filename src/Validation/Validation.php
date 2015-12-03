@@ -176,6 +176,7 @@ class Validation implements InjectionAwareInterface
      */
     private function getValidators($annotations, $class)
     {
+        $validators = [];
         $it = $this->getAnnotations()->filter($annotations)
             ->is(ValidatorInterface::class)
             ->onProperties();
