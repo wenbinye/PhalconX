@@ -42,6 +42,7 @@ class ListenerTransactionTest extends TestCase
 
         $this->assertTrue($pdo->getAttribute(\PDO::ATTR_AUTOCOMMIT) == 1);
         $this->db->begin();
+        $this->db->query('select database()')->fetch();
         $this->assertTrue($pdo->getAttribute(\PDO::ATTR_AUTOCOMMIT) == 0);
         $this->db->commit();
         $this->assertTrue($pdo->getAttribute(\PDO::ATTR_AUTOCOMMIT) == 1);

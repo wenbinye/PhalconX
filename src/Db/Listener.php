@@ -77,8 +77,18 @@ class Listener implements InjectionAwareInterface
 
     private function reconnectIfTimeout($connection)
     {
-        if (!$this->isTimeout() || !$connection->isUnderTransaction()) {
+        if (!$this->isTimeout()) {
             return;
+        }
+        if ($connection->isUnderTransaction()) {
+            if (time() - $this->lastActiveTime > $this->timeout + 60) {
+                $this->getLogger()->error("transaction is timeout");
+                try {
+                    $connection->commit();
+                } catch (\PDOException $e) {
+                    $this->getLogger()->error("transaction commit failed: " . json_encode($e->errorInfo));
+                }
+            }
         }
         $this->getLogger()->debug("connection timeout, reconnecting");
         $this->lastActiveTime = time();
