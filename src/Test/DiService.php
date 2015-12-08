@@ -31,8 +31,11 @@ trait DiService
     {
         return $this->getDi()->get($service, $args);
     }
-    
-    public function setUp()
+
+    /**
+     * @before
+     */
+    public function setUpDi()
     {
         self::$DI[] = $default = Di::getDefault();
         $defaultDi = get_class($default);
@@ -43,7 +46,10 @@ trait DiService
         $this->setDi($di);
     }
 
-    public function tearDown()
+    /**
+     * @after
+     */
+    public function tearDownDi()
     {
         Di::setDefault(array_pop(self::$DI));
     }

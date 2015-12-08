@@ -3,10 +3,7 @@ namespace PhalconX\Test;
 
 abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
 {
-    use DiService {
-        setUp as private setupDi;
-        tearDown as private tearDownDi;
-    }
+    use DiService;
     use Dataset;
 
     /**
@@ -25,7 +22,10 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
      */
     protected $connectionService = 'db';
 
-    protected function setUp()
+    /**
+     * @before
+     */
+    protected function setUpDataset()
     {
         $this->setupDi();
         $dataset = $this->getDataSet();
@@ -34,7 +34,10 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
         }
     }
 
-    protected function tearDown()
+    /**
+     * @after
+     */
+    protected function tearDownDataset()
     {
         $this->tearDownDi();
         $dataset = $this->getDataSet();
