@@ -81,13 +81,14 @@ class Listener implements InjectionAwareInterface
             return;
         }
         if ($connection->isUnderTransaction()) {
-            if (time() - $this->lastActiveTime > $this->timeout + 60) {
-                $this->getLogger()->error("transaction is timeout");
-                try {
-                    $connection->commit();
-                } catch (\PDOException $e) {
-                    $this->getLogger()->error("transaction commit failed: " . json_encode($e->errorInfo));
-                }
+            if (time() - $this->lastActiveTime < $this->timeout + 60) {
+                return;
+            }
+            $this->getLogger()->error("transaction is timeout");
+            try {
+                $connection->commit();
+            } catch (\PDOException $e) {
+                $this->getLogger()->error("transaction commit failed: " . json_encode($e->errorInfo));
             }
         }
         $this->getLogger()->debug("connection timeout, reconnecting");
