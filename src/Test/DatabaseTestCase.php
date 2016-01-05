@@ -22,10 +22,7 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
      */
     protected $connectionService = 'db';
 
-    /**
-     * @before
-     */
-    protected function setUpDataset()
+    public function setUp()
     {
         $this->setupDi();
         $dataset = $this->getDataSet();
@@ -34,10 +31,7 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
         }
     }
 
-    /**
-     * @after
-     */
-    protected function tearDownDataset()
+    public function tearDown()
     {
         $this->tearDownDi();
         $dataset = $this->getDataSet();
