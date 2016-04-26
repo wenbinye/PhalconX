@@ -8,7 +8,7 @@ class FileHelper
     /**
      * Finds file
      */
-    public static function find($dir, array $options = null)
+    public static function find($dir, array $options = [])
     {
         $options = array_merge([
             'excludeHiddenFiles' => true,
