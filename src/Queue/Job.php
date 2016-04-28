@@ -1,7 +1,8 @@
 <?php
 namespace PhalconX\Queue;
 
-use Phalcon\Queue\Beanstalk\Job as BeanstalkJob;
+use Pheanstalk\Job as BeanstalkJob;
+use Pheanstalk\PheanstalkInterface;
 use PhalconX\Mvc\SimpleModel;
 
 /**
@@ -11,24 +12,36 @@ use PhalconX\Mvc\SimpleModel;
  */
 abstract class Job extends SimpleModel implements JobInterface
 {
-    const DEFAULT_DELAY = 0;       // no delay
-    const DEFAULT_PRIORITY = 1024; // most urgent: 0, least urgent: 4294967295
-    const DEFAULT_TTR = 60;        // 1 minute
-
-    protected $delay = self::DEFAULT_DELAY;
-    protected $priority = self::DEFAULT_PRIORITY;
-    protected $ttr = self::DEFAULT_TTR;
+    protected $delay = PheanstalkInterface::DEFAULT_DELAY;
+    protected $priority = PheanstalkInterface::DEFAULT_PRIORITY;
+    protected $ttr = PheanstalkInterface::DEFAULT_TTR;
     protected $runOnce;
 
-    /**
-     * @var Beanstalk
-     */
+    private $id;
+    private $data;
     private $beanstalk;
 
-    /**
-     * @var BeanstalkJob
-     */
-    private $beanstalkJob;
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    public function setId($id)
+    {
+        $this->id = $id;
+        return $this;
+    }
+
+    public function setData($data)
+    {
+        $this->data = $data;
+        return $this;
+    }
+
+    public function getData()
+    {
+        return $this->data;
+    }
     
     public function getDelay()
     {
@@ -55,56 +68,15 @@ abstract class Job extends SimpleModel implements JobInterface
         $this->runOnce = $runOnce;
         return $this;
     }
-
-    public function delete()
-    {
-        return $this->beanstalk->delete($this);
-    }
-
-    public function release()
-    {
-        return $this->beanstalkJob->release();
-    }
-
-    public function bury()
-    {
-        return $this->beanstalkJob->bury();
-    }
-
-    public function touch()
-    {
-        return $this->beanstalkJob->touch();
-    }
-
-    public function kick()
-    {
-        return $this->beanstalkJob->kick();
-    }
-
-    public function stats()
-    {
-        return $this->beanstalkJob->stats();
-    }
-
-    public function getBeanstalk()
-    {
-        return $this->beanstalk;
-    }
-
+    
     public function setBeanstalk(Beanstalk $beanstalk)
     {
         $this->beanstalk = $beanstalk;
         return $this;
     }
-    
-    public function getBeanstalkJob()
-    {
-        return $this->beanstalkJob;
-    }
 
-    public function setBeanstalkJob(BeanstalkJob $beanstalkJob)
+    public function delete()
     {
-        $this->beanstalkJob = $beanstalkJob;
-        return $this;
+        return $this->beanstalk->delete($this);
     }
 }

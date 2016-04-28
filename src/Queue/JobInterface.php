@@ -1,10 +1,12 @@
 <?php
 namespace PhalconX\Queue;
 
-use Phalcon\Queue\Beanstalk\Job as BeanstalkJob;
-
 interface JobInterface
 {
+    public function getId();
+
+    public function getData();
+
     /**
      * @return int 任务延时
      */
@@ -22,31 +24,11 @@ interface JobInterface
 
     public function isRunOnce();
 
-    /**
-     * @return self
-     */
-    public function setRunOnce($isRunOnce);
-
-    public function setBeanstalk(Beanstalk $queue);
-
-    /**
-     * 任务处理函数
-     */
-    public function process();
-
     public function delete();
 
-    public function release();
+    public function process();
 
-    public function bury();
+    public function setId($id);
 
-    public function touch();
-
-    public function kick();
-
-    public function stats();
-    
-    public function setBeanstalkJob(BeanstalkJob $job);
-    
-    public function getBeanstalkJob();
+    public function setBeanstalk(Beanstalk $beanstalk);
 }

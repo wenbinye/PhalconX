@@ -25,9 +25,8 @@ class BeanstalkTest extends TestCase
         $beanstalk = new Beanstalk([
             'host' => ArrayHelper::fetch($_SERVER, 'BEANSTALK_HOST', '127.0.0.1'),
         ]);
-        $beanstalk->watch('test');
-        $beanstalk->choose('test');
-        $beanstalk->ignoreDefault();
+        $beanstalk->watchOnly('test');
+        $beanstalk->useTube('test');
         // clear job queue
         while (($job = $beanstalk->reserve(0))) {
             $job->delete();
@@ -37,7 +36,7 @@ class BeanstalkTest extends TestCase
 
     public function testWatching()
     {
-        $tubes = $this->queue->watching();
+        $tubes = $this->queue->listTubesWatched();
         $this->assertEquals($tubes, ['test']);
     }
 
@@ -57,11 +56,12 @@ class BeanstalkTest extends TestCase
         $ret = $this->queue->put($job);
         $this->assertTrue(is_numeric($ret));
         $ret = $this->queue->put($job);
-        $this->assertTrue($ret === true);
+        $this->assertTrue(is_numeric($ret));
+        
         $theJob = $this->queue->reserve(0);
         $theJob->delete();
         $theJob = $this->queue->reserve(0);
-        $this->assertNull($theJob);
+        $this->assertFalse($theJob);
 
         $ret = $this->queue->put($job);
         $this->assertTrue(is_numeric($ret));
