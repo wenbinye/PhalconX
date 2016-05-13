@@ -54,6 +54,7 @@ class Serializer implements InjectionAwareInterface
     {
         $properties = $this->getClassProperties($class);
         $obj = new $class;
+        $is_array = ($obj instanceof ArrayAccess);
         foreach ($properties as $name => $prop) {
             if (isset($prop['serializeName'])) {
                 $name = $prop['serializeName'];
@@ -74,9 +75,11 @@ class Serializer implements InjectionAwareInterface
             if (isset($prop['setter'])) {
                 $setter = $prop['setter'];
                 $obj->$setter($value);
-            } else {
+            } elseif (isset($prop['name'])) {
                 $key = $prop['name'];
                 $obj->$key = $value;
+            } elseif ($is_array) {
+                $obj[$key] = $value;
             }
         }
         return $obj;
