@@ -1,6 +1,8 @@
 <?php
 namespace PhalconX\Test;
 
+use Symfony\Component\Yaml\Yaml;
+
 /**
  * Create dataset from file
  */
@@ -27,7 +29,7 @@ trait Dataset
         if ($format == 'json') {
             return json_decode(file_get_contents($file), true);
         } elseif (in_array($format, array('yml', 'yaml'))) {
-            return yaml_parse_file($file);
+            return Yaml::parse($file);
         } elseif ($format == 'php') {
             return require($file);
         } else {
