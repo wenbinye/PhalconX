@@ -119,11 +119,7 @@ abstract class Enum
      */
     public static function instances()
     {
-        $all = [];
-        foreach (static::getNames() as $name => $val) {
-            $all[] = new static($name, $val);
-        }
-        return $all;
+        return array_values(self::getValues());
     }
     
     /**
@@ -142,7 +138,7 @@ abstract class Enum
     public static function nameOf($value)
     {
         $values = static::getValues();
-        return isset($values[$value]) ? $values[$value] : null;
+        return isset($values[$value]) ? $values[$value]->name() : null;
     }
 
     /**
@@ -174,7 +170,7 @@ abstract class Enum
     {
         $names = static::getNames();
         if (array_key_exists($name, $names)) {
-            return new static($name, $names[$name]);
+            return self::fromValue($names[$name]);
         }
         throw new \InvalidArgumentException("No enum constant '$name' in class " . get_called_class());
     }
@@ -188,7 +184,7 @@ abstract class Enum
     {
         $values = static::getValues();
         if (array_key_exists($value, $values)) {
-            return new static($values[$value], $value);
+            return $values[$value];
         }
         throw new \InvalidArgumentException("No enum constant value '$value' class " . get_called_class());
     }
@@ -216,7 +212,7 @@ abstract class Enum
             self::$names[$class] = $constants;
             $flip = [];
             foreach ($constants as $name => $val) {
-                $flip[$val] = $name;
+                $flip[$val] = new $class($name, $val);
             }
             // array_flip cannot use here, if value is true or false, the following error will occur:
             // array_flip(): Can only flip STRING and INTEGER values! on line 1
