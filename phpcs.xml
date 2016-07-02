@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="Wenbinye_PHP">
-    <description>The coding standard for wenbinye.</description>
+<ruleset name="PhalconX">
+    <description>The coding standard for PhalconX.</description>
     <file>./src</file>
     <exclude-pattern>*/Dialect/*</exclude-pattern>
     <exclude-pattern>*/tests/*</exclude-pattern>

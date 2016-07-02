@@ -1,11 +1,16 @@
 <?php
 namespace PhalconX\Test;
 
+use Symfony\Component\Yaml\Yaml;
+use InvalidArgumentException;
+
 /**
  * Create dataset from file
  */
 trait Dataset
 {
+    abstract public function getFixturesDir();
+
     /**
      * load json, yaml data set
      *
@@ -19,7 +24,7 @@ trait Dataset
     {
         $file = $this->getDatasetFile($file);
         if (!file_exists($file)) {
-            throw new \InvalidArgumentException("Could not find dataset file '$file'");
+            throw new InvalidArgumentException("Could not find dataset file '$file'");
         }
         if (!$format) {
             $format = pathinfo($file, \PATHINFO_EXTENSION);
@@ -27,7 +32,7 @@ trait Dataset
         if ($format == 'json') {
             return json_decode(file_get_contents($file), true);
         } elseif (in_array($format, array('yml', 'yaml'))) {
-            return yaml_parse_file($file);
+            return Yaml::parse($file);
         } elseif ($format == 'php') {
             return require($file);
         } else {
@@ -37,6 +42,6 @@ trait Dataset
 
     public function getDatasetFile($file)
     {
-        return $this->config->fixturesDir . '/' . $file;
+        return $this->getFixturesDir() . '/' . $file;
     }
 }

@@ -13,21 +13,41 @@
     "require": {
         "php": ">=5.5",
         "ext-phalcon": ">=2.0",
-        "symfony/console": "~2.5",
-        "nikic/php-parser": "2.0.x-dev"
+        "psr/log": "^1.0",
+        "container-interop/container-interop": "^1.1"
     },
     "bin": ["bin/phalconx"],
     "require-dev": {
-        "vlucas/phpdotenv": "~1.0",
+        "mikey179/vfsStream": "^1.6",
+        "vlucas/phpdotenv": "^1.0",
+        "nikic/php-parser": "^2.1.0",
+        "symfony/console": "^3.0",
+        "squizlabs/php_codesniffer": "^2.5",
         "phpunit/phpunit": "^5.0",
         "phpunit/dbunit": "^2.0"
+    },
+    "suggests": {
+        "nikic/php-parser": "for use lint",
+        "symfony/console": "for use console commands"
     },
     "autoload": {
         "psr-4": {
             "PhalconX\\" : "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "PhalconX\\": "tests/"
+        }
+    },
     "scripts": {
-        "post-install-cmd": ["cp contrib/pre-commit .git/hooks && chmod +x .git/hooks/pre-commit"]
+        "post-install-cmd": ["cp contrib/pre-commit .git/hooks && chmod +x .git/hooks/pre-commit"],
+        "test" : [
+            "@phpunit",
+            "@phpcs"
+        ],
+        "phpunit": "php vendor/bin/phpunit",
+        "phpcs": "php vendor/bin/phpcs",
+        "phpcbf": "php vendor/bin/phpcbf `git diff-index --name-only --cached --diff-filter=ACMR HEAD -- | egrep '\\.php$'`"
     }
 }
