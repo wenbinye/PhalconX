@@ -1,7 +1,6 @@
 <?php
 namespace PhalconX;
 
-use PhalconX\TestCase;
 use PhalconX\Logger\File;
 use Psr\Log\LoggerInterface;
 use org\bovigo\vfs\vfsStream;

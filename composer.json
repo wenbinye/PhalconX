@@ -33,7 +33,10 @@
     "autoload": {
         "psr-4": {
             "PhalconX\\" : "src/"
-        }
+        },
+        "files": [
+            "src/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
