@@ -1,9 +1,8 @@
 <?php
 namespace PhalconX\Mvc\View;
 
-use Phalcon\Cache;
-use Phalcon\Logger;
-use Phalcon\Di\Injectable;
+use ReflectionClass;
+use Psr\Log\LoggerInterface;
 use PhalconX\Helper\ArrayHelper;
 
 /**
@@ -13,21 +12,42 @@ use PhalconX\Helper\ArrayHelper;
  * if base template was changed, the child template will not
  * recompile. this volt extension resolve this problem.
  *
+ * Note: used in development only
+ *
  * <code>
- * $ext = new AutoRecompileExtension($cacheDir);
+ * $ext = new AutoRecompileExtension();
  * $volt->getCompiler()->addExtension($ext);
  * </code>
  */
-class AutoRecompileExtension extends Injectable
+class AutoRecompileExtension
 {
     const T_EXTENDS = 310;
 
+    /**
+     * @var \Phalcon\Mvc\View\Engine\Volt\Compiler
+     */
     private $compiler;
+    /**
+     * @var LoggerInterface
+     */
     private $logger;
-    private $cache;
+    /**
+     * @var array
+     */
+    private $options = [];
+    /**
+     * @var array
+     */
+    private $deps = [];
+    /**
+     * @var array
+     */
+    private $baseViews = [];
 
-    private $metadata;
-    private $options;
+    public function __construct(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
 
     public function setOptions($options)
     {
@@ -47,42 +67,53 @@ class AutoRecompileExtension extends Injectable
     public function initialize($compiler)
     {
         $this->compiler = $compiler;
-        $refl = new \ReflectionClass($compiler);
-        $prop = $refl->getProperty('_view');
-        $prop->setAccessible(true);
-        $view = $prop->getValue($compiler);
+        $view = $this->getView();
         if (isset($view)) {
             $this->setOption('viewsDir', $view->getViewsDir());
         }
         $this->setOption('compiledPath', $compiler->getOption('compiledPath'));
         $this->setOption('compiledSeparator', $compiler->getOption('compiledSeparator'));
         $this->setOption('compiledExtension', $compiler->getOption('compiledExtension'));
-
-        $this->compiler->setOption('compiledPath', function ($templatePath, $options, $extendMode) {
+        $compiler->setOption('compiledPath', function ($templatePath, $options, $extendMode) {
             $templatePath = realpath($templatePath);
             $compiledPath = $this->getCompiledPath($templatePath, $extendMode);
             if ($this->hasDependency($templatePath)) {
                 if ($this->isDependencyNewer($templatePath)) {
-                    $this->getLogger()->debug("remove $compiledPath");
                     @unlink($compiledPath);
                 }
             }
             return $compiledPath;
         });
-        $this->readMetadata();
+        $this->load();
     }
     
     public function compileStatement($statment)
     {
         if ($statment['type'] === self::T_EXTENDS) {
-            $this->addDependency($statment['path']['file'], $statment['path']['value']);
+            $this->addDependency(
+                $statment['path']['file'],
+                $statment['path']['value']
+            );
         }
     }
 
+    private function getView()
+    {
+        $refl = new ReflectionClass($this->compiler);
+        $prop = $refl->getProperty('_view');
+        $prop->setAccessible(true);
+        return $prop->getValue($this->compiler);
+    }
+
+    /**
+     * @param string $templatePath view file path
+     * @param bool $extendsMode
+     * @return string
+     */
     private function getCompiledPath($templatePath, $extendsMode = null)
     {
         if (!isset($extendsMode)) {
-            $extendsMode = $this->getExtendsMode($templatePath);
+            $extendsMode = $this->isBaseView($templatePath);
         }
         $sep = ArrayHelper::fetch($this->options, 'compiledSeparator', '_');
         $ext = ArrayHelper::fetch($this->options, 'compiledExtension', '.php');
@@ -94,27 +125,24 @@ class AutoRecompileExtension extends Injectable
         return $compiledPath . $ext;
     }
     
-    private function getExtendsMode($path)
+    private function isBaseView($path)
     {
-        return isset($this->metadata['extends'][$path])
-            ? $this->metadata['extends'][$path]
-            : false;
+        return in_array($path, $this->baseViews);
     }
 
     private function isDependencyNewer($path)
     {
         if ($this->hasDependency($path)) {
-            $compiled = $this->getCompiledPath($path);
-            if (!file_exists($compiled)) {
+            if (!file_exists($compiled = $this->getCompiledPath($path))) {
                 return false;
             }
             $mtime = filemtime($compiled);
-            $dep = $this->metadata['depends'][$path];
-            if (filemtime($dep) > $mtime) {
+            if (filemtime($base = $this->getBaseView($path)) > $mtime) {
+                $this->logger->debug("base view $base is newer than $path, recompile $path");
                 return true;
             }
-            if ($this->hasDependency($dep)) {
-                return $this->isDependencyNewer($dep);
+            if ($this->hasDependency($base)) {
+                return $this->isDependencyNewer($base);
             }
         }
         return false;
@@ -122,54 +150,50 @@ class AutoRecompileExtension extends Injectable
 
     private function hasDependency($path)
     {
-        return isset($this->metadata['depends'][$path]);
+        return isset($this->deps[$path]);
     }
 
+    private function getBaseView($path)
+    {
+        return isset($this->deps[$path]) ? $this->deps[$path] : null;
+    }
+
+    /**
+     * @param string $path current view file
+     * @param string $base base view name
+     */
     private function addDependency($path, $base)
     {
         $base = realpath($this->getOption('viewsDir') . $base);
         $path = realpath($path);
-        $this->metadata['extends'][$base] = 1;
-        $this->metadata['depends'][$path] = $base;
-        $this->saveMetadata();
+        
+        $this->baseViews[] = $base;
+        $this->deps[$path] = $base;
+        $this->save();
     }
 
-    private function readMetadata()
+    private function load()
     {
-        $this->metadata = $this->getCache()->get('_PHX.volt.recompile');
-    }
-
-    private function saveMetadata()
-    {
-        $this->getCache()->save('_PHX.volt.recompile', $this->metadata, 0);
-    }
-
-    public function getCache()
-    {
-        if (!$this->cache) {
-            $di = $this->getDi();
-            $this->cache = $di->has('apcCache') ? $di->getApcCache()
-                         : new Cache\Backend\File(new Cache\Frontend\Data([
-                             'lifetime' => 365*86400,
-                         ]), [
-                             'cacheDir' => $this->getOption('compiledPath') ?: getcwd()
-                         ]);
+        if (file_exists($file = $this->getFile())) {
+            $data = json_decode(file_get_contents($file), true);
+            $this->deps = ArrayHelper::fetch($data, 'deps', []);
+            $this->baseViews = ArrayHelper::fetch($data, 'baseViews', []);
         }
-        return $this->cache;
     }
 
-    public function setCache($cache)
+    private function save()
     {
-        $this->cache = $cache;
+        file_put_contents(
+            $this->getFile(),
+            json_encode([
+                'deps' => $this->deps,
+                'baseViews' => $this->baseViews
+            ])
+        );
     }
 
-    public function getLogger()
+    private function getFile()
     {
-        if (!$this->logger) {
-            $di = $this->getDi();
-            $this->logger = $di->has('logger') ? $di->getLogger()
-                          : new Logger\Adapter\Stream('php://stderr');
-        }
-        return $this->logger;
+        return $this->getOption('compiledPath') . '/.template-extends';
     }
 }

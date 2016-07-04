@@ -87,6 +87,11 @@ class Di extends PhalconDi implements DiInterface
         }
     }
 
+    protected function normalize($name)
+    {
+        return ltrim($name, '\\');
+    }
+
     protected function getDefinition($name)
     {
         if (isset($this->definitions[$name])) {
@@ -198,6 +203,7 @@ class Di extends PhalconDi implements DiInterface
      */
     public function set($name, $definition, $shared = false)
     {
+        $name = $this->normalize($name);
         return $this->definitions[$name] = $this->createDefinition($name, $definition, Scope::PROTOTYPE);
     }
 
@@ -206,6 +212,7 @@ class Di extends PhalconDi implements DiInterface
      */
     public function setShared($name, $definition)
     {
+        $name = $this->normalize($name);
         return $this->definitions[$name] = $this->createDefinition($name, $definition, Scope::SINGLETON);
     }
 
@@ -214,6 +221,7 @@ class Di extends PhalconDi implements DiInterface
      */
     public function remove($name)
     {
+        $name = $this->normalize($name);
         unset($this->definitions[$name]);
         unset($this->singletonEntries[$name]);
         unset($this->requestEntries[$name]);
@@ -224,6 +232,7 @@ class Di extends PhalconDi implements DiInterface
      */
     public function attempt($name, $definition, $shared = false)
     {
+        $name = $this->normalize($name);
         if (!array_key_exists($name, $this->definitions)) {
             return $this->set($name, $definition, $shared);
         }
@@ -235,6 +244,7 @@ class Di extends PhalconDi implements DiInterface
      */
     public function get($name, $parameters = null)
     {
+        $name = $this->normalize($name);
         $definition = $this->getDefinition($name);
         if (!($definition instanceof DefinitionInterface)) {
             throw new Exception("Invalid definition for '$name'");
@@ -266,6 +276,7 @@ class Di extends PhalconDi implements DiInterface
      */
     public function getShared($name, $parameters = null)
     {
+        $name = $this->normalize($name);
         if (array_key_exists($name, $this->singletonEntries)) {
             $this->freshInstance = true;
             return $this->singletonEntries[$name];
@@ -282,6 +293,7 @@ class Di extends PhalconDi implements DiInterface
      */
     public function setRaw($name, ServiceInterface $rawDefinition)
     {
+        $name = $this->normalize($name);
         if (!($rawDefinition instanceof DefinitionInterface)) {
             throw new InvalidArgumentException("Definition of service '$name' must be instance of " . DefinitionInterface::class);
         }
@@ -293,6 +305,7 @@ class Di extends PhalconDi implements DiInterface
      */
     public function getRaw($name)
     {
+        $name = $this->normalize($name);
         return $this->getService($name)->getDefinition();
     }
 
@@ -301,6 +314,7 @@ class Di extends PhalconDi implements DiInterface
      */
     public function getService($name)
     {
+        $name = $this->normalize($name);
         if ($this->has($name)) {
             return $this->getDefinition($name);
         }
@@ -312,6 +326,7 @@ class Di extends PhalconDi implements DiInterface
      */
     public function has($name)
     {
+        $name = $this->normalize($name);
         return isset($this->definitions[$name])
             || array_key_exists($name, $this->singletonEntries)
             || array_key_exists($name, $this->requestEntries)

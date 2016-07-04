@@ -8,12 +8,13 @@ use PhalconX\Di\Definition\ObjectDefinition;
  */
 class ObjectDefinitionResolver implements DefinitionResolverInterface
 {
+    const CLASS_NAME_REGEX = '/^([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*\\\\)*[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/';
     /**
      * @inheritDoc
      */
     public function isResolvable($name)
     {
-        return class_exists($name);
+        return preg_match(self::CLASS_NAME_REGEX, $name) && class_exists($name);
     }
 
     /**
