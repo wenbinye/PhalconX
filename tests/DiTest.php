@@ -18,7 +18,7 @@ class DiTest extends TestCase
     public function createDi($definitions)
     {
         $di = new Di;
-        $di->addDefintions($definitions);
+        $di->addDefinitions($definitions);
         return $di;
     }
     

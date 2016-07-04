@@ -7,6 +7,7 @@ use Phalcon\Di\InjectionAwareInterface;
 use ReflectionClass;
 use ReflectionException;
 use PhalconX\Di\Definition\Helper\AliasDefinitionHelper;
+use PhalconX\Di\DeferredObject;
 
 class ObjectDefinition extends AbstractDefinition
 {
@@ -85,19 +86,25 @@ class ObjectDefinition extends AbstractDefinition
             }
             $instance = $this->createInstance($className, $parameters);
         }
-        if (!empty($this->propertyDefinitions)) {
-            foreach ($this->propertyDefinitions as $property => $definition) {
-                $instance->$property = $definition->resolve(null, $container);
-            }
-        }
-        if (!empty($this->methodDefinitions)) {
-            foreach ($this->methodDefinitions as $method => $calls) {
-                foreach ($calls as $args) {
-                    call_user_func_array([$instance, $method], $this->resolveValues($container, $args));
+        
+        if (!empty($this->propertyDefinitions) || !empty($this->methodDefinitions)) {
+            return new DeferredObject($instance, function ($instance) use ($container) {
+                if (!empty($this->propertyDefinitions)) {
+                    foreach ($this->propertyDefinitions as $property => $definition) {
+                        $instance->$property = $definition->resolve(null, $container);
+                    }
                 }
-            }
+                if (!empty($this->methodDefinitions)) {
+                    foreach ($this->methodDefinitions as $method => $calls) {
+                        foreach ($calls as $args) {
+                            call_user_func_array([$instance, $method], $this->resolveValues($container, $args));
+                        }
+                    }
+                }
+            });
+        } else {
+            return $instance;
         }
-        return $instance;
     }
 
     protected function getClassName()

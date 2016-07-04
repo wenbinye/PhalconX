@@ -2,12 +2,14 @@
 namespace PhalconX;
 
 use Closure;
+use BadMethodCallException;
 use Interop\Container\ContainerInterface;
 use InvalidArgumentException;
 use Phalcon\Di as PhalconDi;
 use Phalcon\DiInterface as PhalconDiInterface;
 use Phalcon\Di\ServiceInterface;
 use Phalcon\Di\Exception;
+use Phalcon\Text;
 
 use Phalcon\Mvc\Model\Manager as ModelsManager;
 use Phalcon\Mvc\Model\MetaData\Memory as ModelsMetadata;
@@ -42,6 +44,7 @@ use PhalconX\Di\Definition\ArrayDefinition;
 use PhalconX\Di\Definition\ValueDefinition;
 use PhalconX\Di\Definition\ObjectDefinition;
 use PhalconX\Di\Scope;
+use PhalconX\Di\DeferredObject;
 use PhalconX\Di\DiInterface;
 use PhalconX\Di\Container;
 
@@ -120,7 +123,7 @@ class Di extends PhalconDi implements DiInterface
         return $this;
     }
 
-    public function addDefintions(array $definitions)
+    public function addDefinitions(array $definitions)
     {
         foreach ($definitions as $name => $definition) {
             $this->set($name, $definition);
@@ -129,7 +132,7 @@ class Di extends PhalconDi implements DiInterface
 
     public function addContainerDefinitions()
     {
-        $this->addDefintions([
+        $this->addDefinitions([
             DiInterface::class => new ValueDefinition(DiInterface::class, $this),
             PhalconDiInterface::class => new ValueDefinition(PhalconDiInterface::class, $this),
             ContainerInterface::class => new ValueDefinition(ContainerInterface::class, new Container($this))
@@ -141,7 +144,7 @@ class Di extends PhalconDi implements DiInterface
         if ($mode === null) {
             $mode = PHP_SAPI;
         }
-        $this->addDefintions([
+        $this->addDefinitions([
             'modelsManager' => new ObjectDefinition('modelsManager', ModelsManager::class),
             'modelsMetadata' => new ObjectDefinition('modelsMetadata', ModelsMetadata::class),
             'filter' => new ObjectDefinition('filter', Filter::class),
@@ -152,12 +155,12 @@ class Di extends PhalconDi implements DiInterface
             'transactionManager' => new ObjectDefinition('transactionManager', TransactionManager::class),
         ]);
         if ($mode === 'cli') {
-            $this->addDefintions([
+            $this->addDefinitions([
                 'router' => new ObjectDefinition('router', CliRouter::class),
                 'dispatcher' => new ObjectDefinition('dispatcher', CliDispatcher::class)
             ]);
         } else {
-            $this->addDefintions([
+            $this->addDefinitions([
                 'router' => new ObjectDefinition('router', Router::class),
                 'dispatcher' => new ObjectDefinition('dispatcher', Dispatcher::class),
                 'url' => new ObjectDefinition('url', UrlResolver::class),
@@ -187,6 +190,7 @@ class Di extends PhalconDi implements DiInterface
                 }
             }
         }
+        throw new BadMethodCallException("Unknown method '$method'");
     }
     
     /**
@@ -242,10 +246,17 @@ class Di extends PhalconDi implements DiInterface
             return $this->requestEntries[$name];
         }
         $value = $definition->resolve($parameters, $this);
+        if ($value instanceof DeferredObject) {
+            $deferred = $value;
+            $value = $deferred->getInstance();
+        }
         if ($scope === Scope::SINGLETON) {
             $this->singletonEntries[$name] = $value;
         } elseif ($scope === Scope::REQUEST) {
             $this->requestEntries[$name] = $value;
+        }
+        if (isset($deferred)) {
+            $deferred->initialize();
         }
         return $value;
     }
