@@ -2,6 +2,7 @@
 namespace PhalconX\Di\Definition;
 
 use Phalcon\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
 
 class FactoryDefinition extends AbstractDefinition
 {
@@ -33,7 +34,11 @@ class FactoryDefinition extends AbstractDefinition
                 $arguments[] = $definition->resolve(null, $container);
             }
         }
-        return call_user_func_array($this->definition, $arguments);
+        $instance = call_user_func_array($this->definition, $arguments);
+        if ($instance instanceof InjectionAwareInterface) {
+            $instance->setDi($container);
+        }
+        return $instance;
     }
 
     private function getArgumentDefinitions()

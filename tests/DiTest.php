@@ -148,7 +148,19 @@ class DiTest extends TestCase
     public function testInjectionAware()
     {
         $di = $this->createDi($defs = []);
+        // print_r($di);
         $instance = $di->get(\PhalconX\Helper\Di\Injected::class);
         $this->assertTrue($instance->di === $di);
+    }
+
+    public function testParameters()
+    {
+        $args = ['foo' => 'foo->string'];
+        $di = $this->createDi($defs = [
+            'foo' => function($params) use ($args) {
+                $this->assertEquals($args, $params);
+            }
+        ]);
+        $di->get('foo', [$args]);
     }
 }

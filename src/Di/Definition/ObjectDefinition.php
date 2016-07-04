@@ -5,6 +5,7 @@ use Phalcon\DiInterface;
 use Phalcon\Di\Exception;
 use Phalcon\Di\InjectionAwareInterface;
 use ReflectionClass;
+use ReflectionException;
 use PhalconX\Di\Definition\Helper\AliasDefinitionHelper;
 
 class ObjectDefinition extends AbstractDefinition
@@ -125,12 +126,15 @@ class ObjectDefinition extends AbstractDefinition
     {
         $values = [];
         foreach ($definitions as $i => $definition) {
+            if ($definition === null) {
+                throw new Exception("Cannot resolve paramenter $i");
+            }
             $values[] = $definition->resolve(null, $container);
         }
         return $values;
     }
 
-    private static function getConstructorTypes($className)
+    private function getConstructorTypes($className)
     {
         if (isset(self::$CLASS_METADATA[$className])) {
             return self::$CLASS_METADATA[$className];
@@ -141,13 +145,11 @@ class ObjectDefinition extends AbstractDefinition
         $paramTypes = [];
         if (($constructor = $refl->getConstructor()) !== null) {
             foreach ($constructor->getParameters() as $i => $parameter) {
-                if (($class = $parameter->getClass()) === null) {
-                    throw new Exception(sprintf(
-                        "Cannot resolve constructor parameter $i for '%s'",
-                        $this->getClassName()
-                    ));
+                if (($class = $parameter->getClass()) !== null) {
+                    $paramTypes[] = $class->getName();
+                } elseif (!$parameter->isOptional()) {
+                    $paramTypes[] = null;
                 }
-                $paramTypes[] = $class->getName();
             }
         }
         $metadata['constructor'] = $paramTypes;
@@ -160,13 +162,22 @@ class ObjectDefinition extends AbstractDefinition
 
     private function resolveConstructorParameters($container)
     {
+        $className = $this->getClassName();
         if ($this->constructorParameters === null) {
-            $metadata = self::getConstructorTypes($this->getClassName());
+            try {
+                $metadata = self::getConstructorTypes($className);
+            } catch (ReflectionException $e) {
+                throw new Exception(sprintf("Cannot find $className for '%s'", $this->getName()));
+            }
             $args = [];
             foreach ($metadata['constructor'] as $type) {
-                $args[] = $container->has($type)
-                        ? new AliasDefinitionHelper($type)
-                        : new ObjectDefinition($type, $type);
+                if ($type === null) {
+                    $args[] = null;
+                } else {
+                    $args[] = $container->has($type)
+                            ? new AliasDefinitionHelper($type)
+                            : new ObjectDefinition($type, $type);
+                }
             }
             if (!empty($metadata['interfaces'][InjectionAwareInterface::class])) {
                 $this->methods['setDi'][] = [new ValueDefinition('di', $container)];
@@ -179,7 +190,11 @@ class ObjectDefinition extends AbstractDefinition
         $definitions = [];
         $prefix = $this->getClassName() . '.constructor';
         foreach ($this->constructorParameters as $i => $val) {
-            $definitions[] = $this->createDefinition($prefix . "[{$i}]", $val);
+            if ($val === null) {
+                $definitions[] = null;
+            } else {
+                $definitions[] = $this->createDefinition($prefix . "[{$i}]", $val);
+            }
         }
         $this->constructorParameterDefinitions = $definitions;
     }

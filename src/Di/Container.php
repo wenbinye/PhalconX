@@ -2,7 +2,6 @@
 namespace PhalconX\Di;
 
 use Interop\Container\ContainerInterface;
-use Phalcon\DiInterface;
 
 class Container implements ContainerInterface
 {

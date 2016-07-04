@@ -9,6 +9,30 @@ use Phalcon\DiInterface as PhalconDiInterface;
 use Phalcon\Di\ServiceInterface;
 use Phalcon\Di\Exception;
 
+use Phalcon\Mvc\Model\Manager as ModelsManager;
+use Phalcon\Mvc\Model\MetaData\Memory as ModelsMetadata;
+use Phalcon\Filter;
+use Phalcon\Escaper;
+use Phalcon\Annotations\Adapter\Memory as Annotations;
+use Phalcon\Security;
+use Phalcon\Events\Manager as EventsManager;
+use Phalcon\Mvc\Model\Transaction\Manager as TransactionManager;
+use Phalcon\Cli\Router as CliRouter;
+use Phalcon\Cli\Dispatcher as CliDispatcher;
+use Phalcon\Mvc\Router;
+use Phalcon\Mvc\Dispatcher;
+use Phalcon\Mvc\Url as UrlResolver;
+use Phalcon\Http\Response;
+use Phalcon\Http\Response\Cookies;
+use Phalcon\Http\Request;
+use Phalcon\Crypt;
+use Phalcon\Flash\Direct as Flash;
+use Phalcon\Flash\Session as FlashSession;
+use Phalcon\Tag;
+use Phalcon\Session\Adapter\Files as Session;
+use Phalcon\Session\Bag as SessionBag;
+use Phalcon\Assets\Manager as AssetsManager;
+
 use PhalconX\Di\DefinitionInterface;
 use PhalconX\Di\Definition\Helper\DefinitionHelperInterface;
 use PhalconX\Di\Definition\Resolver\DefinitionResolverInterface;
@@ -16,6 +40,7 @@ use PhalconX\Di\Definition\Resolver\ObjectDefinitionResolver;
 use PhalconX\Di\Definition\FactoryDefinition;
 use PhalconX\Di\Definition\ArrayDefinition;
 use PhalconX\Di\Definition\ValueDefinition;
+use PhalconX\Di\Definition\ObjectDefinition;
 use PhalconX\Di\Scope;
 use PhalconX\Di\DiInterface;
 use PhalconX\Di\Container;
@@ -47,10 +72,16 @@ class Di extends PhalconDi implements DiInterface
      */
     private $freshInstance;
 
-    public function __construct()
+    public function __construct($addContainer = true, $addPhalcon = true)
     {
         parent::__construct();
         $this->definitionResolver = new ObjectDefinitionResolver;
+        if ($addContainer) {
+            $this->addContainerDefinitions();
+        }
+        if ($addPhalcon) {
+            $this->addPhalconDefinitions();
+        }
     }
 
     protected function getDefinition($name)
@@ -103,6 +134,59 @@ class Di extends PhalconDi implements DiInterface
             PhalconDiInterface::class => new ValueDefinition(PhalconDiInterface::class, $this),
             ContainerInterface::class => new ValueDefinition(ContainerInterface::class, new Container($this))
         ]);
+    }
+
+    public function addPhalconDefinitions($mode = null)
+    {
+        if ($mode === null) {
+            $mode = PHP_SAPI;
+        }
+        $this->addDefintions([
+            'modelsManager' => new ObjectDefinition('modelsManager', ModelsManager::class),
+            'modelsMetadata' => new ObjectDefinition('modelsMetadata', ModelsMetadata::class),
+            'filter' => new ObjectDefinition('filter', Filter::class),
+            'escaper' => new ObjectDefinition('escaper', Escaper::class),
+            'annotations' => new ObjectDefinition('annotations', Annotations::class),
+            'security' => new ObjectDefinition('security', Security::class),
+            'eventsManager' => new ObjectDefinition('eventsManager', EventsManager::class),
+            'transactionManager' => new ObjectDefinition('transactionManager', TransactionManager::class),
+        ]);
+        if ($mode === 'cli') {
+            $this->addDefintions([
+                'router' => new ObjectDefinition('router', CliRouter::class),
+                'dispatcher' => new ObjectDefinition('dispatcher', CliDispatcher::class)
+            ]);
+        } else {
+            $this->addDefintions([
+                'router' => new ObjectDefinition('router', Router::class),
+                'dispatcher' => new ObjectDefinition('dispatcher', Dispatcher::class),
+                'url' => new ObjectDefinition('url', UrlResolver::class),
+                'response' => new ObjectDefinition('response', Response::class),
+                'request' => new ObjectDefinition('request', Request::class),
+                'cookies' => new ObjectDefinition('cookies', Cookies::class),
+                'crypt' => new ObjectDefinition('crypt', Crypt::class),
+                'flash' => new ObjectDefinition('flash', Flash::class),
+                'flashSession' => new ObjectDefinition('flashSession', FlashSession::class),
+                'tag' => new ObjectDefinition('tag', Tag::class),
+                'session' => new ObjectDefinition('session', Session::class),
+                'sessionBag' => new ObjectDefinition('sessionBag', SessionBag::class),
+                'assets' => new ObjectDefinition('assets', AssetsManager::class)
+            ]);
+        }
+    }
+
+    public function __call($method, $args = null)
+    {
+        if (Text::startsWith($method, "get")) {
+            $name = lcfirst(substr($method, 3));
+            if (isset($this->definitions[$name])) {
+                if ($args) {
+                    return $this->get($name, $args);
+                } else {
+                    return $this->get($name);
+                }
+            }
+        }
     }
     
     /**
