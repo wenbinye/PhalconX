@@ -43,44 +43,35 @@ class Router extends BaseRouter
     private $annotations;
 
     /**
-     * @var Cache
+     * @var Cache\BackendInterface
      */
     private $cache;
 
     /**
-     * @var logger
+     * @var \PhalconX\Logger\AdapterInterface logger
      */
     private $logger;
 
-    public function __construct(
-        Annotations $annotations,
-        Cache\BackendInterface $cache = null,
-        $logger = null,
-        array $options = null
-    ) {
-        $this->annotations = $annotations;
-        $this->cache = $cache ?: new Cache\Backend\Memory(new Cache\Frontend\None);
-        $this->logger = $logger;
-        
+    public function __construct(array $options = null)
+    {
         $this->defaultAction = ArrayHelper::fetch($options, 'defaultAction', 'index');
         $this->controllerSuffix = ArrayHelper::fetch($options, 'controllerSuffix', 'Controller');
         $this->actionSuffix = ArrayHelper::fetch($options, 'actionSuffix', 'Action');
-        
         parent::__construct(ArrayHelper::fetch($options, 'defaultRoutes', true));
     }
     
     public function scan($dir, $module = null)
     {
-        $handlers = $this->cache->get('_PHX.route_controllers.' . $dir);
+        $handlers = $this->getCache()->get('_PHX.route_controllers.' . $dir);
         if (!isset($handlers)) {
             $handlers = [];
-            $it = $this->annotations->scan($dir)
+            $it = $this->getAnnotations()->scan($dir)
                 ->is(RoutePrefix::class)
                 ->onClass();
             foreach ($it as $annotation) {
                 $handlers[] = [$annotation->value, $annotation->getClass(), $module];
             }
-            $this->cache->save('_PHX.route_controllers.' . $dir, $handlers);
+            $this->getCache()->save('_PHX.route_controllers.' . $dir, $handlers);
         }
         $this->handlers = array_merge($this->handlers, $handlers);
         $this->processed = false;
@@ -98,10 +89,8 @@ class Router extends BaseRouter
                     continue;
                 }
                 if ($this->controllerSuffix && !Text::endsWith($handler, $this->controllerSuffix)) {
-                    if ($this->logger) {
-                        $this->logger->error("Controller handler {$handler} not match suffix "
+                    $this->getLogger()->error("Controller handler {$handler} not match suffix "
                                              . $this->controllerSuffix);
-                    }
                     continue;
                 }
                 $this->processHandler($handler, $prefix, $module);
@@ -113,7 +102,7 @@ class Router extends BaseRouter
 
     public function processHandler($handler, $prefix, $module)
     {
-        $routes = $this->cache->get('_PHX.routes.'.$handler);
+        $routes = $this->getCache()->get('_PHX.routes.'.$handler);
         if (isset($routes)) {
             $this->_routes = array_merge($this->_routes, $routes);
         } else {
@@ -126,7 +115,7 @@ class Router extends BaseRouter
                 'controller' => Text::uncamelize(substr($class, 0, -strlen($this->controllerSuffix))),
                 'action' => null
             ];
-            $it = $this->annotations->iterate($handler)
+            $it = $this->getAnnotations()->iterate($handler)
                 ->is(Route::class)
                 ->onClassOrMethods();
             $methodRoutes = [];
@@ -136,9 +125,7 @@ class Router extends BaseRouter
                 } else {
                     $method = $annotation->getMethodName();
                     if ($this->actionSuffix && !Text::endsWith($method, $this->actionSuffix)) {
-                        if ($this->logger) {
-                            $this->logger->warning("Invalid route annotation " . $annotation);
-                        }
+                        $this->getLogger()->warning("Invalid route annotation " . $annotation);
                         continue;
                     }
                     
@@ -160,7 +147,7 @@ class Router extends BaseRouter
                     'action' => $this->defaultAction
                 ]);
             }
-            $this->cache->save('_PHX.routes.'.$handler, $routes);
+            $this->getCache()->save('_PHX.routes.'.$handler, $routes);
         }
     }
     
@@ -206,24 +193,15 @@ class Router extends BaseRouter
         return $route;
     }
 
-    public function getAnnotations()
-    {
-        return $this->annotations;
-    }
-
-    public function getCache()
-    {
-        return $this->cache;
-    }
-
-    public function getLogger()
-    {
-        return $this->logger;
-    }
-
     public function getDefaultAction()
     {
         return $this->defaultAction;
+    }
+
+    public function setDefaultAction($action)
+    {
+        $this->defaultAction = $action;
+        return $this;
     }
 
     public function getControllerSuffix()
@@ -231,8 +209,75 @@ class Router extends BaseRouter
         return $this->controllerSuffix;
     }
 
+    public function setControllerSuffix($suffix)
+    {
+        $this->controllerSuffix = $suffix;
+        return $this;
+    }
+
     public function getActionSuffix()
     {
         return $this->actionSuffix;
+    }
+
+    public function setActionSuffix($suffix)
+    {
+        $this->actionSuffix = $suffix;
+        return $this;
+    }
+
+    /**
+     * @return logger
+     */
+    public function getLogger()
+    {
+        if ($this->logger === null) {
+            $this->logger = $this->getAnnotations()->getLogger();
+        }
+        return $this->logger;
+    }
+
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
+        return $this;
+    }
+
+    /**
+     * Gets the annotations component
+     *
+     * @return Annotations
+     */
+    public function getAnnotations()
+    {
+        if ($this->annotations === null) {
+            $this->annotations = $this->getDi()->getAnnotations();
+        }
+        return $this->annotations;
+    }
+
+    public function setAnnotations(Annotations $annotations)
+    {
+        $this->annotations = $annotations;
+        return $this;
+    }
+
+    /**
+     * Gets the cache component
+     *
+     * @return \Phalcon\Cache\BackendInterface
+     */
+    public function getCache()
+    {
+        if ($this->cache === null) {
+            $this->cache = $this->getAnnotations()->getCache();
+        }
+        return $this->cache;
+    }
+
+    public function setCache($cache)
+    {
+        $this->cache = $cache;
+        return $this;
     }
 }

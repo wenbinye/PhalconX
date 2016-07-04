@@ -6,8 +6,8 @@ use PhalconX\Console\Annotations\Command;
 use PhalconX\Console\Annotations\Argument;
 use PhalconX\Console\Annotations\Option;
 use PhalconX\Console\Command as BaseCommand;
-use PhalconX\PhpLint\PhpLint;
-use PhalconX\PhpLint\Reporters\TextReporter;
+use PhalconX\Php\Lint as PhpLint;
+use PhalconX\Php\Lint\Reporters\TextReporter;
 
 /**
  * @Command('lint', desc="phplint")
@@ -20,12 +20,12 @@ class Lint extends BaseCommand
     public $dir;
 
     /**
-     * @Option('optional|is_array', shortcut="-e", desc="directory to exclude")
+     * @Option('required|is_array', shortcut="-e", desc="directory to exclude")
      */
     public $exclude;
 
     /**
-     * @Option(optional, shortcut="-l", desc="autoload file")
+     * @Option(required, shortcut="-l", desc="autoload file")
      */
     public $autoload;
 
@@ -75,6 +75,7 @@ class Lint extends BaseCommand
     public function filter($current, $file, $it)
     {
         return !preg_match($this->excludePattern, $file)
+            && is_readable($file)
             && (is_dir($file) || Text::endsWith($file, '.php'));
     }
 

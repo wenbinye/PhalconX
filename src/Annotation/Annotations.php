@@ -4,11 +4,14 @@ namespace PhalconX\Annotation;
 use Phalcon\Annotations\Reader;
 use Phalcon\Annotations\Annotation as PhalconAnnotation;
 use Phalcon\Cache;
+use Phalcon\Logger;
+use Phalcon\Di;
+use Phalcon\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
 use PhalconX\Helper\ClassHelper;
 use PhalconX\Helper\ClassResolver;
-use PhalconX\Helper\FileHelper;
 
-class Annotations
+class Annotations implements InjectionAwareInterface
 {
     /**
      * Automatic imported classes
@@ -17,7 +20,7 @@ class Annotations
     private $imports = [];
 
     /**
-     * @var Cache cache object to store annotations
+     * @var Cache\BackendInterface cache object to store annotations
      */
     private $cache;
 
@@ -27,7 +30,7 @@ class Annotations
     private $parser;
 
     /**
-     * @var Phalcon\Logger\Adapter
+     * @var Logger\AdapterInterface
      */
     private $logger;
 
@@ -37,26 +40,14 @@ class Annotations
     private $classResolver;
 
     /**
+     * @var DiInterface
+     */
+    private $di;
+
+    /**
      * @var array
      */
     private $extensions = ['php'];
-    
-    /**
-     * Constructor
-     * @param Cache $cache
-     * @param Logger $logger
-     * @param Reader $reader
-     */
-    public function __construct(
-        Cache\BackendInterface $cache = null,
-        $logger = null,
-        Reader $parser = null
-    ) {
-        $this->cache = $cache ?: new Cache\Backend\Memory(new Cache\Frontend\None);
-        $this->logger = $logger;
-        $this->parser = $parser ?: new Reader;
-        $this->classResolver = new ClassResolver($cache);
-    }
 
     /**
      * Imports annotation classes
@@ -79,15 +70,17 @@ class Annotations
 
     public function scan($dir)
     {
-        $annotations = $this->cache->get('_PHX.annotations_scan.'.$dir);
+        $annotations = $this->getCache()->get('_PHX.annotations_scan.'.$dir);
         if (!isset($annotations)) {
             $annotations = [];
-            foreach (FileHelper::find($dir, ['extension' => $this->extensions]) as $file => $fileInfo) {
+            $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
+            $regex = '#\.(' . implode("|", array_map('preg_quote', $this->extensions)) . ')$#';
+            foreach (new \RegexIterator($it, $regex) as $file => $fileInfo) {
                 foreach (ClassHelper::getClasses($file) as $class) {
                     $annotations = array_merge($annotations, $this->get($class));
                 }
             }
-            $this->cache->save('_PHX.annotations_scan.'.$dir, $annotations);
+            $this->getCache()->save('_PHX.annotations_scan.'.$dir, $annotations);
         }
         return $this->filter($annotations);
     }
@@ -100,10 +93,10 @@ class Annotations
      */
     public function get($class)
     {
-        $annotations = $this->cache->get('_PHX.annotations.' . $class);
+        $annotations = $this->getCache()->get('_PHX.annotations.' . $class);
         if (!isset($annotations)) {
             $annotations = $this->getAnnotations($class);
-            $this->cache->save('_PHX.annotations.' . $class, $annotations);
+            $this->getCache()->save('_PHX.annotations.' . $class, $annotations);
         }
         return $annotations;
     }
@@ -135,7 +128,7 @@ class Annotations
      */
     private function getAnnotations($class)
     {
-        $parsed = $this->parser->parse($class);
+        $parsed = $this->getParser()->parse($class);
         if (!is_array($parsed)) {
             return [];
         }
@@ -184,6 +177,7 @@ class Annotations
      */
     private function create($annotation, $context)
     {
+        $logger = $this->getLogger();
         $name = $annotation['name'];
         if (!$this->isValidName($name)) {
             return null;
@@ -193,24 +187,18 @@ class Annotations
             if (isset($this->imports[$name])) {
                 $annotationClass = $this->imports[$name];
             } else {
-                if ($this->logger) {
-                    $this->logger->warning("Unknown annotation '$name' at {$annotation['file']}:{$annotation['line']}");
-                }
+                $logger->warning("Unknown annotation '$name' at {$annotation['file']}:{$annotation['line']}");
                 return null;
             }
         }
         if (!class_exists($annotationClass)) {
-            if ($this->logger) {
-                $this->logger->warning("Annotation class '$annotationClass' does not exist"
-                                    ." at {$annotation['file']}:{$annotation['line']}");
-            }
+            $logger->warning("Annotation class '$annotationClass' does not exist"
+                             ." at {$annotation['file']}:{$annotation['line']}");
             return null;
         }
         if (!is_subclass_of($annotationClass, Annotation::class)) {
-            if ($this->logger) {
-                $this->logger->warning("Annotation class '$annotationClass' at {$annotation['file']}:{$annotation['line']}"
-                                    ." is not subclass of " . Annotation::class);
-            }
+            $logger->warning("Annotation class '$annotationClass' at {$annotation['file']}:{$annotation['line']}"
+                             ." is not subclass of " . Annotation::class);
             return null;
         }
         $context['file'] = $annotation['file'];
@@ -237,7 +225,7 @@ class Annotations
      */
     private function resolveClassName($name, $declaringClass)
     {
-        return $this->classResolver->resolve($name, $declaringClass);
+        return $this->getClassResolver()->resolve($name, $declaringClass);
     }
 
     public function getImports()
@@ -245,23 +233,96 @@ class Annotations
         return $this->imports;
     }
 
+    public function getDi()
+    {
+        if ($this->di === null) {
+            $this->di = Di::getDefault();
+        }
+        return $this->di;
+    }
+
+    public function setDi(DiInterface $di)
+    {
+        $this->di = $di;
+        return $this;
+    }
+    
     public function getCache()
     {
+        if ($this->cache === null) {
+            $di = $this->getDi();
+            $this->cache = $di->has('apcCache') ? $di->getApcCache()
+                         : new Cache\Backend\Memory(new Cache\Frontend\None);
+        }
         return $this->cache;
+    }
+
+    public function setCache($cache)
+    {
+        $this->cache = $cache;
+        return $this;
     }
 
     public function getParser()
     {
+        if ($this->parser === null) {
+            $this->parser = new Reader;
+        }
         return $this->parser;
     }
 
+    public function setParser(Reader $reader)
+    {
+        $this->parser = $reader;
+        return $this;
+    }
+
+    /**
+     * @return Logger\AdapterInterface
+     */
     public function getLogger()
     {
+        if ($this->logger === null) {
+            $di = $this->getDi();
+            if ($di->has('logger')) {
+                $this->logger = $di->getLogger();
+            } else {
+                $logger = new Logger\Adapter\Stream('php://stderr');
+                $logger->setLogLevel(Logger::WARNING);
+                $this->logger = $logger;
+            }
+        }
         return $this->logger;
+    }
+
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
+        return $this;
     }
 
     public function getClassResolver()
     {
+        if ($this->classResolver === null) {
+            $this->classResolver = new ClassResolver($this->getCache());
+        }
         return $this->classResolver;
+    }
+
+    public function setClassResolver(ClassResolver $resolver)
+    {
+        $this->classResolver = $resolver;
+        return $this;
+    }
+
+    public function getExtensions()
+    {
+        return $this->extensions;
+    }
+
+    public function setExtensions($extensions)
+    {
+        $this->extensions = $extensions;
+        return $this;
     }
 }

@@ -2,7 +2,7 @@
 namespace PhalconX\Validation\Annotations;
 
 use Phalcon\Validation\Validator\Uniqueness as UniquenessValidator;
-use PhalconX\Validation\Form;
+use PhalconX\Validation\Validation;
 use PhalconX\Helper\ClassResolver;
 
 class Uniqueness extends Validator
@@ -31,16 +31,16 @@ class Uniqueness extends Validator
      */
     public $message;
 
-    public function getValidator(Form $form)
+    public function getValidator(Validation $validation)
     {
         $context = $this->getContext();
         if ($context->getDeclaringClass()) {
-            $modelClass = (new ClassResolver($form->getCache()))
+            $modelClass = (new ClassResolver($validation->getCache()))
                 ->resolve($this->model, $context->getDeclaringClass());
             if ($modelClass) {
                 $this->model = $modelClass;
             }
         }
-        return parent::getValidator($form);
+        return parent::getValidator($validation);
     }
 }

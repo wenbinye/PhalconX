@@ -26,18 +26,24 @@ trait DiService
             return $this->di->getShared($property);
         }
     }
-    
-    public function setUp()
+
+    public function get($service, $args = null)
+    {
+        return $this->getDi()->get($service, $args);
+    }
+
+    public function setUpDi()
     {
         self::$DI[] = $default = Di::getDefault();
-        $di = new Di;
+        $defaultDi = get_class($default);
+        $di = new $defaultDi;
         foreach ($default->getServices() as $name => $service) {
             $di->setRaw($name, $service);
         }
         $this->setDi($di);
     }
 
-    public function tearDown()
+    public function tearDownDi()
     {
         Di::setDefault(array_pop(self::$DI));
     }

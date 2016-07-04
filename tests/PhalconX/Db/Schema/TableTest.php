@@ -20,6 +20,18 @@ class TableTest extends TestCase
         $this->db = DbHelper::getConnection($this->config->mysql->toArray());
         $this->db->execute($this->dataset('db/user.sql'));
     }
+
+    public function testDefaultZero()
+    {
+        $table = Table::create('foo', [
+            'columns' => [
+                'is_public' => 'integer(4)=int isNumeric notNull first {"default":"0","comment":"is public"}'
+            ]
+        ]);
+        $this->assertEquals(trim($table->toSql($this->db)), 'CREATE TABLE `foo` (
+	`is_public` TINYINT(4) COMMENT "is public" DEFAULT "0" NOT NULL
+)');
+    }
     
     public function testCreate()
     {

@@ -2,7 +2,6 @@
 namespace PhalconX\Validation;
 
 use PhalconX\Test\TestCase;
-use PhalconX\Validation\Form;
 use PhalconX\Annotation\Context;
 use PhalconX\Test\Enum\Gender;
 use PhalconX\Test\Model\Scope;
@@ -37,7 +36,7 @@ class ValidatorFactoryTest extends TestCase
      */
     public function setupFactory()
     {
-        $this->factory = new ValidatorFactory(new Form());
+        $this->factory = new ValidatorFactory($this->get(Validation::class));
     }
 
     private function create($options)

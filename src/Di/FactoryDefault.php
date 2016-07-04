@@ -32,26 +32,28 @@ class FactoryDefault extends Di
                 "modelsMetadata" =>     new Service("modelsMetadata", "Phalcon\\Mvc\\Model\\MetaData\\Memory", true),
                 "filter" =>             new Service("filter", "Phalcon\\Filter", true),
                 "escaper" =>            new Service("escaper", "Phalcon\\Escaper", true),
-                "annotations" =>        new Service("annotations", "Phalcon\\Annotations\\Adapter\\Memory", true),
+                "annotations" =>        new Service("annotations", "PhalconX\\Annotation\\Annotations", true),
                 "security" =>           new Service("security", "Phalcon\\Security", true),
                 "eventsManager" =>      new Service("eventsManager", "Phalcon\\Events\\Manager", true),
-                "transactionManager" => new Service("transactionManager", "Phalcon\\Mvc\\Model\\Transaction\\Manager", true)
+                "transactionManager" => new Service("transactionManager", "Phalcon\\Mvc\\Model\\Transaction\\Manager", true),
+                'validation' => new Service('validation', 'PhalconX\Validation\Validation', true),
+                'serializer' => new Service('serializer', 'PhalconX\Serializer\Serializer', true)
             ];
         } else {
             $this->_services = [
-                "router" =>             new Service("router", "Phalcon\\Mvc\\Router", true),
+                "router" =>             new Service("router", "PhalconX\\Mvc\\Router", true),
                 "dispatcher" =>         new Service("dispatcher", "Phalcon\\Mvc\\Dispatcher", true),
                 "url" =>                new Service("url", "Phalcon\\Mvc\\Url", true),
                 "modelsManager" =>      new Service("modelsManager", "Phalcon\\Mvc\\Model\\Manager", true),
                 "modelsMetadata" =>     new Service("modelsMetadata", "Phalcon\\Mvc\\Model\\MetaData\\Memory", true),
                 "response" =>           new Service("response", "Phalcon\\Http\\Response", true),
                 "cookies" =>            new Service("cookies", "Phalcon\\Http\\Response\\Cookies", true),
-                "request" =>            new Service("request", "Phalcon\\Http\\Request", true),
+                "request" =>            new Service("request", "PhalconX\\Http\\Request", true),
                 "filter" =>             new Service("filter", "Phalcon\\Filter", true),
                 "escaper" =>            new Service("escaper", "Phalcon\\Escaper", true),
                 "security" =>           new Service("security", "Phalcon\\Security", true),
                 "crypt" =>              new Service("crypt", "Phalcon\\Crypt", true),
-                "annotations" =>        new Service("annotations", "Phalcon\\Annotations\\Adapter\\Memory", true),
+                "annotations" =>        new Service("annotations", "PhalconX\\Annotation\\Annotations", true),
                 "flash" =>              new Service("flash", "Phalcon\\Flash\\Direct", true),
                 "flashSession" =>       new Service("flashSession", "Phalcon\\Flash\\Session", true),
                 "tag" =>                new Service("tag", "Phalcon\\Tag", true),
@@ -59,7 +61,9 @@ class FactoryDefault extends Di
                 "sessionBag" =>         new Service("sessionBag", "Phalcon\\Session\\Bag"),
                 "eventsManager" =>      new Service("eventsManager", "Phalcon\\Events\\Manager", true),
                 "transactionManager" => new Service("transactionManager", "Phalcon\\Mvc\\Model\\Transaction\\Manager", true),
-                "assets" =>             new Service("assets", "Phalcon\\Assets\\Manager", true)
+                "assets" =>             new Service("assets", "Phalcon\\Assets\\Manager", true),
+                'validation' => new Service('validation', 'PhalconX\Validation\Validation', true),
+                'serializer' => new Service('serializer', 'PhalconX\Serializer\Serializer', true)
             ];
         }
     }
@@ -125,7 +129,7 @@ class FactoryDefault extends Di
         } else {
             $services = $names;
         }
-        $this->autoload($services, $provider, $options);
+        return $this->autoload($services, $provider, $options);
     }
 
     private function createServiceAliases($names, $aliases)
@@ -134,10 +138,5 @@ class FactoryDefault extends Di
         $common = array_intersect($names, $keys);
         $names = array_diff($names, $keys);
         return array_merge($names, array_intersect_key($aliases, array_flip($common)));
-    }
-    
-    public function safeGet($name)
-    {
-        return $this->has($name) ? $this->get($name) : null;
     }
 }

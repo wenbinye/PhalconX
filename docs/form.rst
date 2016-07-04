@@ -3,17 +3,17 @@
 
 .. code-block:: php
 
-   use PhalconX\Validation\Form;
+   use PhalconX\Validation\Validation;
    use PhalconX\Validation\ValidatorFactory;
 
-   $form = new Form();
+   $validation = new Validation();
 
-   my $formObject = new MyForm($input);
-   $form->validate($formObject);    // throw ValidationException if data is invalid
-   $form->validate($formData, [
-       'field1' => ValidatorFactory::create([
+   my $foo = new Foo($input);
+   $validation->validate($foo); // throw ValidationException if data is invalid
+   $validation->validate($input, [
+       'field1' => [
            'required' => '',
-       ]),
+       ],
    ]);
 
-   $myform = $form->createForm(MyForm::class); // create PhalconX\Forms\Form object
+   $myform = $validation->createForm(MyForm::class); // create Phalcon\Forms\Form object

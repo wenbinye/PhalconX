@@ -1,7 +1,9 @@
 <?php
 namespace PhalconX\Forms\Annotations;
 
+use Phalcon\Forms\Element\Text as TextElement;
+
 class Text extends Input
 {
-    protected static $elementClass = "Phalcon\Forms\Element\Text";
+    protected static $elementClass = TextElement::class;
 }

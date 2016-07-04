@@ -3,7 +3,7 @@ namespace PhalconX\Forms\Annotations;
 
 use PhalconX\Test\TestCase;
 
-use PhalconX\Validation\Form;
+use PhalconX\Validation\Validation;
 use PhalconX\Forms\Annotations\Input;
 use PhalconX\Forms\Annotations\Date;
 use PhalconX\Forms\Annotations\Email;
@@ -41,7 +41,7 @@ class InputTest extends TestCase
      */
     public function setupForm()
     {
-        $this->form = new Form;
+        $this->form = $this->get(Validation::class);
     }
     
     /**

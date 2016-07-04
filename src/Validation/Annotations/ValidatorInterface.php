@@ -1,7 +1,7 @@
 <?php
 namespace PhalconX\Validation\Annotations;
 
-use PhalconX\Validation\Form;
+use PhalconX\Validation\Validation;
 
 interface ValidatorInterface
 {
@@ -10,5 +10,5 @@ interface ValidatorInterface
      *
      * @return Phalcon\Validation\Validator
      */
-    public function getValidator(Form $form);
+    public function getValidator(Validation $validation);
 }

@@ -16,7 +16,7 @@ class InjectableTest extends TestCase
     /**
      * @before
      */
-    public function setupDi()
+    public function beforeMethod()
     {
         $di = new Di;
         $di['config'] = new Config;

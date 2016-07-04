@@ -3,12 +3,21 @@ namespace PhalconX\Enum;
 
 use PhalconX\Test\TestCase;
 use PhalconX\Test\Enum\Gender;
+use PhalconX\Test\Enum\OnOff;
 
 /**
  * TestCase for Enum
  */
 class EnumTest extends TestCase
 {
+    public function testEquality()
+    {
+        $on = OnOff::fromValue('1');
+        $onObj = OnOff::ON();
+        // var_export([$on, $onObj]);
+        $this->assertTrue($on === $onObj);
+    }
+    
     public function testName()
     {
         $this->assertEquals(Gender::MALE()->name(), 'MALE');

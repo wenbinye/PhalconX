@@ -36,6 +36,9 @@ abstract class Command extends BaseCommand
             ->setProcessTitle($command->title)
             ->setDescription($command->getDescription());
         if ($command->aliases) {
+            if (is_string($command->aliases)) {
+                $command->aliases = [$command->aliases];
+            }
             $this->setAliases($command->aliases);
         }
         $reflection = new \ReflectionClass($this);

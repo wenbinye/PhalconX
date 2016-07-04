@@ -4,7 +4,7 @@ namespace PhalconX\Validation\Annotations;
 use Phalcon\Validation\Exception;
 use PhalconX\Validation\Validators\IsA as IsAValidator;
 use PhalconX\Annotation\Annotation;
-use PhalconX\Validation\Form;
+use PhalconX\Validation\Validation;
 use PhalconX\Helper\ClassResolver;
 
 class IsA extends Annotation implements ValidatorInterface
@@ -15,21 +15,24 @@ class IsA extends Annotation implements ValidatorInterface
     
     public $message;
 
-    public function getValidator(Form $form)
+    public function getValidator(Validation $validation)
     {
         if (!$this->class) {
             throw new Exception("Class should be set");
         }
-        $class = (new ClassResolver($form->getCache()))
-            ->resolve($this->class, $this->getDeclaringClass());
-        if (!$class) {
-            throw new Exception(sprintf(
-                "Class '%s' is not imported in %s",
-                $this->class,
-                $this->getDeclaringClass()
-            ));
+        $class = $this->class;
+        if ($this->getDeclaringClass()) {
+            $class = (new ClassResolver($validation->getCache()))
+                   ->resolve($class, $this->getDeclaringClass());
+            if (!$class) {
+                throw new Exception(sprintf(
+                    "Class '%s' is not imported in %s",
+                    $this->class,
+                    $this->getDeclaringClass()
+                ));
+            }
         }
-        return new IsAValidator($form, [
+        return new IsAValidator($validation, [
             'class' => $class,
             'message' => $this->message
         ]);

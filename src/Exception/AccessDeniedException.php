@@ -1,7 +1,7 @@
 <?php
 namespace PhalconX\Exception;
 
-class AccessDeniedException extends FilterException
+class AccessDeniedException extends HttpException
 {
     public function __construct($message = null, $previous = null)
     {

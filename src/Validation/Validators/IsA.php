@@ -13,7 +13,7 @@ class IsA extends BaseValidator implements ValidatorInterface
 {
     private $form;
     
-    public function __construct(Form $form, $options)
+    public function __construct(\PhalconX\Validation\Validation $form, $options)
     {
         $this->form = $form;
         parent::__construct($options);
@@ -50,6 +50,7 @@ class IsA extends BaseValidator implements ValidatorInterface
             foreach ($e->getErrors() as $error) {
                 $validation->appendMessage(new Message($error->getMessage(), $field . '.' . $error->getField()));
             }
+            return false;
         }
     }
 }

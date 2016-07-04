@@ -114,20 +114,14 @@ class Column extends SimpleModel
         return $this->type == $other->type
             && $this->size == $other->size
             && $this->scale == $other->scale
-            && $this->default === $other->default
+            && strcmp($this->default, $other->default) == 0
             && $this->unsigned == $other->unsigned
             && $this->notNull == $other->notNull;
     }
 
     public function isSame(Column $other)
     {
-        return $this->type == $other->type
-            && $this->size == $other->size
-            && $this->scale == $other->scale
-            && $this->default === $other->default
-            && $this->unsigned == $other->unsigned
-            && $this->notNull == $other->notNull
-            && $this->comment == $other->comment;
+        return $this->isLike($other) && $this->comment == $other->comment;
     }
 
     public function check()

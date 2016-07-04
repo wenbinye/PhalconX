@@ -27,6 +27,9 @@ class ArrayHelperTest extends TestCase
 
         $users = array_map(function($a) { return new User($a['name']); }, $arr);
         $this->assertEquals(ArrayHelper::pull($users, 'name', ArrayHelper::GETTER), ['john','jim']);
+
+        $arr = ['john' => [1, 2], 'jim' => [3, 4]];
+        $this->assertEquals([2, 4], ArrayHelper::pull($arr, 1));
     }
 
     public function testAssoc()

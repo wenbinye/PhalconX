@@ -8,7 +8,7 @@ class None implements FrontendInterface
 {
     protected $options;
 
-    public function __construct($options)
+    public function __construct($options = null)
     {
         $this->options = $options;
     }

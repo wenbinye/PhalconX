@@ -1,7 +1,7 @@
 <?php
 namespace PhalconX\Exception;
 
-class CsrfTokenInvalidException extends FilterException
+class CsrfTokenInvalidException extends HttpException
 {
     public function __construct($message = null, $previous = null)
     {

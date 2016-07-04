@@ -2,9 +2,8 @@
 namespace PhalconX\Forms;
 
 use Phalcon\Validation\Message\Group;
-use Phalcon\Forms\Form as BaseForm;
 
-class Form extends BaseForm
+class Form extends \Phalcon\Forms\Form
 {
     public function hasErrors()
     {

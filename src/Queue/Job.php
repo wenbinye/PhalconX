@@ -1,24 +1,47 @@
 <?php
 namespace PhalconX\Queue;
 
-use Phalcon\Queue\Beanstalk\Job as BeanstalkJob;
-use PhalconX\Di\Injectable;
+use Pheanstalk\Job as BeanstalkJob;
+use Pheanstalk\PheanstalkInterface;
 use PhalconX\Mvc\SimpleModel;
 
+/**
+ * job 中任何公开成员变量都将作为任务参数。
+ * 如果 job.id 非空，将检查是否有相同任务存在，如果有相同任务，将替换
+ * 已经存在的任务。
+ */
 abstract class Job extends SimpleModel implements JobInterface
 {
-    use Injectable;
-    
-    const DEFAULT_DELAY = 0;       // no delay
-    const DEFAULT_PRIORITY = 1024; // most urgent: 0, least urgent: 4294967295
-    const DEFAULT_TTR = 60;        // 1 minute
+    protected $delay = PheanstalkInterface::DEFAULT_DELAY;
+    protected $priority = PheanstalkInterface::DEFAULT_PRIORITY;
+    protected $ttr = PheanstalkInterface::DEFAULT_TTR;
+    protected $runOnce;
 
-    private $beanstalkJob;
+    private $id;
+    private $data;
+    private $beanstalk;
 
-    protected $id;
-    protected $delay = self::DEFAULT_DELAY;
-    protected $priority = self::DEFAULT_PRIORITY;
-    protected $ttr = self::DEFAULT_TTR;
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    public function setId($id)
+    {
+        $this->id = $id;
+        return $this;
+    }
+
+    public function setData($data)
+    {
+        $this->data = $data;
+        return $this;
+    }
+
+    public function getData()
+    {
+        return $this->data;
+    }
     
     public function getDelay()
     {
@@ -35,54 +58,25 @@ abstract class Job extends SimpleModel implements JobInterface
         return $this->priority;
     }
 
-    public function getId()
+    public function isRunOnce()
     {
-        return $this->id;
+        return $this->runOnce;
+    }
+
+    public function setRunOnce($runOnce)
+    {
+        $this->runOnce = $runOnce;
+        return $this;
+    }
+    
+    public function setBeanstalk(Beanstalk $beanstalk)
+    {
+        $this->beanstalk = $beanstalk;
+        return $this;
     }
 
     public function delete()
     {
-        return $this->beanstalkJob->delete();
-    }
-
-    public function release()
-    {
-        return $this->beanstalkJob->release();
-    }
-
-    public function bury()
-    {
-        return $this->beanstalkJob->bury();
-    }
-
-    public function touch()
-    {
-        return $this->beanstalkJob->touch();
-    }
-
-    public function kick()
-    {
-        return $this->beanstalkJob->kick();
-    }
-
-    public function stats()
-    {
-        return $this->beanstalkJob->stats();
-    }
-    
-    public function getBeanstalkJob()
-    {
-        return $this->beanstalkJob;
-    }
-
-    public function setBeanstalkJob(BeanstalkJob $beanstalkJob)
-    {
-        $this->beanstalkJob = $beanstalkJob;
-        return $this;
-    }
-
-    public function __sleep()
-    {
-        return array_diff(array_keys(get_object_vars($this)), ['beanstalkJob', 'di']);
+        return $this->beanstalk->delete($this);
     }
 }

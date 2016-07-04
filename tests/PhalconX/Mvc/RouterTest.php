@@ -1,6 +1,7 @@
 <?php
 namespace PhalconX\Mvc;
 
+use Phalcon\Http\Request;
 use PhalconX\Annotation\Annotations;
 use PhalconX\Test\TestCase;
 use PhalconX\Test\Mvc\Router\IndexController;
@@ -17,10 +18,11 @@ class RouterTest extends TestCase
      */
     public function setupRouter()
     {
-        $router = new Router(new Annotations(), null, null, ['defaultRoutes' => false]);
+        $di = $this->getDi();
+        $di['request'] = $this->get(Request::class);
+        $router = $this->get(Router::class, [['defaultRoutes' => false]]);
         $refl = new \ReflectionClass(IndexController::class);
         $router->scan(dirname($refl->getFilename()));
-        $router->setDi($this->getDi());
         $this->router = $router;
     }
 

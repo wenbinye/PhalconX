@@ -19,7 +19,7 @@ class AnnotationsTest extends TestCase
      */
     public function setupAnnotations()
     {
-        $this->annotations = new Annotations;
+        $this->annotations = $this->get(Annotations::class);
     }
 
     public function testGetNotImported()

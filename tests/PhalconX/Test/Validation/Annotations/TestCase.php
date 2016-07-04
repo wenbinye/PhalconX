@@ -4,7 +4,6 @@ namespace PhalconX\Test\Validation\Annotations;
 use Phalcon\Validation;
 use PhalconX\Annotation\Context;
 use PhalconX\Test\TestCase as BaseTestCase;
-use PhalconX\Validation\Form;
 use PhalconX\Test\Helper;
 
 abstract class TestCase extends BaseTestCase
@@ -18,8 +17,8 @@ abstract class TestCase extends BaseTestCase
      */
     public function setupValidation()
     {
-        $this->form = new Form();
-        $this->validation = new Validation();
+        $this->form = new \PhalconX\Validation\Validation();
+        $this->validation = $this->get(Validation::class);
     }
 
     protected function getAnnotation($args = [])

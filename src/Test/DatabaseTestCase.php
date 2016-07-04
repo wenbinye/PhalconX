@@ -3,10 +3,7 @@ namespace PhalconX\Test;
 
 abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
 {
-    use DiService {
-        setUp as private setupDi;
-        tearDown as private tearDownDi;
-    }
+    use DiService;
     use Dataset;
 
     /**
@@ -25,7 +22,7 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
      */
     protected $connectionService = 'db';
 
-    protected function setUp()
+    public function setUp()
     {
         $this->setupDi();
         $dataset = $this->getDataSet();
@@ -34,7 +31,7 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
         }
     }
 
-    protected function tearDown()
+    public function tearDown()
     {
         $this->tearDownDi();
         $dataset = $this->getDataSet();
@@ -66,13 +63,13 @@ abstract class DatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase
         if (isset($this->cache[$file])) {
             return $this->cache[$file];
         }
-        if (preg_match('/\.\(json|ya?ml|php|xml)$/', $file, $matches)) {
+        if (preg_match('/\.(json|ya?ml|php|xml)$/', $file, $matches)) {
             if ($matches[1] == 'xml') {
                 $dataset = parent::createFlatXMLDataSet($this->getDatasetFile($file));
             } else {
                 $dataset = parent::createArrayDataSet($this->dataset($file));
             }
-            return $this->cache[$path] = $dataset;
+            return $this->cache[$file] = $dataset;
         } else {
             throw new \InvalidArgumentException("Could not load dataset, support only json, yaml, php, xml files");
         }

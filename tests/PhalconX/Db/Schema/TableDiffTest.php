@@ -30,13 +30,13 @@ class TableDiffTest extends TestCase
         $db = "`" . Di::getDefault()->getConfig()->mysql->dbname . "`";
         return [
             [
-                'alter table user drop column `name`',
-                "ALTER TABLE $db.`user` DROP INDEX `name`;
-ALTER TABLE $db.`user` DROP COLUMN `name`"],
-            [
                 'ALTER TABLE `user` CHANGE `name` `username` VARCHAR(200) COMMENT "foo name" DEFAULT "2" NOT NULL',
                 "ALTER TABLE $db.`user` CHANGE `name` `username` VARCHAR(200) COMMENT \"foo name\" DEFAULT \"2\" NOT NULL",
             ],
+            [
+                'alter table user drop column `name`',
+                "ALTER TABLE $db.`user` DROP INDEX `name`;
+ALTER TABLE $db.`user` DROP COLUMN `name`"],
             [
                 'ALTER TABLE `user` ADD `gender` CHAR(1)',
                 "ALTER TABLE $db.`user` ADD `gender` CHAR(1)"
