@@ -5,7 +5,7 @@ use Psr\Cache\CacheItemInterface;
 use DateTimeInterface;
 use DateInterval;
 
-class Item extends CacheItemInterface
+class Item implements CacheItemInterface
 {
     /**
      * @var string
@@ -25,13 +25,19 @@ class Item extends CacheItemInterface
     /**
      * @var int
      */
-    private $expiresAt;
+    private $expiration;
 
-    public function __construct($key, $value, $isHit = true)
+    public function __construct($key, $value, $expiration, $isHit = true)
     {
         $this->key = $key;
         $this->value = $value;
+        $this->expiration = $expiration;
         $this->isHit = $isHit;
+    }
+
+    public static function miss($key)
+    {
+        return new self($key, null, null, false);
     }
     
     /**
@@ -64,6 +70,7 @@ class Item extends CacheItemInterface
     public function set($value)
     {
         $this->value = $value;
+        $this->isHit = true;
         return $this;
     }
 
@@ -72,7 +79,7 @@ class Item extends CacheItemInterface
      */
     public function expiresAt($expiration)
     {
-        $this->expiresAt = $expiration instanceof DateTimeInterface
+        $this->expiration = $expiration instanceof DateTimeInterface
                          ? $expiration->getTimestamp()
                          : $expiration;
         return $this;
@@ -83,14 +90,14 @@ class Item extends CacheItemInterface
      */
     public function expiresAfter($time)
     {
-        $this->expiresAt = $time instanceof DateTimeInterface
+        $this->expiration = $time instanceof DateTimeInterface
                          ? (new DateTime())->add($time)->getTimestamp()
                          : time() + $time;
         return $this;
     }
 
-    public function getExpiresAt()
+    public function getExpiration()
     {
-        return $this->expiresAt;
+        return $this->expiration;
     }
 }

@@ -2,10 +2,11 @@
 namespace PhalconX\Cache;
 
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Cache\CacheItemInterface;
 
 class ArrayPool implements CacheItemPoolInterface
 {
-    private $values;
+    private $values = [];
     
     /**
      * @inheritDoc
@@ -13,10 +14,12 @@ class ArrayPool implements CacheItemPoolInterface
     public function getItem($key)
     {
         if (array_key_exists($key, $this->values)) {
-            return new Item($key, $this->values[$key]);
-        } else {
-            return new Item($key, null, false);
+            list($value, $expiration) = $this->values[$key];
+            if ($expiration === null || time() < $expiration) {
+                return new Item($key, $value, $expiration);
+            }
         }
+        return Item::miss($key);
     }
 
     /**
@@ -26,7 +29,7 @@ class ArrayPool implements CacheItemPoolInterface
     {
         $items = [];
         foreach ($keys as $key) {
-            $items[] = $this->getItem($key);
+            $items[$key] = $this->getItem($key);
         }
         return $items;
     }
@@ -73,7 +76,7 @@ class ArrayPool implements CacheItemPoolInterface
      */
     public function save(CacheItemInterface $item)
     {
-        $this->values[$item->getKey()] = $item->get();
+        $this->values[$item->getKey()] = [$item->get(), $item->getExpiration()];
         return true;
     }
 

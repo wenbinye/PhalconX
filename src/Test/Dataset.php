@@ -32,7 +32,7 @@ trait Dataset
         if ($format == 'json') {
             return json_decode(file_get_contents($file), true);
         } elseif (in_array($format, array('yml', 'yaml'))) {
-            return Yaml::parse($file);
+            return Yaml::parse(file_get_contents($file));
         } elseif ($format == 'php') {
             return require($file);
         } else {

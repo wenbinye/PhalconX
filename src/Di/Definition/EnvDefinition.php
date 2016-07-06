@@ -1,6 +1,7 @@
 <?php
 namespace PhalconX\Di\Definition;
 
+use PhalconX\Di\Definition\Resolver\EnvDefinitionResolver;
 use Phalcon\DiInterface;
 
 class EnvDefinition extends AbstractDefinition
@@ -15,8 +16,8 @@ class EnvDefinition extends AbstractDefinition
 
     public function resolve($parameters = null, DiInterface $container = null)
     {
-        $envName = $this->definition;
-        return isset($_ENV[$envName]) ? $_ENV[$envName] : $this->default;
+        $value = EnvDefinitionResolver::findEnvironmentVariable($this->definition);
+        return $value === false ? $this->default : $value;
     }
 
     public static function __set_state(array $attributes)

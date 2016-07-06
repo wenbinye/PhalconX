@@ -125,7 +125,7 @@ class ObjectDefinition extends AbstractDefinition
             return new $className($parameters[0], $parameters[1], $parameters[2]);
         } else {
             $refl = new ReflectionClass($className);
-            return $refl->getConstructor()->invokeArgs($parameters);
+            return $refl->newInstanceArgs($parameters);
         }
     }
 
