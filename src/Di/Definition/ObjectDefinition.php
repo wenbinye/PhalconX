@@ -152,9 +152,12 @@ class ObjectDefinition extends AbstractDefinition
         $paramTypes = [];
         if (($constructor = $refl->getConstructor()) !== null) {
             foreach ($constructor->getParameters() as $i => $parameter) {
+                if ($parameter->isOptional()) {
+                    continue;
+                }
                 if (($class = $parameter->getClass()) !== null) {
                     $paramTypes[] = $class->getName();
-                } elseif (!$parameter->isOptional()) {
+                } else {
                     $paramTypes[] = null;
                 }
             }
