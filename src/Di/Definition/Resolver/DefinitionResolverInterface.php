@@ -5,9 +5,10 @@ interface DefinitionResolverInterface
 {
     /**
      * @param string $name
+     * @param string $scope
      * @return \PhalconX\Di\DefinitionInterface
      */
-    public function resolve($name);
+    public function resolve($name, $scope);
 
     /**
      * @param string $name

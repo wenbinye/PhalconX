@@ -20,8 +20,9 @@ class ObjectDefinitionResolver implements DefinitionResolverInterface
     /**
      * @inheritDoc
      */
-    public function resolve($name)
+    public function resolve($name, $scope)
     {
-        return new ObjectDefinition($name, $name);
+        return (new ObjectDefinition($name, $name))
+            ->setScope($scope);
     }
 }

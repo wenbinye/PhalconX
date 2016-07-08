@@ -14,7 +14,7 @@ class Container implements ContainerInterface
 
     public function get($id)
     {
-        return $this->di->get($id);
+        return $this->di->get($id, null, true);
     }
 
     public function has($id)

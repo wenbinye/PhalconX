@@ -26,11 +26,11 @@ class MultipleDefinitionResolver implements DefinitionResolverInterface
     /**
      * @inheritDoc
      */
-    public function resolve($name)
+    public function resolve($name, $scope)
     {
         foreach ($this->resolvers as $resolver) {
             if ($resolver->isResolvable($name)) {
-                return $resolver->resolve($name);
+                return $resolver->resolve($name, $scope);
             }
         }
     }

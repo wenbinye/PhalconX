@@ -75,16 +75,23 @@ class Di extends PhalconDi implements DiInterface
      */
     private $freshInstance;
 
-    public function __construct($addContainer = true, $addPhalcon = true)
+    public function __construct($addPhalcon = true)
     {
         parent::__construct();
         $this->definitionResolver = new ObjectDefinitionResolver;
-        if ($addContainer) {
-            $this->addContainerDefinitions();
-        }
+        $this->addContainerDefinitions();
         if ($addPhalcon) {
             $this->addPhalconDefinitions();
         }
+    }
+
+    protected function addContainerDefinitions()
+    {
+        $this->addDefinitions([
+            DiInterface::class => new ValueDefinition(DiInterface::class, $this),
+            PhalconDiInterface::class => new ValueDefinition(PhalconDiInterface::class, $this),
+            ContainerInterface::class => new ValueDefinition(ContainerInterface::class, new Container($this))
+        ]);
     }
 
     protected function normalize($name)
@@ -92,13 +99,15 @@ class Di extends PhalconDi implements DiInterface
         return ltrim($name, '\\');
     }
 
-    protected function getDefinition($name)
+    protected function getDefinition($name, $scope, $register)
     {
         if (isset($this->definitions[$name])) {
             $definition = $this->definitions[$name];
         } elseif ($this->definitionResolver->isResolvable($name)) {
-            $definition = $this->definitionResolver->resolve($name);
-            $this->definitions[$name] = $definition;
+            $definition = $this->definitionResolver->resolve($name, $scope);
+            if ($register) {
+                $this->definitions[$name] = $definition;
+            }
         } else {
             throw new Exception("No entry or class found for '$name'");
         }
@@ -122,6 +131,34 @@ class Di extends PhalconDi implements DiInterface
         return $definition;
     }
 
+    protected function resolve($definition, $parameters)
+    {
+        $name = $definition->getName();
+        if (!($definition instanceof DefinitionInterface)) {
+            throw new Exception("Invalid definition for '$name'");
+        }
+        $scope = $definition->getScope();
+        if ($scope === Scope::SINGLETON && array_key_exists($name, $this->singletonEntries)) {
+            return $this->singletonEntries[$name];
+        } elseif ($scope === Scope::REQUEST && array_key_exists($name, $this->requestEntries)) {
+            return $this->requestEntries[$name];
+        }
+        $value = $definition->resolve($parameters, $this);
+        if ($value instanceof DeferredObject) {
+            $deferred = $value;
+            $value = $deferred->getInstance();
+        }
+        if ($scope === Scope::SINGLETON) {
+            $this->singletonEntries[$name] = $value;
+        } elseif ($scope === Scope::REQUEST) {
+            $this->requestEntries[$name] = $value;
+        }
+        if (isset($deferred)) {
+            $deferred->initialize();
+        }
+        return $value;
+    }
+
     public function setDefinitionResolver(DefinitionResolverInterface $definitionResolver)
     {
         $this->definitionResolver = $definitionResolver;
@@ -133,15 +170,6 @@ class Di extends PhalconDi implements DiInterface
         foreach ($definitions as $name => $definition) {
             $this->set($name, $definition);
         }
-    }
-
-    public function addContainerDefinitions()
-    {
-        $this->addDefinitions([
-            DiInterface::class => new ValueDefinition(DiInterface::class, $this),
-            PhalconDiInterface::class => new ValueDefinition(PhalconDiInterface::class, $this),
-            ContainerInterface::class => new ValueDefinition(ContainerInterface::class, new Container($this))
-        ]);
     }
 
     public function addPhalconDefinitions($mode = null)
@@ -245,30 +273,13 @@ class Di extends PhalconDi implements DiInterface
     public function get($name, $parameters = null)
     {
         $name = $this->normalize($name);
-        $definition = $this->getDefinition($name);
-        if (!($definition instanceof DefinitionInterface)) {
-            throw new Exception("Invalid definition for '$name'");
+        $args = func_get_args();
+        if (!empty($args[2])) {
+            $definition = $this->getDefinition($name, Scope::SINGLETON, $register = true);
+        } else {
+            $definition = $this->getDefinition($name, Scope::PROTOTYPE, $register = false);
         }
-        $scope = $definition->getScope();
-        if ($scope === Scope::SINGLETON && array_key_exists($name, $this->singletonEntries)) {
-            return $this->singletonEntries[$name];
-        } elseif ($scope === Scope::REQUEST && array_key_exists($name, $this->requestEntries)) {
-            return $this->requestEntries[$name];
-        }
-        $value = $definition->resolve($parameters, $this);
-        if ($value instanceof DeferredObject) {
-            $deferred = $value;
-            $value = $deferred->getInstance();
-        }
-        if ($scope === Scope::SINGLETON) {
-            $this->singletonEntries[$name] = $value;
-        } elseif ($scope === Scope::REQUEST) {
-            $this->requestEntries[$name] = $value;
-        }
-        if (isset($deferred)) {
-            $deferred->initialize();
-        }
-        return $value;
+        return $this->resolve($definition, $parameters);
     }
 
     /**
@@ -285,7 +296,8 @@ class Di extends PhalconDi implements DiInterface
             return $this->requestEntries[$name];
         }
         $this->freshInstance = false;
-        return $this->get($name, $parameters);
+        $definition = $this->getDefinition($name, Scope::SINGLETON, $register = true);
+        return $this->resolve($definition, $parameters);
     }
 
     /**

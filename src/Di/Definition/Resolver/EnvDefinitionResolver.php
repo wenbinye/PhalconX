@@ -31,8 +31,9 @@ class EnvDefinitionResolver implements DefinitionResolverInterface
     /**
      * @inheritDoc
      */
-    public function resolve($name)
+    public function resolve($name, $scope)
     {
-        return new EnvDefinition($name, $name);
+        return (new EnvDefinition($name, $name))
+            ->setScope($scope);
     }
 }

@@ -109,7 +109,7 @@ class DiTest extends TestCase
             LoggerInterface::class => Di\object(File::class)
             ->constructor($logfile = vfsStream::url('root/app.log'))
         ]);
-        $instance1 = $di->get(Foo::class);
+        $instance1 = $di->get(Foo::class, null, true);
         $instance2 = $di->get(Foo::class);
         $this->assertTrue($instance1 === $instance2);
     }
