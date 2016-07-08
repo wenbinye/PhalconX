@@ -79,7 +79,11 @@ class ObjectDefinition extends AbstractDefinition
         }
         $className = $this->getClassName();
         if (empty($this->constructorParameterDefinitions)) {
-            $instance = new $className;
+            if ($parameters === null) {
+                $instance = new $className;
+            } else {
+                $instance = $this->createInstance($className, $parameters);
+            }
         } else {
             if ($parameters === null) {
                 $parameters = $this->resolveValues($container, $this->constructorParameterDefinitions);
