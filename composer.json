@@ -17,6 +17,7 @@
         "psr/cache": "^1.0",
         "container-interop/container-interop": "^1.1",
         "symfony/console": "^2.5",
+        "symfony/yaml": "^2.7",
         "pda/pheanstalk": "^3.1"
     },
     "bin": ["bin/phalconx"],
