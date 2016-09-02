@@ -20,11 +20,6 @@ class Listener implements InjectionAwareInterface
     private $logging;
 
     /**
-     * @var boolean
-     */
-    private $transaction;
-
-    /**
      * @var DiInterface
      */
     private $di;
@@ -45,34 +40,12 @@ class Listener implements InjectionAwareInterface
         $this->lastActiveTime = time();
         $this->timeout = ArrayHelper::fetch($options, 'timeout', 60);
         $this->logging = ArrayHelper::fetch($options, 'logging', true);
-        $this->transaction = ArrayHelper::fetch($options, 'transaction', true);
     }
 
     public function beforeQuery($event, $connection, $binds)
     {
         $this->reconnectIfTimeout($connection);
         $this->loggingStatment($connection, $binds);
-    }
-
-    public function beginTransaction($event, $connection)
-    {
-        if ($this->transaction) {
-            $connection->getInternalHandler()->setAttribute(\PDO::ATTR_AUTOCOMMIT, 0);
-        }
-    }
-
-    public function commitTransaction($event, $connection)
-    {
-        if ($this->transaction) {
-            $connection->getInternalHandler()->setAttribute(\PDO::ATTR_AUTOCOMMIT, 1);
-        }
-    }
-
-    public function rollbackTransaction($event, $connection)
-    {
-        if ($this->transaction) {
-            $connection->getInternalHandler()->setAttribute(\PDO::ATTR_AUTOCOMMIT, 1);
-        }
     }
 
     private function reconnectIfTimeout($connection)
